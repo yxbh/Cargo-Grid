@@ -89,6 +89,12 @@ def _bytes(root) -> bytes:
     return ET.tostring(root, encoding="utf-8", xml_declaration=True)
 
 
+def _filament_mode(settings: BambuSettings) -> str:
+    if settings.roof_support and settings.roof_support.nozzle_map is not None:
+        return "Manual"
+    return "Auto For Match"
+
+
 def _validate_request(job: Job, bambu: BambuSettings | None, stack: StackSettings | None) -> None:
     if not job.designs:
         raise ValueError("a job needs at least one design")
@@ -314,8 +320,9 @@ def _write_3mf(
                 f"catalogue_plate_{plate_index + 1}" if job.kind == "catalogue" else label,
             )
             _metadata(plate, "locked", "false")
+            if bambu:
+                _metadata(plate, "filament_map_mode", _filament_mode(bambu))
             if bambu and bambu.roof_support and bambu.roof_support.nozzle_map is not None:
-                _metadata(plate, "filament_map_mode", "Manual")
                 _metadata(
                     plate, "filament_maps", " ".join(str(n) for n in bambu.roof_support.nozzle_map)
                 )
@@ -417,16 +424,13 @@ def _write_3mf(
                 "filament_colour": [m.color for m in bambu.materials],
                 "filament_settings_id": [m.name for m in bambu.materials],
                 "filament_is_support": ["0"] * len(bambu.materials),
+                "filament_map_mode": _filament_mode(bambu),
             }
             if bambu.roof_support:
                 settings.update(bambu.roof_support.native_settings())
                 settings["nozzle_volume_type"] = ["Standard", "Standard"]
                 settings["extruder_type"] = ["Direct Drive", "Direct Drive"]
-                overrides = set(bambu.roof_support.native_settings()) - {
-                    "filament_map",
-                    "filament_map_mode",
-                    "support_on_build_plate_only",
-                }
+                overrides = bambu.roof_support.process_override_keys
                 settings["different_settings_to_system"] = [
                     ";".join(sorted(overrides)),
                     *[""] * (len(bambu.materials) + 1),
@@ -440,11 +444,25 @@ def _write_3mf(
         "application_import_verified": False,
         "sliced": False,
         "physical_print_verified": False,
+        "filament_assignment": (
+            {
+                "mode": _filament_mode(bambu),
+                "physical_map_requested": (
+                    list(bambu.roof_support.nozzle_map)
+                    if bambu.roof_support and bambu.roof_support.nozzle_map is not None
+                    else None
+                ),
+            }
+            if bambu
+            else None
+        ),
         "joint_styles": styles,
         "roof_support": None
         if not (bambu and bambu.roof_support)
         else {
             "settings": asdict(bambu.roof_support),
+            "contact_mode": bambu.roof_support.contact_mode,
+            "contact_material_intent": "PETG model/base and distinct PLA interface; actual material compatibility and physical release must be checked",
             "enforcer_count": sum(
                 v.subtype == "support_enforcer" for _, vs, _ in batches for v in vs
             ),

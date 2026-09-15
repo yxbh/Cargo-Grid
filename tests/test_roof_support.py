@@ -115,7 +115,8 @@ def test_automatic_support_defaults_omit_custom_assignments(tmp_path):
         settings = json.loads(archive.read("Metadata/project_settings.config"))
         assert settings["support_filament"] == "1" and settings["support_interface_filament"] == "2"
         assert settings["support_on_build_plate_only"] == "0"
-        assert not {"filament_map", "filament_map_mode"} & settings.keys()
+        assert "filament_map" not in settings
+        assert settings["filament_map_mode"] == "Auto For Match"
         assert "raft_first_layer_expansion" not in settings
         assert not {
             "filament_map",
@@ -125,7 +126,15 @@ def test_automatic_support_defaults_omit_custom_assignments(tmp_path):
         } & set(settings["different_settings_to_system"][0].split(";"))
         config = ET.fromstring(archive.read("Metadata/model_settings.config"))
         metadata = {m.get("key") for m in config.findall("./plate/metadata")}
-        assert not {"filament_map_mode", "filament_maps", "filament_volume_maps"} & metadata
+        assert not {"filament_maps", "filament_volume_maps"} & metadata
+        assert (
+            next(
+                m.get("value")
+                for m in config.findall("./plate/metadata")
+                if m.get("key") == "filament_map_mode"
+            )
+            == "Auto For Match"
+        )
 
 
 @pytest.mark.parametrize("expansion", [None, -1, 0, 1.5])
@@ -331,6 +340,6 @@ def test_native_bambu_roundtrip_keeps_nonprinting_roof_enforcers(bambu, tmp_path
         types = [p.get("subtype") for p in config.findall("./object/part")]
         assert types.count("normal_part") == 1 and types.count("support_enforcer") == 3
         metadata = {m.get("key"): m.get("value") for m in config.findall("./plate/metadata")}
-        assert metadata["filament_map_mode"] == ("Manual" if nozzle_map else "Auto For Flush")
+        assert metadata["filament_map_mode"] == ("Manual" if nozzle_map else "Auto For Match")
         if nozzle_map:
             assert metadata["filament_maps"] == "2 1"

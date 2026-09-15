@@ -172,6 +172,18 @@ def test_bambu_explicit_materials_and_plate_membership(box_job, materials, tmp_p
     assert len(volumes) == 3
     assert all(v[2] == "normal_part" and v[3] == 1 for v in volumes)
     assert sum(p["quantity"] for p in result["plates"]) == 3
+    assert settings["filament_map_mode"] == "Auto For Match"
+    assert "filament_map" not in settings
+    assert result["filament_assignment"] == {
+        "mode": "Auto For Match",
+        "physical_map_requested": None,
+    }
+    with ZipFile(path) as archive:
+        config = ET.fromstring(archive.read("Metadata/model_settings.config"))
+        for plate in config.findall("plate"):
+            values = _metadata(plate)
+            assert values["filament_map_mode"] == "Auto For Match"
+            assert "filament_maps" not in values and "filament_volume_maps" not in values
 
 
 def test_actual_rotated_bounds_respect_margin_and_exclusion(materials, tmp_path):

@@ -62,7 +62,7 @@ Holes are **off by default**. Enabling them requires both `--holes` and a diamet
 ### Targeted PETG/PLA roof supports
 
 ```sh
-uv run cargo-grid part --build 350 320 325 --margin 37 --cells 2 1 --quantity 2 --holes --hole-diameter 10 --hole-scope full --bambu --material "Model PETG" PETG "#778877" --material "Interface PLA" PLA "#dddddd" --nozzle 0.8 --layer-height 0.4 --roof-support --roof-top-gap 0.2 --roof-interface-layers 2 --roof-interface-spacing 0 --output outputs/roof-job
+uv run cargo-grid part --build 350 320 325 --margin 37 --cells 2 1 --quantity 2 --holes --hole-diameter 10 --hole-scope full --bambu --material "Model PETG" PETG "#778877" --material "Interface PLA" PLA "#dddddd" --nozzle 0.8 --layer-height 0.4 --roof-support --roof-top-gap 0 --roof-interface-layers 2 --roof-interface-spacing 0 --output outputs/roof-job
 ```
 
 This is an **H2D-sized diagnostic example**, not an embedded factory profile. Select the actual printer, bed, filament and process presets in Bambu Studio and inspect the resulting paths.
@@ -71,7 +71,13 @@ Roof support is off by default and limited to original-style tile `part` or `lay
 
 The enforcers are non-printing selection volumes; they do not change tile STEP geometry. At reference dimensions they span Z=9.2--11.2 around the Z=10.2 ceiling so the first roof contacts remain selectable across the checked fine/coarse layer profiles. Printed support may extend beyond the nominal masks and temporarily occupy round edge cutouts. Check underside access and actual interfaces after every profile change.
 
-Logical PETG model/base slot 1 and PLA interface slot 2 remain explicit. **Physical nozzle grouping is automatic by default**, using the tested Bambu version's native `Auto For Flush` / **Filament-Saving Mode**. **Convenience Mode** is `Auto For Match`; **Custom** is `Manual` grouping. These are distinct from a customized process preset and from the `normal(manual)` support type used with enforcers.
+The intentional PETG-base/PLA-interface roof workflow defaults to **zero top-contact distance, synchronized support/model layers, zero top-interface spacing and two top interface layers**. All five contact/process invariants, including build-plate-only off, are marked for preservation through profile changes. A positive `--roof-top-gap` explicitly selects a gapped workflow instead. Zero contact requires a dense interface with at least two layers; incompatible requests fail rather than silently falling back.
+
+Zero contact is **not a generic support default or a chemical-compatibility guarantee**. The exporter requires declared PETG model/base and distinct PLA interface roles; it rejects same-material roof requests. This workflow also preserves 0.40 mm support/object XY distance: a bounded comparison removed small unintended PLA-interface/side-wall contacts while retaining vertical contact and all critical lips, with at most 1.44 percentage points less south-mask coverage. Positive-gap and general support workflows are unchanged. Verify the actual spools and profiles; an unverified substitution may fuse the support to the part.
+
+Logical PETG model/base slot 1 and PLA interface slot 2 remain explicit. **Every generated Bambu plate defaults to automatic Convenience Mode** (`Auto For Match`), without a requested physical nozzle map or cached assignment. This is Cargo-Grid's preference, not a claim about Bambu's factory default. **Filament-Saving Mode** is `Auto For Flush`; **Custom** is `Manual` grouping. These modes are distinct from a customized process preset and from `normal(manual)` support selection. Convenience depends on the slicer's available filament information; inspect its actual assignment. Prime/flush behavior, foot expansion, thresholds, bridge detection, cooling and speeds are not changed by the zero-contact request.
+
+With full holes and roof support on a 2x1 tile, the three female-edge round cutouts at `(0,30)`, `(30,0)` and `(90,0)` intentionally contain removable support during printing. Clear them from the underside after printing; this is not permanent CAD infill. The protected X openings remain clear in the checked paths. Do not assume every round hole is open while supports are present.
 
 `--roof-nozzles 2 1` is an optional explicit Custom mapping. Otherwise no physical assignment is locked. **On build plate only is off.** Initial support-foot expansion uses the native automatic default; `--roof-foot-expansion 0` is an optional smaller-foot choice, while omission or `-1` leaves native automatic behavior. It is not a universal requirement for X-socket clearance. Default mapping/foot settings are not marked as overrides; explicit contact settings are retained through GUI import.
 
@@ -114,7 +120,7 @@ design.quantity = 2
 export_job(Job([design], BuildVolume(150, 150, 50), "part"), Path("outputs/python-job"))
 ```
 
-`Interface`, `Tile` and `BuildVolume` describe geometry and usable space. `exact_layout`/`layout_job` build exact-footprint jobs; `catalogue_job` enumerates the bounded library. `BambuSettings`/`Material`, `RoofSupportSettings` and `StackSettings` describe the optional export requests. `RoofSupportSettings` requires the gap, interface-layer count and interface spacing; its nozzle map and foot expansion default to `None`. Geometry functions do not read reference meshes or printer profiles.
+`Interface`, `Tile` and `BuildVolume` describe geometry and usable space. `exact_layout`/`layout_job` build exact-footprint jobs; `catalogue_job` enumerates the bounded library. `BambuSettings`/`Material`, `RoofSupportSettings` and `StackSettings` describe optional export requests. `RoofSupportSettings()` explicitly requests the maintained PETG/PLA zero-contact workflow: gap 0, two dense interface layers and synchronized layer heights. A positive gap selects gapped contact. Its nozzle map and foot expansion default to `None`. Geometry functions do not read reference meshes or printer profiles.
 
 `examples/tile.py` and `examples/coupons.py` expose `gen_step()` for a separate CAD workbench. Run that workbench from the design root with this package importable, generate an explicit project-relative STEP path, and inspect the same file. Workbench tools/viewers are external, not bundled or installed by Cargo-Grid.
 

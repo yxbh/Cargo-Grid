@@ -89,19 +89,27 @@ def parser() -> argparse.ArgumentParser:
         p.add_argument(
             "--roof-support",
             action="store_true",
-            help="Bambu manual supports under retained west/south female pocket roofs; PETG slot 1 / PLA slot 2",
+            help="PETG/PLA roof supports with dense zero-contact interfaces by default; retained west/south female roofs only",
         )
         p.add_argument(
-            "--roof-top-gap", type=float, help="explicit experimental support-to-roof Z gap, mm"
+            "--roof-top-gap",
+            type=float,
+            help="roof contact gap in mm; default 0 for the intentional PETG/PLA workflow, positive values select gapped contact",
         )
-        p.add_argument("--roof-interface-layers", type=int)
+        p.add_argument(
+            "--roof-interface-layers",
+            type=int,
+            help="top interface layers; default 2, at least 2 for zero contact",
+        )
         p.add_argument(
             "--roof-coverage",
             choices=("critical", "full"),
             help="critical pads (default when roof support is enabled) or conservative full roof",
         )
         p.add_argument(
-            "--roof-interface-spacing", type=float, help="explicit interface line spacing, mm"
+            "--roof-interface-spacing",
+            type=float,
+            help="interface line spacing in mm; default 0, required for zero contact",
         )
         p.add_argument(
             "--roof-nozzles",
@@ -210,10 +218,8 @@ def main(argv: list[str] | None = None) -> int:
             or args.roof_nozzles is not None
             or args.roof_foot_expansion is not None
         ):
-            if not args.roof_support or not all(v is not None for v in roof_values):
-                raise ValueError(
-                    "roof supports require --roof-support, --roof-top-gap, --roof-interface-layers and --roof-interface-spacing"
-                )
+            if not args.roof_support:
+                raise ValueError("roof contact options require --roof-support")
             if not args.bambu:
                 raise ValueError(
                     "roof supports require --bambu; core 3MF has no native support semantics"
@@ -233,9 +239,9 @@ def main(argv: list[str] | None = None) -> int:
             ):
                 raise ValueError("roof supports and stacked separator jobs cannot be combined")
             roof_support = RoofSupportSettings(
-                args.roof_top_gap,
-                args.roof_interface_layers,
-                args.roof_interface_spacing,
+                args.roof_top_gap if args.roof_top_gap is not None else 0.0,
+                args.roof_interface_layers if args.roof_interface_layers is not None else 2,
+                args.roof_interface_spacing if args.roof_interface_spacing is not None else 0.0,
                 tuple(args.roof_nozzles) if args.roof_nozzles is not None else None,
                 coverage=args.roof_coverage or "critical",
                 foot_expansion=args.roof_foot_expansion,
@@ -340,6 +346,12 @@ def main(argv: list[str] | None = None) -> int:
                 "Verify nozzle assignments, sliced support paths and physical release.",
                 file=sys.stderr,
             )
+            if roof_support.contact_mode == "zero-contact":
+                print(
+                    "WARNING: Zero roof contact assumes the explicitly selected PETG/PLA interface pair. "
+                    "Do not reuse it for same-material support or an unverified material substitution; it may fuse.",
+                    file=sys.stderr,
+                )
         print(
             "Generated geometry is not a print preset: inspect slicer output and verify physical fit separately.",
             file=sys.stderr,

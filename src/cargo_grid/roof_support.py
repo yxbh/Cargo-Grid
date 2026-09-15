@@ -17,11 +17,11 @@ MIN_ENFORCER_HALF_SPAN_MM = 1.0
 
 @dataclass(frozen=True)
 class RoofSupportSettings:
-    """Explicit diagnostic parameters, not calibrated material-pair defaults."""
+    """Intentional PETG-base/PLA-interface contact, not a chemistry guarantee."""
 
-    top_gap: float
-    interface_layers: int
-    interface_spacing: float
+    top_gap: float = 0.0
+    interface_layers: int = 2
+    interface_spacing: float = 0.0
     nozzle_map: tuple[int, int] | None = None
     coverage: RoofCoverage = "critical"
     foot_expansion: float | None = None
@@ -32,6 +32,10 @@ class RoofSupportSettings:
         positive("roof interface gap", self.top_gap, zero=True)
         count("roof interface layers", self.interface_layers)
         positive("roof interface spacing", self.interface_spacing, zero=True)
+        if self.top_gap == 0 and (self.interface_layers < 2 or self.interface_spacing != 0):
+            raise ValueError(
+                "zero-contact roof support requires at least two dense interface layers with spacing 0"
+            )
         if self.foot_expansion is not None and self.foot_expansion != -1:
             positive("roof support-foot expansion", self.foot_expansion, zero=True)
         if self.nozzle_map is not None:
@@ -42,6 +46,17 @@ class RoofSupportSettings:
             if set(self.nozzle_map) != {1, 2}:
                 raise ValueError("PETG and PLA must use distinct physical nozzles 1 and 2")
 
+    @property
+    def contact_mode(self) -> Literal["zero-contact", "gapped"]:
+        return "zero-contact" if self.top_gap == 0 else "gapped"
+
+    @property
+    def process_override_keys(self) -> set[str]:
+        keys = set(self.native_settings()) - {"filament_map", "filament_map_mode"}
+        if self.contact_mode != "zero-contact":
+            keys.discard("support_on_build_plate_only")
+        return keys
+
     def native_settings(self) -> dict[str, str | list[str]]:
         settings: dict[str, str | list[str]] = {
             "enable_support": "1",
@@ -50,11 +65,14 @@ class RoofSupportSettings:
             "support_interface_filament": "2",
             "support_on_build_plate_only": "0",
             "support_interface_top_layers": str(self.interface_layers),
-            "support_top_z_distance": str(self.top_gap),
-            "support_interface_spacing": str(self.interface_spacing),
-            "support_expansion": "0",
-            "support_object_xy_distance": "0.35",
+            "support_top_z_distance": f"{self.top_gap:g}",
+            "support_interface_spacing": f"{self.interface_spacing:g}",
         }
+        if self.contact_mode == "zero-contact":
+            settings["independent_support_layer_height"] = "0"
+            settings["support_object_xy_distance"] = "0.4"
+        else:
+            settings.update(support_expansion="0", support_object_xy_distance="0.35")
         if self.nozzle_map is not None:
             settings.update(
                 filament_map=[str(n) for n in self.nozzle_map],
