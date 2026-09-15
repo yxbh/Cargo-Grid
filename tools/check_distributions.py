@@ -18,6 +18,14 @@ ROOT_FILES = {
     "PKG-INFO",
     ".github/workflows/ci.yml",
     "tools/check_distributions.py",
+    "tools/render_docs.py",
+    "AGENTS.md",
+}
+DOCUMENTATION_IMAGES = {
+    "docs/images/hero.png",
+    "docs/images/straight-members.png",
+    "docs/images/corners-connectors.png",
+    "docs/images/x-attachments.png",
 }
 FORBIDDEN_SUFFIXES = {
     ".step",
@@ -46,12 +54,15 @@ def source_version() -> str:
     raise ValueError("No literal package version found")
 
 
-def check_path(name: str) -> PurePosixPath:
+def check_path(name: str, *, documentation_image: bool = False) -> PurePosixPath:
     path = PurePosixPath(name)
     if not path.parts or path.is_absolute() or ".." in path.parts or "\\" in name:
         raise ValueError(f"Unsafe archive member: {name}")
     if (
-        path.suffix.lower() in FORBIDDEN_SUFFIXES
+        (
+            path.suffix.lower() in FORBIDDEN_SUFFIXES
+            and not (documentation_image and path.suffix.lower() == ".png")
+        )
         or any(part in {"outputs", ".venv", ".local", "__pycache__", ".git"} for part in path.parts)
         or path.name in {"uv.lock", "result.json", ".env", ".pypirc"}
     ):
@@ -122,13 +133,19 @@ def check_sdist(path: Path, expected_version: str) -> None:
     with tarfile.open(path, "r:gz") as archive:
         files = {}
         for member in archive.getmembers():
-            name = check_path(member.name)
+            raw = PurePosixPath(member.name)
+            intended_image = (
+                bool(raw.parts)
+                and raw.parts[0] == prefix
+                and str(PurePosixPath(*raw.parts[1:])) in DOCUMENTATION_IMAGES
+            )
+            name = check_path(member.name, documentation_image=intended_image)
             if member.isdir():
                 continue
             if not member.isfile() or name.parts[0] != prefix:
                 raise ValueError(f"Unexpected source archive member: {member.name}")
             relative = PurePosixPath(*name.parts[1:])
-            if str(relative) not in ROOT_FILES and not (
+            if str(relative) not in ROOT_FILES | DOCUMENTATION_IMAGES and not (
                 relative.parts
                 and relative.parts[0] in SOURCE_ROOTS
                 and relative.suffix in {".py", ".md"}
@@ -145,6 +162,9 @@ def check_sdist(path: Path, expected_version: str) -> None:
             "LICENSE",
             "src/cargo_grid/_version.py",
             "src/cargo_grid/__main__.py",
+            "AGENTS.md",
+            "docs/attachments.md",
+            *sorted(DOCUMENTATION_IMAGES),
         ):
             if required not in files:
                 raise ValueError(f"Source archive missing {required}")
@@ -172,7 +192,7 @@ def main() -> None:
     except (ValueError, KeyError, OSError, BadZipFile, tarfile.TarError) as error:
         parser.exit(1, f"distribution check: {error}\n")
     print(
-        f"Checked wheel and source archive for cargo-grid {version}; no generated/runtime artifacts."
+        f"Checked wheel and source archive for cargo-grid {version}; only allowlisted source/docs assets, no runtime data."
     )
 
 

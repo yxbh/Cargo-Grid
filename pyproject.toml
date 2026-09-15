@@ -36,9 +36,11 @@ include = [
     "/examples",
     "/docs",
     "/tools/check_distributions.py",
+    "/tools/render_docs.py",
     "/.github/workflows/ci.yml",
     "/.gitignore",
     "/README.md",
+    "/AGENTS.md",
     "/LICENSE",
     "/pyproject.toml",
 ]
