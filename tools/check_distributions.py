@@ -1,0 +1,180 @@
+"""Check local wheel/sdist contents before any separately authorized release."""
+
+import argparse
+import ast
+import tarfile
+from configparser import ConfigParser
+from email.parser import Parser
+from pathlib import Path, PurePosixPath
+from zipfile import BadZipFile, ZipFile
+
+ROOT = Path(__file__).resolve().parents[1]
+SOURCE_ROOTS = {"src", "tests", "examples", "docs"}
+ROOT_FILES = {
+    "pyproject.toml",
+    "README.md",
+    "LICENSE",
+    ".gitignore",
+    "PKG-INFO",
+    ".github/workflows/ci.yml",
+    "tools/check_distributions.py",
+}
+FORBIDDEN_SUFFIXES = {
+    ".step",
+    ".stp",
+    ".stl",
+    ".3mf",
+    ".gcode",
+    ".glb",
+    ".gltf",
+    ".pyc",
+    ".pyo",
+    ".png",
+    ".npz",
+}
+
+
+def source_version() -> str:
+    module = ast.parse((ROOT / "src/cargo_grid/_version.py").read_text(encoding="utf-8"))
+    for node in module.body:
+        if isinstance(node, ast.Assign) and any(
+            isinstance(target, ast.Name) and target.id == "__version__" for target in node.targets
+        ):
+            value = ast.literal_eval(node.value)
+            if isinstance(value, str):
+                return value
+    raise ValueError("No literal package version found")
+
+
+def check_path(name: str) -> PurePosixPath:
+    path = PurePosixPath(name)
+    if not path.parts or path.is_absolute() or ".." in path.parts or "\\" in name:
+        raise ValueError(f"Unsafe archive member: {name}")
+    if (
+        path.suffix.lower() in FORBIDDEN_SUFFIXES
+        or any(part in {"outputs", ".venv", ".local", "__pycache__", ".git"} for part in path.parts)
+        or path.name in {"uv.lock", "result.json", ".env", ".pypirc"}
+    ):
+        raise ValueError(f"Runtime/generated/private artifact in distribution: {name}")
+    return path
+
+
+def check_metadata(text: str, expected_version: str) -> None:
+    metadata = Parser().parsestr(text)
+    if metadata["Name"] != "cargo-grid" or metadata["Version"] != expected_version:
+        raise ValueError("Distribution name/version does not match source")
+    if metadata["License-Expression"] != "MIT" or metadata["Requires-Python"] != ">=3.12":
+        raise ValueError("Missing license or Python requirement metadata")
+    if metadata["Description-Content-Type"] != "text/markdown":
+        raise ValueError("README is missing from distribution metadata")
+    if metadata.get_payload().strip() != (ROOT / "README.md").read_text(encoding="utf-8").strip():
+        raise ValueError("Distribution README does not match current source")
+    if any("://" in requirement for requirement in metadata.get_all("Requires-Dist", [])):
+        raise ValueError("Direct dependency URLs must not be embedded in release metadata")
+
+
+def check_wheel(path: Path, expected_version: str) -> None:
+    with ZipFile(path) as archive:
+        if archive.testzip() is not None:
+            raise ValueError("Corrupt wheel")
+        names = archive.namelist()
+        for name in names:
+            member = check_path(name)
+            if archive.getinfo(name).is_dir():
+                continue
+            if len(member.parts) < 2 or not (
+                member.parts[0] == "cargo_grid"
+                and member.suffix == ".py"
+                or member.parts[0] == f"cargo_grid-{expected_version}.dist-info"
+                and str(PurePosixPath(*member.parts[1:]))
+                in {
+                    "METADATA",
+                    "WHEEL",
+                    "RECORD",
+                    "entry_points.txt",
+                    "licenses/LICENSE",
+                }
+            ):
+                raise ValueError(f"Unexpected wheel member: {name}")
+        prefix = f"cargo_grid-{expected_version}.dist-info/"
+        if not {prefix + "WHEEL", prefix + "RECORD"} <= set(names):
+            raise ValueError("Wheel format metadata is missing")
+        check_metadata(archive.read(prefix + "METADATA").decode(), expected_version)
+        entries = ConfigParser()
+        entries.read_string(archive.read(prefix + "entry_points.txt").decode())
+        if entries["console_scripts"]["cargo-grid"] != "cargo_grid.cli:main":
+            raise ValueError("Console entry point is missing")
+        if archive.read(prefix + "licenses/LICENSE") != (ROOT / "LICENSE").read_bytes():
+            raise ValueError("Wheel license does not match the repository license")
+        actual = {n for n in names if n.startswith("cargo_grid/") and n.endswith(".py")}
+        expected = {
+            str(p.relative_to(ROOT / "src")).replace("\\", "/")
+            for p in (ROOT / "src/cargo_grid").rglob("*.py")
+        }
+        if actual != expected:
+            raise ValueError("Wheel modules differ from the maintained source")
+        if any(archive.read(name) != (ROOT / "src" / name).read_bytes() for name in expected):
+            raise ValueError("Wheel module contents differ from current source")
+
+
+def check_sdist(path: Path, expected_version: str) -> None:
+    prefix = f"cargo_grid-{expected_version}"
+    with tarfile.open(path, "r:gz") as archive:
+        files = {}
+        for member in archive.getmembers():
+            name = check_path(member.name)
+            if member.isdir():
+                continue
+            if not member.isfile() or name.parts[0] != prefix:
+                raise ValueError(f"Unexpected source archive member: {member.name}")
+            relative = PurePosixPath(*name.parts[1:])
+            if str(relative) not in ROOT_FILES and not (
+                relative.parts
+                and relative.parts[0] in SOURCE_ROOTS
+                and relative.suffix in {".py", ".md"}
+            ):
+                raise ValueError(f"Unexpected source release file: {relative}")
+            stream = archive.extractfile(member)
+            if stream is None:
+                raise ValueError(f"Unreadable source release file: {relative}")
+            files[str(relative)] = stream.read()
+        for required in (
+            "PKG-INFO",
+            "pyproject.toml",
+            "README.md",
+            "LICENSE",
+            "src/cargo_grid/_version.py",
+            "src/cargo_grid/__main__.py",
+        ):
+            if required not in files:
+                raise ValueError(f"Source archive missing {required}")
+        check_metadata(files["PKG-INFO"].decode(), expected_version)
+        if files["LICENSE"] != (ROOT / "LICENSE").read_bytes():
+            raise ValueError("Source archive license was changed")
+        for name, data in files.items():
+            if name != "PKG-INFO" and data != (ROOT / name).read_bytes():
+                raise ValueError(f"Source archive contains stale content: {name}")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("directory", type=Path, nargs="?", default=Path("dist"))
+    args = parser.parse_args()
+    wheels, sources = list(args.directory.glob("*.whl")), list(args.directory.glob("*.tar.gz"))
+    if len(wheels) != 1 or len(sources) != 1:
+        parser.error(
+            "expected exactly one wheel and one source archive in a fresh output directory"
+        )
+    try:
+        version = source_version()
+        check_wheel(wheels[0], version)
+        check_sdist(sources[0], version)
+    except (ValueError, KeyError, OSError, BadZipFile, tarfile.TarError) as error:
+        parser.exit(1, f"distribution check: {error}\n")
+    print(
+        f"Checked wheel and source archive for cargo-grid {version}; no generated/runtime artifacts."
+    )
+
+
+if __name__ == "__main__":
+    main()

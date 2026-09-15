@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  portable:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: astral-sh/setup-uv@d0d8abe699bfb85fec6de9f7adb5ae17292296ff # v6
+        with:
+          python-version: "3.12"
+      - name: Install CAD runtime libraries
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install --no-install-recommends -y libgl1 libglu1-mesa
+      - name: Install dependencies
+        run: uv sync --group dev
+      - name: Lint and format
+        run: |
+          uv run --no-sync ruff check .
+          uv run --no-sync ruff format --check .
+      - name: Portable geometry and export tests
+        run: uv run --no-sync pytest -q -m "not native and not reference"
+      - name: Build and inspect distributions
+        run: |
+          uv build
+          uv run --no-sync python tools/check_distributions.py dist
+      - name: Installed wheel smoke test
+        run: |
+          uv venv --python 3.12 .local/wheel-smoke
+          uv pip install --python .local/wheel-smoke/bin/python dist/*.whl
+          cd .local
+          env -u PYTHONPATH wheel-smoke/bin/python -m cargo_grid --version
+          env -u PYTHONPATH wheel-smoke/bin/cargo-grid --help
+          env -u PYTHONPATH wheel-smoke/bin/cargo-grid part --build 150 150 50 --no-stl --output wheel-job

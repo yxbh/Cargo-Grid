@@ -1,0 +1,65 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "cargo-grid"
+dynamic = ["version"]
+description = "Parametric cargo mat geometry and print-job generator"
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{name = "Benjamin"}]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+]
+dependencies = ["build123d>=0.11,<0.12", "numpy>=2,<3", "scipy>=1.14,<2"]
+
+[project.urls]
+Repository = "https://github.com/yxbh/Cargo-Grid"
+Issues = "https://github.com/yxbh/Cargo-Grid/issues"
+
+[tool.hatch.version]
+path = "src/cargo_grid/_version.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/cargo_grid"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src/cargo_grid",
+    "/tests",
+    "/examples",
+    "/docs",
+    "/tools/check_distributions.py",
+    "/.github/workflows/ci.yml",
+    "/.gitignore",
+    "/README.md",
+    "/LICENSE",
+    "/pyproject.toml",
+]
+
+[project.scripts]
+cargo-grid = "cargo_grid.cli:main"
+
+[dependency-groups]
+dev = ["pytest>=8", "ruff>=0.11"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+markers = [
+    "native: requires an explicitly supplied local Bambu Studio executable",
+    "reference: requires an explicitly supplied local reference 3MF",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]

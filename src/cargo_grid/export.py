@@ -1,0 +1,622 @@
+"""STEP primary exports and independently authored core/Bambu 3MF packaging."""
+
+import json
+from dataclasses import asdict, dataclass
+from math import ceil, sqrt
+from pathlib import Path
+from shutil import copyfileobj
+from tempfile import TemporaryFile
+from typing import BinaryIO
+from xml.etree import ElementTree as ET
+from xml.sax.saxutils import quoteattr
+from zipfile import ZIP_DEFLATED, ZipFile
+
+from build123d import Axis, Compound, export_step, import_step
+from OCP.Precision import Precision
+
+from cargo_grid._version import __version__
+from cargo_grid.jobs import Job
+from cargo_grid.meshes import checked_mesh, write_stl
+from cargo_grid.packing import pack_sizes
+from cargo_grid.parameters import Interface, count, positive
+from cargo_grid.roof_support import RoofSupportSettings, roof_enforcers, validate_roof_job
+from cargo_grid.stacking import StackSettings, Volume, stack_volumes
+
+CORE = "http://schemas.microsoft.com/3dmanufacturing/core/2015/02"
+REL = "http://schemas.openxmlformats.org/package/2006/relationships"
+CONTENT = "http://schemas.openxmlformats.org/package/2006/content-types"
+MANIFEST_SCHEMA_VERSION = 1
+UNSUPPORTED_COMBINATIONS = {
+    "roof_support_with_stacking": "Roof supports and stacked separator jobs cannot be combined.",
+    "roof_support_with_catalogues_or_accessories": "Roof supports require a tile-only part or layout job.",
+    "roof_support_with_full_height": "Roof supports require original roofed joints.",
+    "stacked_catalogues": "Stack repeated part/layout tile quantities, not mixed catalogue samples.",
+}
+
+
+@dataclass(frozen=True)
+class Material:
+    name: str
+    kind: str
+    color: str
+
+    def __post_init__(self) -> None:
+        if not self.name.strip() or not self.kind.strip():
+            raise ValueError("material name and type must be explicit")
+        if len(self.color) != 7 or self.color[0] != "#":
+            raise ValueError("material color must be #RRGGBB")
+        try:
+            int(self.color[1:], 16)
+        except ValueError as error:
+            raise ValueError("material color must be #RRGGBB") from error
+
+
+@dataclass(frozen=True)
+class BambuSettings:
+    materials: tuple[Material, ...]
+    nozzle: float
+    layer_height: float
+    roof_support: RoofSupportSettings | None = None
+
+    def __post_init__(self) -> None:
+        from cargo_grid.parameters import positive
+
+        positive("nozzle diameter", self.nozzle)
+        positive("layer height", self.layer_height)
+        if not self.materials:
+            raise ValueError("Bambu project requires explicit filament slots")
+        if self.roof_support is not None:
+            if not isinstance(self.roof_support, RoofSupportSettings):
+                raise ValueError("roof_support must be RoofSupportSettings")
+            if len(self.materials) != 2 or [m.kind.upper() for m in self.materials] != [
+                "PETG",
+                "PLA",
+            ]:
+                raise ValueError(
+                    "roof supports require exactly PETG slot 1 (model/base) and PLA slot 2 (interface)"
+                )
+
+
+def _xml(parent, tag, **attributes):
+    return ET.SubElement(parent, f"{{{CORE}}}{tag}", {k: str(v) for k, v in attributes.items()})
+
+
+def _metadata(parent, key, value):
+    ET.SubElement(parent, "metadata", key=key, value=str(value))
+
+
+def _bytes(root) -> bytes:
+    return ET.tostring(root, encoding="utf-8", xml_declaration=True)
+
+
+def _validate_request(job: Job, bambu: BambuSettings | None, stack: StackSettings | None) -> None:
+    if not job.designs:
+        raise ValueError("a job needs at least one design")
+    positive("part gap", job.part_gap, zero=True)
+    names = set()
+    reserved = {
+        "CON",
+        "PRN",
+        "AUX",
+        "NUL",
+        *(f"COM{i}" for i in range(1, 10)),
+        *(f"LPT{i}" for i in range(1, 10)),
+    }
+    for design in job.designs:
+        count("design quantity", design.quantity)
+        name = design.name
+        if (
+            not isinstance(name, str)
+            or not name
+            or name in (".", "..")
+            or name.endswith((" ", "."))
+            or any(c in '<>:"/\\|?*' or ord(c) < 32 for c in name)
+            or name.split(".")[0].upper() in reserved
+        ):
+            raise ValueError(
+                "design names must be portable filenames without paths or reserved characters"
+            )
+        if name.casefold() in names:
+            raise ValueError(f"duplicate design filename: {name}")
+        names.add(name.casefold())
+    if stack and not bambu:
+        raise ValueError(
+            "support-aware stacks require the Bambu backend and explicit material roles"
+        )
+    if stack and job.kind == "catalogue":
+        raise ValueError(
+            "catalogue stacks are not supported; stack repeated part or layout quantities"
+        )
+    if stack and bambu:
+        if max(stack.model_slot, stack.support_slot, stack.interface_slot) > len(bambu.materials):
+            raise ValueError("stack material slot exceeds declared filament list")
+        if any(
+            not d.name.startswith("tile_")
+            or "family" in d.parameters
+            or "interface" not in d.parameters
+            for d in job.designs
+        ):
+            raise ValueError("stacking only accepts repeated identical tiles")
+    if bambu and bambu.roof_support:
+        if stack:
+            raise ValueError("roof supports and stacked separator jobs cannot be combined")
+        validate_roof_job(job, bambu.roof_support, bambu.layer_height)
+
+
+def write_3mf(
+    job: Job,
+    path: Path,
+    *,
+    bambu: BambuSettings | None = None,
+    stack: StackSettings | None = None,
+    catalogue: bool = False,
+) -> dict:
+    _validate_request(job, bambu, stack)
+    if path.exists():
+        raise ValueError(f"output file already exists: {path}; choose a new path")
+    with TemporaryFile() as mesh_buffer:
+        return _write_3mf(job, path, mesh_buffer, bambu=bambu, stack=stack, catalogue=catalogue)
+
+
+def _write_3mf(
+    job: Job,
+    path: Path,
+    mesh_buffer: BinaryIO,
+    *,
+    bambu: BambuSettings | None,
+    stack: StackSettings | None,
+    catalogue: bool,
+) -> dict:
+    ET.register_namespace("", CORE)
+    model = ET.Element(f"{{{CORE}}}model", unit="millimeter")
+    # Bambu's importer selects its dialect using this marker. Attribution stays
+    # independently authored; these are diagnostic settings, not factory presets.
+    _xml(model, "metadata", name="Application").text = (
+        "BambuStudio-02.08.02.61" if bambu else f"Cargo-Grid {__version__}"
+    )
+    _xml(model, "metadata", name="Designer").text = "Cargo-Grid independent parametric generator"
+    _xml(model, "metadata", name="CargoGridVersion").text = __version__
+    styles = sorted(
+        {
+            d.parameters["interface"]["joint_style"]
+            for d in job.designs
+            if "interface" in d.parameters and "joint_style" in d.parameters["interface"]
+        }
+    )
+    if styles:
+        _xml(model, "metadata", name="CargoGridJointStyles").text = ",".join(styles)
+    if bambu:
+        _xml(model, "metadata", name="BambuStudio:3mfVersion").text = "1"
+    resources = _xml(model, "resources")
+    build = _xml(model, "build")
+    config = ET.Element("config")
+    plates = []
+    next_id = 1
+    batches = []
+    for design in job.designs:
+        remaining = 1 if catalogue else design.quantity
+        while remaining:
+            n = min(stack.count, remaining) if stack else 1
+            if stack:
+                settings = StackSettings(
+                    n,
+                    stack.gap,
+                    stack.interface_thickness,
+                    stack.model_slot,
+                    stack.support_slot,
+                    stack.interface_slot,
+                )
+                volumes = stack_volumes(design, settings, job.build)
+            else:
+                volumes = [Volume(design.name, design.shape, "model", 1)]
+                if bambu and bambu.roof_support:
+                    volumes.extend(
+                        roof_enforcers(design, bambu.layer_height, bambu.roof_support.coverage)
+                    )
+            batches.append((design, volumes, n))
+            remaining -= n
+    sizes = [
+        tuple(
+            Compound([v.shape for v in volumes if v.subtype == "normal_part"]).bounding_box().size
+        )
+        for _, volumes, _ in batches
+    ]
+    placements = pack_sizes(sizes, job.build, gap=job.part_gap, pack=job.kind == "catalogue")
+    plate_count = max(p.plate for p in placements) + 1
+    if bambu and plate_count > 36:
+        raise ValueError(
+            f"Bambu Studio supports at most 36 plates; packed job needs {plate_count}. "
+            "Use a larger envelope or export smaller separate jobs."
+        )
+    cols = ceil(sqrt(plate_count))
+    mesh_cache = {}
+    configured_plates = {}
+    plate_records = {}
+    for batch_index, ((design, volumes, quantity), placement, size) in enumerate(
+        zip(batches, placements, sizes)
+    ):
+        plate_index = placement.plate
+        px, py, rotation = placement.x, placement.y, placement.rotation
+        origin = (
+            plate_index % cols * job.build.x * 1.2,
+            -(plate_index // cols) * job.build.y * 1.2,
+        )
+        transformed = [v.shape.rotate(Axis.Z, rotation) for v in volumes]
+        rotated_bounds = Compound(
+            [s for v, s in zip(volumes, transformed) if v.subtype == "normal_part"]
+        ).bounding_box()
+        translation = (
+            origin[0] + px - rotated_bounds.min.X,
+            origin[1] + py - rotated_bounds.min.Y,
+            -rotated_bounds.min.Z,
+        )
+        children = []
+        for volume, shape in zip(volumes, transformed):
+            # Reuse identical BREP objects within this export, while each build
+            # item retains its own object identity and quantity.
+            cache_key = (id(volume.shape), rotation)
+            if cache_key in mesh_cache:
+                ident = mesh_cache[cache_key]
+            else:
+                ident = next_id
+                next_id += 1
+                points, faces, mesh_report = checked_mesh(shape)
+                mesh_buffer.write(
+                    f'<object id="{ident}" type="model" name={quoteattr(volume.name)}>'
+                    "<mesh><vertices>".encode()
+                )
+                for start in range(0, len(points), 8192):
+                    mesh_buffer.write(
+                        "".join(
+                            f'<vertex x="{p[0]:.9g}" y="{p[1]:.9g}" z="{p[2]:.9g}"/>'
+                            for p in points[start : start + 8192]
+                        ).encode()
+                    )
+                mesh_buffer.write(b"</vertices><triangles>")
+                for start in range(0, len(faces), 8192):
+                    mesh_buffer.write(
+                        "".join(
+                            f'<triangle v1="{a}" v2="{b}" v3="{c}"/>'
+                            for a, b, c in faces[start : start + 8192]
+                        ).encode()
+                    )
+                mesh_buffer.write(b"</triangles></mesh></object>")
+                mesh_cache[cache_key] = ident
+            children.append((ident, volume))
+        object_id = next_id
+        next_id += 1
+        label = f"{design.name}_batch_{batch_index + 1}"
+        obj = _xml(resources, "object", id=object_id, type="model", name=label)
+        components = _xml(obj, "components")
+        for ident, _ in children:
+            _xml(components, "component", objectid=ident)
+        _xml(
+            build,
+            "item",
+            objectid=object_id,
+            printable="1",
+            transform="1 0 0 0 1 0 0 0 1 " + " ".join(f"{v:.9g}" for v in translation),
+        )
+        configured = ET.SubElement(config, "object", id=str(object_id))
+        _metadata(configured, "name", label)
+        _metadata(configured, "extruder", 1)
+        for ident, volume in children:
+            part = ET.SubElement(configured, "part", id=str(ident), subtype=volume.subtype)
+            _metadata(part, "name", volume.name)
+            if volume.subtype == "normal_part":
+                _metadata(part, "extruder", volume.slot)
+        if plate_index not in configured_plates:
+            plate = ET.SubElement(config, "plate")
+            _metadata(plate, "plater_id", plate_index + 1)
+            _metadata(
+                plate,
+                "plater_name",
+                f"catalogue_plate_{plate_index + 1}" if job.kind == "catalogue" else label,
+            )
+            _metadata(plate, "locked", "false")
+            if bambu and bambu.roof_support and bambu.roof_support.nozzle_map is not None:
+                _metadata(plate, "filament_map_mode", "Manual")
+                _metadata(
+                    plate, "filament_maps", " ".join(str(n) for n in bambu.roof_support.nozzle_map)
+                )
+                _metadata(plate, "filament_volume_maps", "0 0")
+            configured_plates[plate_index] = plate
+            plate_records[plate_index] = {
+                "number": plate_index + 1,
+                "design": design.name,
+                "quantity": 0,
+                "print_rotation": rotation,
+                "bounds_mm": size,
+                "volumes": [],
+                "items": [],
+            }
+        plate = configured_plates[plate_index]
+        instance = ET.SubElement(plate, "model_instance")
+        _metadata(instance, "object_id", object_id)
+        _metadata(instance, "instance_id", 0)
+        _metadata(instance, "identify_id", batch_index + 1)
+        record = plate_records[plate_index]
+        record["quantity"] += quantity
+        record["items"].append(
+            {
+                "design": design.name,
+                "quantity": quantity,
+                "x": px,
+                "y": py,
+                "rotation": rotation,
+                "size_mm": size,
+            }
+        )
+        record["volumes"].extend(
+            {
+                "name": v.name,
+                "role": v.role,
+                "filament_slot": v.slot if v.subtype == "normal_part" else None,
+                "subtype": v.subtype,
+                "printed_part": v.subtype == "normal_part",
+                **(
+                    {"roof_side": v.roof_side, "roof_index": v.roof_index}
+                    if v.roof_side is not None
+                    else {}
+                ),
+            }
+            for v in volumes
+        )
+    plates = [plate_records[i] for i in sorted(plate_records)]
+    types = ET.Element("Types", xmlns=CONTENT)
+    for extension, content_type in (
+        ("rels", "application/vnd.openxmlformats-package.relationships+xml"),
+        ("model", "application/vnd.ms-package.3dmanufacturing-3dmodel+xml"),
+        ("config", "application/xml"),
+    ):
+        ET.SubElement(types, "Default", Extension=extension, ContentType=content_type)
+    rels = ET.Element("Relationships", xmlns=REL)
+    ET.SubElement(
+        rels,
+        "Relationship",
+        Target="/3D/3dmodel.model",
+        Id="model",
+        Type="http://schemas.microsoft.com/3dmanufacturing/2013/01/3dmodel",
+    )
+    with ZipFile(path, "x", ZIP_DEFLATED) as archive:
+        archive.writestr("[Content_Types].xml", _bytes(types))
+        archive.writestr("_rels/.rels", _bytes(rels))
+        with archive.open("3D/3dmodel.model", "w", force_zip64=True) as output:
+            output.write(
+                f'<?xml version="1.0" encoding="utf-8"?>'
+                f'<model xmlns="{CORE}" unit="millimeter">'.encode()
+            )
+            for child in model:
+                if child is resources:
+                    output.write(b"<resources>")
+                    mesh_buffer.seek(0)
+                    copyfileobj(mesh_buffer, output, length=1024 * 1024)
+                    for obj in resources:
+                        output.write(ET.tostring(obj, encoding="utf-8"))
+                    output.write(b"</resources>")
+                else:
+                    output.write(ET.tostring(child, encoding="utf-8"))
+            output.write(b"</model>")
+        if bambu:
+            archive.writestr("Metadata/model_settings.config", _bytes(config))
+            settings = {
+                "version": "2.8.2.61",
+                "printer_settings_id": "Cargo-Grid explicit envelope (not calibrated)",
+                "print_settings_id": "Cargo-Grid diagnostic layout (not a print preset)",
+                "printable_area": [
+                    "0x0",
+                    f"{job.build.x:g}x0",
+                    f"{job.build.x:g}x{job.build.y:g}",
+                    f"0x{job.build.y:g}",
+                ],
+                "printable_height": f"{job.build.z:g}",
+                "nozzle_diameter": [f"{bambu.nozzle:g}"] * (2 if bambu.roof_support else 1),
+                "layer_height": f"{bambu.layer_height:g}",
+                "filament_diameter": ["1.75"] * len(bambu.materials),
+                "filament_type": [m.kind for m in bambu.materials],
+                "filament_colour": [m.color for m in bambu.materials],
+                "filament_settings_id": [m.name for m in bambu.materials],
+                "filament_is_support": ["0"] * len(bambu.materials),
+            }
+            if bambu.roof_support:
+                settings.update(bambu.roof_support.native_settings())
+                settings["nozzle_volume_type"] = ["Standard", "Standard"]
+                settings["extruder_type"] = ["Direct Drive", "Direct Drive"]
+                overrides = set(bambu.roof_support.native_settings()) - {
+                    "filament_map",
+                    "filament_map_mode",
+                    "support_on_build_plate_only",
+                }
+                settings["different_settings_to_system"] = [
+                    ";".join(sorted(overrides)),
+                    *[""] * (len(bambu.materials) + 1),
+                ]
+            archive.writestr("Metadata/project_settings.config", json.dumps(settings, indent=2))
+    return {
+        "format": "bambu-project" if bambu else "core-geometry",
+        "plates": plates,
+        "packing": "first-fit rectangles" if job.kind == "catalogue" else "one batch per plate",
+        "part_gap_mm": job.part_gap,
+        "application_import_verified": False,
+        "sliced": False,
+        "physical_print_verified": False,
+        "joint_styles": styles,
+        "roof_support": None
+        if not (bambu and bambu.roof_support)
+        else {
+            "settings": asdict(bambu.roof_support),
+            "enforcer_count": sum(
+                v.subtype == "support_enforcer" for _, vs, _ in batches for v in vs
+            ),
+            "target": "retained west (negative-X) and south (negative-Y) original female pocket roofs",
+            "targets": [
+                {
+                    "design": d.name,
+                    "batch": batch + 1,
+                    "side": side,
+                    "roof_indices": sorted({v.roof_index for v in vs if v.roof_side == side}),
+                    "roof_count": len({v.roof_index for v in vs if v.roof_side == side}),
+                    "enforcer_count": sum(v.roof_side == side for v in vs),
+                }
+                for batch, (d, vs, _) in enumerate(batches)
+                for side in ("west", "south")
+                if any(v.roof_side == side for v in vs)
+            ],
+            "skipped_edges": [
+                {"design": d.name, "side": side, "reason": "terminated female edge"}
+                for d in job.designs
+                for side in ("west", "south")
+                if not d.parameters[side]
+            ],
+            "coverage_note": "Critical uses two nominal 3 mm clipped roof pads; native interface coverage expands beyond the masks. Full retains conservative whole-roof masks. Neither mode verifies physical release.",
+            "critical_coverage_experimental": bambu.roof_support.coverage == "critical",
+            "enforcer_z_span_policy": "At least 1 mm either side of the roof, enlarged for the requested layer height and capped by roof thickness. Profile changes still require actual toolpath checks.",
+            "modifier_semantics": "non-printing support_enforcer; slicer generates actual support",
+            "scope_caveat": "Native support may temporarily occupy edge round cutouts inside the receiving pockets; remove from underside before assembly. X sockets are protected in the validated example.",
+            "untargeted_designs": [
+                d.name
+                for d, vs, _ in batches
+                if not any(v.subtype == "support_enforcer" for v in vs)
+            ],
+            "physical_detachment_verified": False,
+        },
+    }
+
+
+def export_job(
+    job: Job,
+    output: Path,
+    *,
+    stl: bool = True,
+    bambu: BambuSettings | None = None,
+    stack: StackSettings | None = None,
+) -> Path:
+    _validate_request(job, bambu, stack)
+    if output.exists() and (not output.is_dir() or any(output.iterdir())):
+        raise ValueError(f"output directory is not empty: {output}; choose a new job directory")
+    for design in job.designs:
+        if not design.shape.is_valid or len(design.shape.solids()) != 1 or design.shape.volume <= 0:
+            raise ValueError(f"{design.name} must be one valid positive-volume solid before export")
+    if bambu:
+        sizes = []
+        for design in job.designs:
+            count("design quantity", design.quantity)
+            remaining = design.quantity
+            while remaining:
+                n = min(remaining, stack.count) if stack else 1
+                width, depth, height = design.size
+                sizes.append((width, depth, n * height + (n - 1) * stack.gap if stack else height))
+                remaining -= n
+        preflight = pack_sizes(sizes, job.build, gap=job.part_gap, pack=job.kind == "catalogue")
+        plate_count = max(p.plate for p in preflight) + 1
+        if plate_count > 36:
+            raise ValueError(
+                f"Bambu Studio supports at most 36 plates; packed job needs {plate_count}. "
+                "Use a larger envelope or export smaller separate jobs."
+            )
+    output.mkdir(parents=True, exist_ok=True)
+    entries = []
+    for design in job.designs:
+        step = output / f"{design.name}.step"
+        if not export_step(design.shape, step):
+            raise ValueError(f"STEP export failed: {step}")
+        restored = import_step(step)
+        volume_delta = abs(restored.volume - design.shape.volume)
+        # First-order volume budget from OCCT's linear confusion tolerance and
+        # actual surface area, rather than a scale-dependent arbitrary mm3 cap.
+        volume_budget = max(1e-6, design.shape.area * Precision.Confusion_s())
+        bounds_delta = max(
+            abs(a - b)
+            for a, b in zip(
+                (*design.shape.bounding_box().min, *design.shape.bounding_box().max),
+                (*restored.bounding_box().min, *restored.bounding_box().max),
+            )
+        )
+        if (
+            not restored.is_valid
+            or len(restored.solids()) != 1
+            or volume_delta > volume_budget
+            or bounds_delta > 1e-5
+        ):
+            raise ValueError(f"STEP roundtrip failed: {design.name}")
+        points, faces, mesh_report = checked_mesh(design.shape)
+        if stl:
+            write_stl(output / f"{design.name}.stl", points, faces)
+        interface_data = design.parameters.get("interface")
+        compatibility = Interface(**interface_data).compatibility() if interface_data else None
+        if compatibility is not None:
+            family = design.parameters.get("family", "tile")
+            edge_present = family in ("tile", "edge-x", "edge-y", "corner-in", "corner-out")
+            compatibility["tile_edge_interface_present"] = edge_present
+            if not edge_present:
+                compatibility["original_tile_edge_dimensions"] = None
+                compatibility["edge_note"] = (
+                    "No tile-edge dovetails on this part; physical support-rail joints are a separate unchanged interface."
+                )
+            compatibility["x_attachment_interface_present"] = family in (
+                "tile",
+                "plate",
+                "lock-90",
+                "lock-45",
+            )
+            if family != "tile":
+                compatibility["geometry_warning"] = None
+            if not compatibility["x_attachment_interface_present"]:
+                compatibility["original_x_attachment_dimensions"] = None
+                compatibility["attachment_seating_note"] = (
+                    "This part has no X socket or plug interface."
+                )
+        entries.append(
+            {
+                "name": design.name,
+                "parameters": design.parameters,
+                "quantity": design.quantity,
+                "size_mm": design.size,
+                "assembly_frames": design.assembly_frames,
+                "hole_placements": design.holes,
+                "volume_mm3": design.shape.volume,
+                "step_roundtrip": "passed",
+                "step_volume_delta_mm3": volume_delta,
+                "step_volume_budget_mm3": volume_budget,
+                "step_bounds_delta_mm": bounds_delta,
+                "mesh": mesh_report,
+                "joint_style": interface_data.get("joint_style") if interface_data else None,
+                "compatibility": compatibility,
+            }
+        )
+    project = write_3mf(job, output / "job.3mf", bambu=bambu, stack=stack)
+    manifest = {
+        "schema_version": MANIFEST_SCHEMA_VERSION,
+        "generator": {"name": "cargo-grid", "version": __version__},
+        "kind": job.kind,
+        "design_mode": {
+            "workflow": job.kind,
+            "joint_styles": project["joint_styles"],
+            "hole_scopes": sorted(
+                {
+                    d.parameters.get("hole_scope", "interior")
+                    for d in job.designs
+                    if d.parameters.get("hole_diameter") is not None
+                }
+            ),
+            "roof_coverage": bambu.roof_support.coverage if bambu and bambu.roof_support else None,
+            "stacked": stack is not None,
+        },
+        "units": "millimeter",
+        "build": asdict(job.build),
+        "footprint_mm": job.footprint,
+        "designs": entries,
+        "omitted": job.omitted,
+        "export": project,
+        "joint_styles": project["joint_styles"],
+        "compatibility": {
+            "tile_edges": "Styles must match. Full-height male tabs do not fit original roofed female pockets.",
+            "x_attachments": "Socket/plug dimensions and seating datum are independent of joint style; open-through edge pockets reduce nearby bearing land. Custom pitch/height/fit offsets still affect compatibility.",
+            "evidence": "compare-reference explicitly evaluates original style only; physical fit is unverified.",
+        },
+        "physical_fit_verified": False,
+        "unsupported_combinations": UNSUPPORTED_COMBINATIONS,
+    }
+    path = output / "manifest.json"
+    path.write_text(json.dumps(manifest, indent=2) + "\n")
+    return path
