@@ -19,7 +19,7 @@ from cargo_grid.catalogue import accessory_variants
 ROOT = Path(__file__).resolve().parents[1]
 BUILD = BuildVolume(350, 320, 325)
 WORKBENCH_REVISION = "120024625ad5c76a5d8bc768556e04fc7eae4023"
-GEOMETRY_REVISION = "964ae082b82de6047397ce3ab4b3d86f42a25b18"
+GEOMETRY_REVISION = "ecd1349da4cef5f73b197861d59d4a165bab5459"
 GEOMETRY_FILES = (
     "parameters.py",
     "interfaces.py",
@@ -32,18 +32,23 @@ GEOMETRY_FILES = (
 )
 CAMERA = "45:32"
 BACKGROUND = "#f2f1ec"
-IMAGE_NAMES = ("hero.png", "x-attachments.png")
-SHEETS = (("x-attachments.png", "X-plug attachments", ("plate", "lock-90", "lock-45"), 4),)
+IMAGE_NAMES = ("hero.png", "x-attachments.png", "vertical-tile-brackets.png")
+SHEETS = (
+    ("x-attachments.png", "X-plug attachments", ("plate", "vertical-tile-bracket", "lock-45"), 4),
+)
 FAMILIES = {
     "plate": (
         "Attachment plates",
         "A flat surface with X plugs underneath for positioning an attachment on the mat.",
     ),
-    "lock-90": (
-        "Upright stops",
-        "An upright cargo stop on an X-plug base; the mounting grid varies by size.",
+    "vertical-tile-bracket": (
+        "Vertical tile brackets",
+        "A one-piece inset wedge carrying a separate ordinary tile vertically. Solid backing makes backed round holes blind; the internal strip has nominal zero gap. Bambu projects place it diagonal-face-down.",
     ),
-    "lock-45": ("Angled stops", "An angled cargo stop on an X-plug base."),
+    "lock-45": (
+        "Angled stops",
+        "An angled cargo stop with full-length 6 mm side webs and rounded cap, on an X-plug base. Use the recommended back-face-down print pose.",
+    ),
     "edge-x": (
         "Male edge strips",
         "A straight finishing strip with male tile-facing joins; length follows the cell count.",
@@ -110,8 +115,30 @@ def hero_items() -> list[Item]:
     ]
 
 
+def bracket_assembly_items() -> list[Item]:
+    return [
+        Item(
+            f"bracket-context-{x}x{y}",
+            f"Vertical panel: {x} x {y}",
+            f"Base {60 * x} x {60 * y} mm / panel {60 * x} x {60 * y} mm",
+        )
+        for x, y in ((1, 2), (2, 1), (2, 2))
+    ]
+
+
 def documentation_shape(key: str):
-    from build123d import Color
+    from build123d import Axis, Color, Compound, Location
+
+    if key.startswith("bracket-context-"):
+        nx, ny = map(int, key.removeprefix("bracket-context-").split("x"))
+        bracket = make_accessory(Accessory("vertical-tile-bracket", nx=nx, ny=ny))
+        tile = make_tile(Tile(nx, ny, hole_diameter=10, hole_scope="full"))
+        tile = tile.rotate(Axis.X, 90).moved(Location((0, ny * 60, 6.1)))
+        bracket.color, tile.color = Color("#637b70"), Color("#c2cecb")
+        shape = Compound(children=[bracket, tile], label=key)
+        if not shape.is_valid or len(shape.solids()) != 2:
+            raise ValueError(f"Invalid separate-tile illustration: {key}")
+        return shape
 
     if key in ("tile-default", "tile-full"):
         shape = make_tile(
@@ -127,7 +154,11 @@ def documentation_shape(key: str):
     else:
         item = next(item for item in inventory() if item.key == key)
         shape = make_accessory(item.spec)
-        color = "#637b70" if item.spec.family in ("plate", "lock-90", "lock-45") else "#626b68"
+        color = (
+            "#637b70"
+            if item.spec.family in ("plate", "vertical-tile-bracket", "lock-45")
+            else "#626b68"
+        )
     if not shape.is_valid or len(shape.solids()) != 1 or shape.volume <= 0:
         raise ValueError(f"Invalid documentation geometry: {key}")
     shape.color = Color(color)
@@ -155,6 +186,14 @@ def thumbnail_tag(entry: dict) -> str:
     return f'<a href="{entry["file"]}"><img src="{entry["file"]}" alt="{escape(entry["alt"], quote=True)}" width="180" height="113"></a>'
 
 
+def revision_tag(value: str) -> str:
+    return (
+        "<code>"
+        + "<wbr>".join(escape(value[i : i + 8]) for i in range(0, len(value), 8))
+        + "</code>"
+    )
+
+
 def verify_assets() -> dict:
     paths = [ROOT / "docs/images" / name for name in IMAGE_NAMES]
     report = {}
@@ -172,6 +211,15 @@ def verify_assets() -> dict:
         raise ValueError("Documentation composites exceed the 4 MB budget")
     table = (ROOT / "docs/attachments.md").read_text()
     manifest = json.loads((ROOT / "docs/images/attachments/manifest.json").read_text())
+    overviews = manifest["overview_images"]
+    if len(overviews) != len(IMAGE_NAMES) or {entry["file"] for entry in overviews} != {
+        f"images/{name}" for name in IMAGE_NAMES
+    }:
+        raise ValueError("Overview manifest does not match the documented image set")
+    for entry in overviews:
+        name = Path(entry["file"]).name
+        if entry["sha256"] != report[name]["sha256"]:
+            raise ValueError(f"Overview hash mismatch: {name}")
     items = inventory()
     entries = manifest["items"]
     if len(entries) != len(items) or {entry["key"] for entry in entries} != {
@@ -241,7 +289,7 @@ def render_items(workbench: Path, work: Path, only: set[str] | None) -> dict:
     environment["PYTHONPATH"] = os.pathsep.join((str(ROOT), str(ROOT / "src")))
     for subdir in ("source", "steps", "renders", "facts", "logs"):
         (work / subdir).mkdir(parents=True, exist_ok=True)
-    items = hero_items() + inventory()
+    items = hero_items() + inventory() + bracket_assembly_items()
     if only and not only <= {item.key for item in items}:
         raise ValueError("Unknown --only item")
     for item in items:
@@ -437,6 +485,15 @@ def thumbnail_entries(work: Path, provenance: dict) -> list[dict]:
         "camera": CAMERA,
         "scale": "Common physical scale within each family; families differ.",
         "source_render_recipe_sha256": provenance["recipe_sha256"],
+        "overview_images": [
+            {
+                "file": f"images/{name}",
+                "dimensions": list(png_size(ROOT / "docs/images" / name)),
+                "bytes": (ROOT / "docs/images" / name).stat().st_size,
+                "sha256": hashlib.sha256((ROOT / "docs/images" / name).read_bytes()).hexdigest(),
+            }
+            for name in IMAGE_NAMES
+        ],
         "items": entries,
     }
     (target / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
@@ -512,15 +569,32 @@ def compose_all(work: Path, provenance: dict) -> None:
     for filename, title, families, columns in SHEETS:
         selected = [item for family in families for item in items if item.spec.family == family]
         sheets.append(composite(work, selected, filename, title, columns))
+    sheets.append(
+        composite(
+            work,
+            bracket_assembly_items(),
+            "vertical-tile-brackets.png",
+            "Brackets with separate ordinary tiles",
+            3,
+        )
+    )
     thumbnails = thumbnail_entries(work, provenance)
     lines = [
         "# Complete attachment inventory",
         "",
-        "This gallery covers every attachment variant returned by `accessory_variants(BuildVolume(350, 320, 325))` with original joints and default accessory parameters. It contains 44 variants, all rendered from the generator's actual STEP geometry. Other build envelopes and explicit parametric lengths/heights can produce additional variants; this is not an exhaustive list of an unbounded parameter space.",
+        f"This gallery covers every attachment variant returned by `accessory_variants(BuildVolume(350, 320, 325))` with original joints and default accessory parameters. It contains {len(items)} variants, all rendered from the generator's actual STEP geometry. Other build envelopes and explicit parametric lengths/heights can produce additional variants; this is not an exhaustive list of an unbounded parameter space.",
         "",
         "Every row has its own STEP-derived thumbnail, directly beside the exact public API name. Click any thumbnail to open its full-size image; on narrow screens, scroll the table horizontally for all columns. Images share a 45-degree azimuth / 32-degree elevation and neutral background, with a common physical scale within each family. Families use different scales for legibility; colors are illustrative, not material assignments.",
         "",
         "[Back to the beginner guide](../README.md) / [Thumbnail dimensions, hashes and source provenance](images/attachments/manifest.json)",
+        "",
+        "For vertical-tile-bracket names, the first cell count is panel/base X (left-right); the second is panel Z (bottom-top) and base Y (front-back). The 1x2 and 2x1 parts are distinct. These three variants require the reference 60 mm pitch, 13 mm tile height and zero fit offset; custom-interface catalogues retain the other supported families. The unreleased lock-90 family has been replaced, without an alias.",
+        "",
+        "Bracket thumbnails show the exported one-piece bracket only. The [family view](images/vertical-tile-brackets.png) adds separate ordinary tiles for assembly context; these tiles are not fused into or included with bracket exports. Their entry faces meet the brackets, so their undersides face outward. Backed interior round holes are blind, and downward wall extension is obstructed; left/right/up joins remain available at a common wall origin.",
+        "",
+        "Edge/corner free top rims use selective R2 rounding. Rail outer top rims and angled-stop cap profiles use R1. Brackets use R1 on the exposed front lip outside the tile's planar bearing land; bed-face boundaries, plug shoulders, mounting faces and the protected base are not blanket-filleted. Nominal zero-gap bearing is not calibrated fit or a physical load rating.",
+        "",
+        "Bambu projects apply the bracket's diagonal-face-down and angled stop's back-face-down rigid rotations before fit checks and packing. Source STEP/STL and core 3MF retain model orientation; manifests record recommendations and exact applied source-to-project transforms. Edge/corner/plate/rail families retain their project orientation.",
         "",
     ]
     for family, (heading, _) in FAMILIES.items():
@@ -548,9 +622,9 @@ def compose_all(work: Path, provenance: dict) -> None:
         "PYTHONPATH=src <workbench-python> tools/render_docs.py --workbench <workbench-checkout>",
         "```",
         "",
-        "Use the workbench's Python interpreter with Pillow already available; paths are supplied locally, not committed. In PowerShell, set `$env:PYTHONPATH='src'` before invoking that interpreter. The script checks geometry modules against the recorded commit, invokes STEP/inspection/render tools, then creates two overview PNGs and 44 family-scaled thumbnails. `--compose-only` reuses verified local STEP-derived renders; `--check` verifies the committed files and their one-to-one inventory mapping without Pillow. Intermediate STEP files and raw renders remain ignored. Layout is deterministic; raster bytes can depend on graphics/Pillow versions.",
+        f"Use the workbench's Python interpreter with Pillow already available; paths are supplied locally, not committed. In PowerShell, set `$env:PYTHONPATH='src'` before invoking that interpreter. The script checks geometry modules against the recorded commit, invokes STEP/inspection/render tools, then creates three overview PNGs and {len(items)} family-scaled thumbnails. `--compose-only` reuses verified local STEP-derived renders; `--check` verifies the committed files and their one-to-one inventory mapping without Pillow. Intermediate STEP files and raw renders remain ignored. Layout is deterministic; raster bytes can depend on graphics/Pillow versions.",
         "",
-        f"Generator source revision: `{provenance['generator_commit']}`. Generator tree: `{provenance['generator_tree']}`. Workbench revision: `{provenance['workbench_commit']}`.",
+        f"Generator source revision: {revision_tag(provenance['generator_commit'])}. Generator tree: {revision_tag(provenance['generator_tree'])}. Workbench revision: {revision_tag(provenance['workbench_commit'])}.",
         "",
         "A successful render is not evidence of printability, physical fit, support release or third-party design rights.",
         "",

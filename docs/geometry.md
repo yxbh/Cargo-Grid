@@ -52,9 +52,27 @@ Expansion changes the first support/raft layer, not the model CAD. It may affect
 
 Stacking creates explicit sacrificial support-base and lower/upper release volumes between repeated identical tiles. The gap must leave positive base thickness after both interfaces. Quantities, maximum stack height, partial batches, material roles and usable build reservations remain explicit. Generated contact/separation geometry does not prove successful physical detachment.
 
-The accessory catalogue contains independently authored functional edge/corner pieces, X-plug plates and locks, and physical support/bracket families. It is not a promise that every contour or secondary mechanism matches another design. Physical support rails use separate end-to-end dovetails and a 25 mm supporting depth; they are not X-plug attachments, and no positive mat-to-rail latch is assumed.
+The accessory catalogue contains independently authored functional edge/corner pieces, X-plug plates, angled stops, vertical tile brackets and physical support rails. It is not a promise that every contour or secondary mechanism matches another design. Physical support rails use separate end-to-end dovetails and a 25 mm supporting depth; they are not X-plug attachments, and no positive mat-to-rail latch is assumed.
 
-Catalogue membership is finite and build-volume-dependent. Oversized accessory variants are listed as omitted rather than shrunk. Ordered tile sizes remain distinct even if either orientation fits the same bed. Print packing uses actual bounding rectangles with optional 90-degree rotation; it is not an optimal-packing guarantee.
+Catalogue membership is finite and build-volume-dependent. Oversized accessory variants are listed as omitted rather than shrunk. Ordered tile sizes remain distinct even if either orientation fits the same bed. Bambu bracket and angled-stop jobs first apply their validated X-axis print rotation; bounding-rectangle packing then permits its existing 90-degree XY rotation. Other families are not reoriented. This is not an optimal-packing guarantee.
+
+### Vertical tile brackets
+
+`vertical-tile-bracket` replaces the unreleased `lock-90` catalogue family without retaining an alias. Its supported grids are 1x2, 2x1 and 2x2 at the reference 60 mm pitch, 13 mm tile height and zero fit offset. The first count is base X / panel width; the second is base Y / panel height. Both joint styles retain the same bracket X geometry, but original tile-edge joins remain the recommended default and the existing full-height limitations still apply.
+
+The bracket is one full-width solid-backed wedge. Base shoulder Z=0 and downward plug tips Z=-12.8 are retained; original lower geometry through Z3.1 is unchanged. A filled nonfunctional upper-rim band at Z3.1--4.1 avoids a shallow exterior slit under the wedge. Base dimensions are 60x120, 120x60 and 120x120 mm. No outboard tabs, through-channel pattern or split mechanism is added.
+
+For base depth `d`, the vertical tile seat is Y=`d-13`, panel plug tips end at Y=`d-0.2`, and the separate tile occupies Y=`d-13` through `d`. Panel bottom Z=6.1 and its 60 mm row pitch stay fixed. There are two vertically stacked panel plugs on 1x2, two side-by-side on 2x1, and four on 2x2. A full-width internal strip occupies Z4.1--6.1 and has nominal zero-gap bearing; with the illustrated full-hole tiles, planar contact is about 260.892 mm2 on 1x2 and 521.784 mm2 on the two-column brackets. These are nominal CAD contacts, not force-free fit or a load rating.
+
+The ordinary tile remains a separate part and is not fused into bracket STEP/STL/3MF geometry. Its entry face seats on the plugs; its original underside is outward. Solid backing makes backed interior round holes nominally 13 mm-deep blind pockets. Edge half/quarter cutouts are not all sealed bores. Same-origin left/right/up extensions retain their mating placement, while downward extension is obstructed. The existing nominal plug/socket overlap is preserved, not replaced by a false zero-collision fit claim.
+
+### Selective rounds and angled stops
+
+Free edge/corner top rims use R2; central dovetail flanks, shoulders and roof boundaries retain their interface geometry. Full-height accessory outlines solve the free R2 rims together with their existing R1 upper joining rounds; the tile generator's default rounding path is unchanged. Rail/support outer top rims use R1 outside the central support-dovetail envelope, retaining the lower body and its full-height joint.
+
+Angled `lock-45` stops retain a 4.1 mm base, a 6 mm horizontal wall thickness (about 4.243 mm normal to the 45-degree wall), and unchanged lower geometry through Z3.1. Full-length 6 mm side webs meet the cap directly without a reverse corner/notch. The exposed cap is rounded R1 in its generating profile rather than attempting a blanket fillet across wall/web junctions.
+
+Bracket R1 front-lip rounding occupies only the outermost 1 mm beyond the ordinary tile's planar bearing land. It preserves the selected core, nominal bearing plane/contact, and broad diagonal bed face. The other long wedge boundaries meet the bed face, protected base or mounting/seat datums and remain protected; they are not omitted as an unreported failed all-edge fillet.
 
 ## Export checks
 
@@ -64,7 +82,9 @@ Mesh chord tolerance is 0.02 mm. Surface seams are welded only within 0.000001--
 
 A remaining isolated three-edge crack can be closed only when it is an unambiguous oppositely oriented triangle, contains no duplicate face, has maximum edge 0.1 mm, and has area below both 0.0000001 mm2 and its perimeter times OCCT linear confusion. Fifteen barycentric probes, including vertices and edge-quarter points, must lie within OCCT's 0.0000001 mm tolerance of the unchanged CAD surface. No vertices move. Larger, ambiguous, nontriangular or off-surface gaps remain errors. The mesh report records any repair and the strict checks still run afterward.
 
-Manifests include a schema version, generator version, design modes, resolved parameters, compatibility qualifications and unsupported combinations. Core 3MF preserves geometry and quantities; native-compatible 3MF adds plate/material/modifier metadata with diagnostic profile IDs. Neither means the exported job has been sliced or physically verified.
+Manifests include a schema version, generator version, design modes, resolved parameters, compatibility qualifications and unsupported combinations. Core 3MF preserves model orientation and quantities; native-compatible 3MF adds plate/material/modifier metadata with diagnostic profile IDs. Neither means the exported job has been sliced or physically verified.
+
+Bambu single-part and catalogue exports rotate vertical tile brackets X=135 degrees (diagonal face down) and angled stops X=-135 degrees (back face down) before bounds checks and packing. STEP/STL and core 3MF retain model orientation. Recommendations include per-artifact applied flags; Bambu plate items include the exact source-to-project transform, composed with their in-plane packing rotation and translation. The pose is already baked into the Bambu mesh and must not be applied twice. API catalogue callers use `orient_for_bambu=True` for the matching eligibility calculation. Roof-support and stack workflows keep their existing orientation and cannot be combined with independently oriented models.
 
 ## Optional reference comparison
 

@@ -3,7 +3,18 @@
 from dataclasses import replace
 
 import pytest
-from build123d import Axis, GeomType, Location, Part, Solid, Vector, export_step, import_step
+from build123d import (
+    Axis,
+    Compound,
+    Edge,
+    GeomType,
+    Location,
+    Part,
+    Solid,
+    Vector,
+    export_step,
+    import_step,
+)
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 
 from cargo_grid import BuildVolume, Interface, Tile, make_tile
@@ -17,6 +28,7 @@ from cargo_grid.accessories import (
 )
 from cargo_grid.catalogue import accessory_design, accessory_variants
 from cargo_grid.interfaces import make_plug
+from cargo_grid.tiles import hole_placements
 
 
 def volume(shape):
@@ -144,6 +156,13 @@ def test_separate_tile_insertion_bearing_and_solid_backing(nx, ny, holes):
     )
     if holes:
         assert bearing == pytest.approx(260.891859550497 * nx, abs=1e-5)
+    core_bearing = sum(
+        sum(f.area for f in q.faces()) if q else 0
+        for top in contact_faces(core, 6.1, 1)
+        for bottom in contact_faces(tile, 6.1, -1)
+        for q in [top.intersect(bottom)]
+    )
+    assert bearing == pytest.approx(core_bearing, abs=1e-5)
     assert bearing > 0
     assert part.is_inside(Vector(nx * 30, ny * 60 - 13 - 0.01, 20))
     # Exact unmodified neighbor tiles can extend sideways/upward with the same wall origin.
@@ -154,6 +173,19 @@ def test_separate_tile_insertion_bearing_and_solid_backing(nx, ny, holes):
     ):
         shape = make_tile(neighbor).rotate(Axis.X, 90).moved(Location((x, ny * 60, z)))
         assert volume(part.intersect(shape)) < 1e-5
+    lower = make_tile(Tile(nx, 1)).rotate(Axis.X, 90).moved(Location((0, ny * 60, 6.1 - 60)))
+    assert volume(part.intersect(lower)) > 1
+    if holes:
+        interior = [
+            h for h in hole_placements(tile_spec) if 0 < h.x < nx * 60 and 0 < h.y < ny * 60
+        ]
+        assert len(interior) == (5 if (nx, ny) == (2, 2) else 1)
+        for hole in interior:
+            ray = Edge.make_line((hole.x, 0, 6.1 + hole.y), (hole.x, ny * 60 + 1, 6.1 + hole.y))
+            material = part.intersect(ray)
+            assert material and material.edges()
+            end = Compound(material.edges()).bounding_box().max.Y
+            assert ny * 60 - end == pytest.approx(13, abs=1e-5)
 
 
 def test_bracket_variants_and_reference_only_interface_policy():

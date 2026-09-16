@@ -41,3 +41,5 @@ jobs:
           env -u PYTHONPATH wheel-smoke/bin/python -m cargo_grid --version
           env -u PYTHONPATH wheel-smoke/bin/cargo-grid --help
           env -u PYTHONPATH wheel-smoke/bin/cargo-grid part --build-width-mm 150 --build-depth-mm 150 --build-height-mm 50 --no-stl --output wheel-job
+          env -u PYTHONPATH wheel-smoke/bin/cargo-grid part --family vertical-tile-bracket --cells 1 2 --build-width-mm 350 --build-depth-mm 320 --build-height-mm 325 --bambu --material PETG PETG "#637b70" --nozzle 0.4 --layer-height 0.2 --no-stl --output wheel-bracket
+          env -u PYTHONPATH wheel-smoke/bin/python -c 'import json; p=json.load(open("wheel-bracket/manifest.json")); d=p["designs"][0]; assert (d["parameters"]["nx"],d["parameters"]["ny"]) == (1,2); assert d["recommended_print_orientation"]["applied_to_exports"]["bambu_3mf"]; assert p["export"]["plates"][0]["items"][0]["source_to_project_transform"]["rotation_x_degrees"] == 135'

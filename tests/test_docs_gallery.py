@@ -25,7 +25,7 @@ def gallery():
 def test_gallery_covers_every_bounded_catalogue_variant_once(gallery):
     items = gallery.inventory()
     assert [item.spec for item in items] == accessory_variants(gallery.BUILD)
-    assert len(items) == len({item.key for item in items}) == 44
+    assert len(items) == len({item.key for item in items}) == 41
     rendered = [
         item.key for family in gallery.FAMILIES for item in items if item.spec.family == family
     ]
@@ -48,12 +48,32 @@ def test_thumbnail_manifest_has_unique_rows_and_family_scale(gallery):
     assert manifest["workbench_commit"] == gallery.WORKBENCH_REVISION
     entries = manifest["items"]
     for field in ("file", "key", "public_name", "alt", "sha256"):
-        assert len({entry[field] for entry in entries}) == 44
+        assert len({entry[field] for entry in entries}) == 41
     for family in gallery.FAMILIES:
         rows = [entry for entry in entries if entry["family"] == family]
         assert len({entry["pixels_per_mm"] for entry in rows}) == 1
     assert all(entry["dimensions"] == [480, 300] for entry in entries)
     assert "docs/attachments.md" in (ROOT / "README.md").read_text()
+
+
+def test_bracket_family_context_is_separate_from_the_part_inventory(gallery):
+    assert [item.key for item in gallery.bracket_assembly_items()] == [
+        "bracket-context-1x2",
+        "bracket-context-2x1",
+        "bracket-context-2x2",
+    ]
+    assert len(gallery.documentation_shape("bracket-context-1x2").solids()) == 2
+    assert len(gallery.documentation_shape("vertical-tile-bracket-1x2").solids()) == 1
+
+
+def test_provenance_hashes_can_wrap_without_changing_their_text(gallery):
+    revision = gallery.GEOMETRY_REVISION
+    tag = gallery.revision_tag(revision)
+    assert tag.replace("<code>", "").replace("</code>", "").replace("<wbr>", "") == revision
+    assert all(
+        len(piece) <= 8
+        for piece in tag.removeprefix("<code>").removesuffix("</code>").split("<wbr>")
+    )
 
 
 def test_thumbnail_checks_reject_a_wrong_hash(gallery, tmp_path, monkeypatch):

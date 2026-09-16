@@ -25,6 +25,7 @@ ROOT_FILES = {
 DOCUMENTATION_IMAGES = {
     "docs/images/hero.png",
     "docs/images/x-attachments.png",
+    "docs/images/vertical-tile-brackets.png",
     *(
         f"docs/images/attachments/{family}-{number}.png"
         for family in ("edge-x", "edge-y", "support")
@@ -36,7 +37,10 @@ DOCUMENTATION_IMAGES = {
     *(f"docs/images/attachments/support-bit-{n}mm.png" for n in (20, 30, 40, 50)),
     *(f"docs/images/attachments/plate-{grid}.png" for grid in ("1x1", "1x2", "2x2")),
     *(f"docs/images/attachments/lock-45-{grid}.png" for grid in ("1x1", "2x2")),
-    *(f"docs/images/attachments/lock-90-{x}x{y}.png" for x in (1, 2, 3) for y in (1, 2)),
+    *(
+        f"docs/images/attachments/vertical-tile-bracket-{grid}.png"
+        for grid in ("1x2", "2x1", "2x2")
+    ),
 }
 FORBIDDEN_SUFFIXES = {
     ".step",
