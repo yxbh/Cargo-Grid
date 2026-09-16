@@ -22,6 +22,7 @@ class Design:
     holes: list[dict] = field(default_factory=list)
     recommended_print_rotation_x: float | None = None
     apply_orientation_to_bambu: bool = False
+    bambu_object_settings: dict[str, str] = field(default_factory=dict)
 
     def __post_init__(self):
         count("design quantity", self.quantity)
@@ -33,6 +34,11 @@ class Design:
             raise ValueError("apply_orientation_to_bambu must be a boolean")
         if self.apply_orientation_to_bambu and self.recommended_print_rotation_x is None:
             raise ValueError("Bambu orientation requires an explicit recommended rotation")
+        if self.bambu_object_settings not in (
+            {},
+            {"enable_support": "1", "support_type": "normal(auto)"},
+        ):
+            raise ValueError("unsupported Bambu per-object settings")
 
     @property
     def size(self) -> tuple[float, float, float]:

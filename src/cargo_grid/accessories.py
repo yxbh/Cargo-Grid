@@ -14,9 +14,10 @@ and lightening apertures are independently constructed, not reference contours.
 
 from dataclasses import dataclass
 from functools import lru_cache
-from math import sqrt
+from math import atan, degrees, sqrt
 
 from build123d import Axis, Face, GeomType, Location, Part, Solid, Wire
+from OCP.BRepFilletAPI import BRepFilletAPI_MakeFillet
 
 from cargo_grid.interfaces import (
     dovetail_face,
@@ -36,6 +37,7 @@ FAMILIES = (
     "corner-in",
     "corner-out",
     "vertical-tile-bracket",
+    "vertical-stop",
     "lock-45",
     "plate",
     "support",
@@ -44,6 +46,8 @@ FAMILIES = (
 )
 SUPPORT_END_NAMES = ("X", "Xs", "Y", "Ys")
 VERTICAL_BRACKET_CELLS = ((1, 2), (2, 1), (2, 2))
+VERTICAL_STOP_CELLS = ((1, 2), (2, 1), (2, 2))
+VERTICAL_STOP_HEIGHTS_MM = (60.0, 120.0)
 BASE_HEIGHT_MM = 4.1
 PANEL_BOTTOM_MM = 6.1
 BRACKET_INSET_MM = 13.0
@@ -55,7 +59,9 @@ STOP_CAP_RADIUS_MM = 1.0
 EDGE_TOP_RADIUS_MM = 2.0
 SUPPORT_TOP_RADIUS_MM = 1.0
 BRACKET_LIP_RADIUS_MM = 1.0
+VERTICAL_STOP_RADIUS_MM = 2.0
 BAMBU_PRINT_ROTATIONS = {"vertical-tile-bracket": 135.0, "lock-45": -135.0}
+BAMBU_OBJECT_SETTINGS = {"vertical-stop": {"enable_support": "1", "support_type": "normal(auto)"}}
 
 
 @dataclass(frozen=True)
@@ -63,10 +69,12 @@ class Accessory:
     """Accessory dimensions in mm; ``nx`` counts straight edge/support cells.
 
     ``length`` controls support-bit length excluding its projecting join.
-    ``height`` is the angled lock-45 height above its shoulder, including its base.
+    ``height`` is the lock-45 or vertical-stop height above its shoulder, including its base.
     Vertical tile brackets use explicit ``nx, ny`` of 1x2, 2x1 or 2x2:
     X counts panel columns; Y counts base rows and vertical panel rows.
     Their height follows the tile grid, not ``height``.
+    Vertical stops use explicit 1x2, 2x1 or 2x2 mounting cells and an explicit
+    60 or 120 mm height. They are filled cargo wedges without wall holes.
     ``variant`` selects corner and support-end types. Pitch and tile height can
     follow a custom Interface, but only reference defaults imply nominal
     reference dimensions; fixed attachment and support joins are not scaled.
@@ -100,6 +108,7 @@ class Accessory:
             "plate": {(1, 1), (1, 2), (2, 2)},
             "lock-45": {(1, 1), (2, 2)},
             "vertical-tile-bracket": set(VERTICAL_BRACKET_CELLS),
+            "vertical-stop": set(VERTICAL_STOP_CELLS),
         }
         if self.family in grids and (self.nx, self.ny) not in grids[self.family]:
             raise ValueError(f"unsupported mounting grid for {self.family}")
@@ -122,6 +131,8 @@ class Accessory:
                 raise ValueError(
                     "vertical-tile-bracket height follows its cells; accessory height is only for lock-45"
                 )
+        if self.family == "vertical-stop" and self.height not in VERTICAL_STOP_HEIGHTS_MM:
+            raise ValueError("vertical-stop requires explicit accessory height 60 or 120 mm")
 
 
 def _box(x: float, y: float, w: float, d: float, h: float, z: float = 0) -> Part:
@@ -348,6 +359,131 @@ def _vertical_bracket(spec: Accessory, *, round_lip: bool = True) -> Part:
     return base.fuse(wedge, *connectors, land).clean()
 
 
+def _vertical_stop_slope(spec: Accessory, radius: float = VERTICAL_STOP_RADIUS_MM) -> float:
+    depth = spec.ny * spec.interface.pitch
+    a = depth - radius
+    b = spec.height - radius - BASE_HEIGHT_MM
+    return (a * b + radius * sqrt(a * a + b * b - radius * radius)) / (a * a - radius * radius)
+
+
+def vertical_stop_print_rotation(spec: Accessory) -> float:
+    if spec.family != "vertical-stop":
+        raise ValueError("vertical-stop print rotation requires a vertical-stop specification")
+    return 180 - degrees(atan(_vertical_stop_slope(spec)))
+
+
+def bambu_print_rotation(spec: Accessory) -> float | None:
+    return (
+        vertical_stop_print_rotation(spec)
+        if spec.family == "vertical-stop"
+        else BAMBU_PRINT_ROTATIONS.get(spec.family)
+    )
+
+
+def required_bambu_print_rotation(parameters: dict) -> float | None:
+    family = parameters.get("family")
+    if family != "vertical-stop":
+        return BAMBU_PRINT_ROTATIONS.get(family)
+    interface = parameters.get("interface", {})
+    pitch = interface.get("pitch", 60)
+    depth = parameters["ny"] * pitch
+    radius = VERTICAL_STOP_RADIUS_MM
+    a = depth - radius
+    b = parameters["height"] - radius - BASE_HEIGHT_MM
+    slope = (a * b + radius * sqrt(a * a + b * b - radius * radius)) / (a * a - radius * radius)
+    return 180 - degrees(atan(slope))
+
+
+def _vertical_stop(spec: Accessory) -> Part:
+    width = spec.nx * spec.interface.pitch
+    depth = spec.ny * spec.interface.pitch
+    slope = _vertical_stop_slope(spec)
+    top = BASE_HEIGHT_MM + slope * depth
+    base = _mounted_base(spec, root_radius=1, round_top=False)
+    profile = Face(
+        Wire.make_polygon(
+            [
+                (0, 0, BASE_HEIGHT_MM - 1),
+                (0, depth, BASE_HEIGHT_MM - 1),
+                (0, depth, top),
+                (0, 0, BASE_HEIGHT_MM),
+            ],
+            close=True,
+        )
+    )
+    raw = Part(base.fuse(Solid.extrude(profile, (width, 0, 0))).clean().solids())
+    selected = []
+    categories = {"cargo-cap": 0, "diagonal": 0, "front": 0, "underside": 0}
+    for edge in raw.edges():
+        bounds = edge.bounding_box()
+        if edge.geom_type != GeomType.LINE:
+            continue
+        category = None
+        if (
+            abs(bounds.min.Y - depth) < 1e-5
+            and abs(bounds.max.Y - depth) < 1e-5
+            and (
+                (bounds.size.X < 1e-5 and bounds.size.Z > 10)
+                or (abs(bounds.min.Z - top) < 1e-5 and abs(bounds.max.Z - top) < 1e-5)
+            )
+        ):
+            category = "cargo-cap"
+        elif (
+            bounds.size.X < 1e-5
+            and bounds.size.Y > 10
+            and bounds.size.Z > 10
+            and (abs(bounds.min.X) < 1e-5 or abs(bounds.min.X - width) < 1e-5)
+        ):
+            category = "diagonal"
+        elif (
+            abs(bounds.min.Y) < 1e-5
+            and abs(bounds.max.Y) < 1e-5
+            and (
+                bounds.size.Z > 4
+                or (
+                    bounds.size.X > 10
+                    and abs(bounds.min.Z - BASE_HEIGHT_MM) < 1e-5
+                    and abs(bounds.max.Z - BASE_HEIGHT_MM) < 1e-5
+                )
+            )
+        ):
+            category = "front"
+        elif (
+            abs(bounds.min.Z) < 1e-5
+            and abs(bounds.max.Z) < 1e-5
+            and (
+                (
+                    bounds.size.X > 10
+                    and (
+                        (abs(bounds.min.Y) < 1e-5 and abs(bounds.max.Y) < 1e-5)
+                        or (abs(bounds.min.Y - depth) < 1e-5 and abs(bounds.max.Y - depth) < 1e-5)
+                    )
+                )
+                or (
+                    bounds.size.Y > 10
+                    and (
+                        (abs(bounds.min.X) < 1e-5 and abs(bounds.max.X) < 1e-5)
+                        or (abs(bounds.min.X - width) < 1e-5 and abs(bounds.max.X - width) < 1e-5)
+                    )
+                )
+            )
+        ):
+            category = "underside"
+        if category is not None:
+            selected.append(edge)
+            categories[category] += 1
+    expected = {"cargo-cap": 3, "diagonal": 2, "front": 3, "underside": 4}
+    if categories != expected:
+        raise ValueError(f"vertical-stop free-edge classification changed: {categories}")
+    operation = BRepFilletAPI_MakeFillet(raw.wrapped)
+    for edge in selected:
+        operation.Add(VERTICAL_STOP_RADIUS_MM, edge.wrapped)
+    operation.Build()
+    if not operation.IsDone():
+        raise ValueError("vertical-stop coupled R2 free-edge fillet failed")
+    return Part(Solid(operation.Shape()).wrapped)
+
+
 def _free_top_rims(spec: Accessory) -> list[tuple[str, float]]:
     p = spec.interface.pitch
     if spec.family == "edge-x":
@@ -431,7 +567,7 @@ def _support(spec: Accessory, *, round_top: bool = True) -> Part:
 
 def accessory_datums(spec: Accessory) -> dict:
     """Machine-readable nominal mating datums; no physical-fit assertions."""
-    if spec.family in ("plate", "vertical-tile-bracket", "lock-45"):
+    if spec.family in ("plate", "vertical-tile-bracket", "vertical-stop", "lock-45"):
         if spec.family == "vertical-tile-bracket":
             p = spec.interface.pitch
             seat = spec.ny * p - BRACKET_INSET_MM
@@ -455,12 +591,20 @@ def accessory_datums(spec: Accessory) -> dict:
                 "outward_tile_face": "underside",
                 "backing": "solid; backed interior round holes are blind",
             }
-        return {
+        result = {
             "shoulder_z": 0,
             "plug_tip_z": -12.8,
             "mount_centers": _mount_centers(spec),
             "joins": [],
         }
+        if spec.family == "vertical-stop":
+            result.update(
+                cargo_face_y=spec.ny * spec.interface.pitch,
+                cargo_height_z=spec.height,
+                body="full-width filled wedge; no wall holes",
+                free_edge_radius=VERTICAL_STOP_RADIUS_MM,
+            )
+        return result
     if spec.family.startswith("support"):
         length, joins = _support_plan(spec)
         result = {
@@ -497,6 +641,8 @@ def make_accessory(spec: Accessory) -> Part:
         raise ValueError("spec must be an Accessory")
     if spec.family == "vertical-tile-bracket":
         part = _vertical_bracket(spec)
+    elif spec.family == "vertical-stop":
+        part = _vertical_stop(spec)
     elif spec.family in ("plate", "lock-45"):
         part = _mounted(spec)
     elif spec.family.startswith("support"):
@@ -525,7 +671,7 @@ def make_accessory(spec: Accessory) -> Part:
             part = _round_free_top(part, spec)
     suffix = (
         f"{spec.nx}x{spec.ny}"
-        if spec.family in ("plate", "vertical-tile-bracket", "lock-45")
+        if spec.family in ("plate", "vertical-tile-bracket", "vertical-stop", "lock-45")
         else f"v{spec.variant}"
         if spec.family in ("corner-in", "corner-out", "support-end")
         else f"{spec.length:g}mm"
@@ -533,7 +679,7 @@ def make_accessory(spec: Accessory) -> Part:
         else str(spec.nx)
     )
     part.label = f"{spec.family}_{suffix}"
-    if spec.family.startswith("lock-"):
+    if spec.family.startswith("lock-") or spec.family == "vertical-stop":
         part.label += f"_h{spec.height:g}"
     part.label += f"_{spec.interface.joint_style}"
     if not part.is_valid or len(part.solids()) != 1 or part.volume <= 0:

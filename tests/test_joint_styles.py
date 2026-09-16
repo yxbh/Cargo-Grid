@@ -173,10 +173,25 @@ def test_all_full_height_ordered_sizes_through_five_cells(nx, ny):
 
 
 @pytest.mark.parametrize(
-    "family", ["plate", "vertical-tile-bracket", "lock-45", "support", "support-bit", "support-end"]
+    "family",
+    [
+        "plate",
+        "vertical-tile-bracket",
+        "vertical-stop",
+        "lock-45",
+        "support",
+        "support-bit",
+        "support-end",
+    ],
 )
 def test_non_edge_interfaces_and_support_rails_do_not_change_with_style(family):
-    original = Accessory(family, nx=2 if family == "vertical-tile-bracket" else 1)
+    original = (
+        Accessory("vertical-tile-bracket", nx=2)
+        if family == "vertical-tile-bracket"
+        else Accessory("vertical-stop", nx=2, height=60)
+        if family == "vertical-stop"
+        else Accessory(family)
+    )
     full = replace(original, interface=Interface(joint_style="full-height"))
     a, b = make_accessory(original), make_accessory(full)
     assert a.volume == pytest.approx(b.volume, abs=1e-7)

@@ -15,7 +15,7 @@ from build123d import Axis, Compound, export_step, import_step
 from OCP.Precision import Precision
 
 from cargo_grid._version import __version__
-from cargo_grid.accessories import BAMBU_PRINT_ROTATIONS
+from cargo_grid.accessories import BAMBU_OBJECT_SETTINGS, required_bambu_print_rotation
 from cargo_grid.jobs import Job
 from cargo_grid.meshes import checked_mesh, write_stl
 from cargo_grid.packing import pack_sizes
@@ -111,7 +111,8 @@ def _validate_request(job: Job, bambu: BambuSettings | None, stack: StackSetting
     }
     for design in job.designs:
         count("design quantity", design.quantity)
-        required_pose = BAMBU_PRINT_ROTATIONS.get(design.parameters.get("family"))
+        family = design.parameters.get("family")
+        required_pose = required_bambu_print_rotation(design.parameters)
         if (
             bambu
             and required_pose is not None
@@ -122,6 +123,12 @@ def _validate_request(job: Job, bambu: BambuSettings | None, stack: StackSetting
         ):
             raise ValueError(
                 f"{design.name}: Bambu accessory export requires its validated print orientation; "
+                "create the design with accessory_design()"
+            )
+        required_object_settings = BAMBU_OBJECT_SETTINGS.get(family, {})
+        if bambu and design.bambu_object_settings != required_object_settings:
+            raise ValueError(
+                f"{design.name}: Bambu accessory export requires its validated object settings; "
                 "create the design with accessory_design()"
             )
         if bambu and design.apply_orientation_to_bambu and (stack or bambu.roof_support):
@@ -325,6 +332,8 @@ def _write_3mf(
         configured = ET.SubElement(config, "object", id=str(object_id))
         _metadata(configured, "name", label)
         _metadata(configured, "extruder", 1)
+        for key, value in design.bambu_object_settings.items():
+            _metadata(configured, key, value)
         for ident, volume in children:
             part = ET.SubElement(configured, "part", id=str(ident), subtype=volume.subtype)
             _metadata(part, "name", volume.name)
@@ -363,16 +372,17 @@ def _write_3mf(
         _metadata(instance, "identify_id", batch_index + 1)
         record = plate_records[plate_index]
         record["quantity"] += quantity
-        record["items"].append(
-            {
-                "design": design.name,
-                "quantity": quantity,
-                "x": px,
-                "y": py,
-                "rotation": rotation,
-                "size_mm": size,
-            }
-        )
+        item = {
+            "design": design.name,
+            "quantity": quantity,
+            "x": px,
+            "y": py,
+            "rotation": rotation,
+            "size_mm": size,
+        }
+        if bambu and design.bambu_object_settings:
+            item["object_settings"] = dict(design.bambu_object_settings)
+        record["items"].append(item)
         if bambu and design.apply_orientation_to_bambu:
             angle = design.recommended_print_rotation_x
             assert angle is not None
@@ -622,6 +632,7 @@ def export_job(
                 "plate",
                 "vertical-tile-bracket",
                 "lock-45",
+                "vertical-stop",
             )
             if family != "tile":
                 compatibility["geometry_warning"] = None
@@ -663,6 +674,13 @@ def export_job(
                     "bambu_3mf": bool(bambu and design.apply_orientation_to_bambu),
                 },
                 "note": "Standalone recommended pose. Bambu-oriented designs are rotated before packing; exact source-to-project transforms are recorded per plate item. Source STEP/STL and core 3MF retain model orientation.",
+            }
+        if design.bambu_object_settings:
+            entries[-1]["recommended_bambu_object_settings"] = {
+                "scope": "object",
+                "settings": dict(design.bambu_object_settings),
+                "applied_to_bambu_3mf": bool(bambu),
+                "note": "Normal Auto is scoped to this accessory object. It is separate from tile-roof support and still requires sliced-path and removal review.",
             }
     project = write_3mf(job, output / "job.3mf", bambu=bambu, stack=stack)
     manifest = {

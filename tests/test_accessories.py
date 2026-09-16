@@ -15,6 +15,11 @@ STANDARD = [
     *(Accessory("corner-in", variant=v) for v in range(1, 5)),
     *(Accessory("corner-out", variant=v) for v in range(1, 7)),
     *(Accessory("vertical-tile-bracket", nx=x, ny=y) for x, y in ((1, 2), (2, 1), (2, 2))),
+    *(
+        Accessory("vertical-stop", nx=x, ny=y, height=height)
+        for x, y in ((1, 2), (2, 1), (2, 2))
+        for height in (60, 120)
+    ),
     *(Accessory("lock-45", nx=n, ny=n) for n in (1, 2)),
     *(Accessory("plate", nx=x, ny=y) for x, y in ((1, 1), (1, 2), (2, 2))),
     *(Accessory("support-bit", length=n) for n in (20, 30, 40, 50)),
@@ -34,11 +39,13 @@ def test_standard_families_are_connected_and_labeled(spec, joint_style):
     assert part.volume > 0
     assert part.label.startswith(spec.family)
     box = part.bounding_box()
-    if spec.family in ("vertical-tile-bracket", "lock-45", "plate"):
+    if spec.family in ("vertical-tile-bracket", "vertical-stop", "lock-45", "plate"):
         assert box.min.Z == pytest.approx(-12.8)
         top = (
             spec.ny * 60 + 7.578174593052
             if spec.family == "vertical-tile-bracket"
+            else spec.height
+            if spec.family == "vertical-stop"
             else 4.1
             if spec.family == "plate"
             else spec.height
@@ -220,6 +227,8 @@ def test_custom_pitch_and_extended_rails():
         {"family": "vertical-tile-bracket", "nx": 3},
         {"family": "vertical-tile-bracket", "nx": 2, "height": 100},
         {"family": "vertical-tile-bracket", "nx": 2, "interface": Interface(pitch=65)},
+        {"family": "vertical-stop"},
+        {"family": "vertical-stop", "nx": 2, "ny": 1, "height": 100},
         {"family": "lock-45", "ny": 2},
         {"family": "corner-in", "variant": 5},
         {"family": "corner-out", "variant": 7},

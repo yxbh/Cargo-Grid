@@ -7,9 +7,12 @@ from math import floor
 from typing import Literal
 
 from cargo_grid.accessories import (
-    BAMBU_PRINT_ROTATIONS,
+    BAMBU_OBJECT_SETTINGS,
     VERTICAL_BRACKET_CELLS,
+    VERTICAL_STOP_CELLS,
+    VERTICAL_STOP_HEIGHTS_MM,
     Accessory,
+    bambu_print_rotation,
     make_accessory,
 )
 from cargo_grid.jobs import Design, Job, tile_design
@@ -48,6 +51,11 @@ def accessory_variants(build: BuildVolume, interface: Interface = Interface()) -
             for x, y in VERTICAL_BRACKET_CELLS
         )
     result.extend(
+        Accessory("vertical-stop", nx=x, ny=y, height=height, interface=interface)
+        for x, y in VERTICAL_STOP_CELLS
+        for height in VERTICAL_STOP_HEIGHTS_MM
+    )
+    result.extend(
         Accessory("lock-45", nx=x, ny=y, interface=interface) for x, y in ((1, 1), (2, 2))
     )
     result.extend(
@@ -59,15 +67,22 @@ def accessory_variants(build: BuildVolume, interface: Interface = Interface()) -
 def accessory_design(spec: Accessory) -> Design:
     parameters = asdict(spec)
     token = sha256(json.dumps(parameters, sort_keys=True).encode()).hexdigest()[:10]
-    name = f"{spec.family}_{spec.nx}x{spec.ny}_v{spec.variant}_{spec.interface.joint_style}_{token}"
+    dimensions = (
+        f"{spec.nx}x{spec.ny}_h{spec.height:g}"
+        if spec.family == "vertical-stop"
+        else f"{spec.nx}x{spec.ny}"
+    )
+    name = f"{spec.family}_{dimensions}_v{spec.variant}_{spec.interface.joint_style}_{token}"
     shape = make_accessory(spec)
     shape.label = name
+    rotation = bambu_print_rotation(spec)
     return Design(
         name,
         shape,
         parameters,
-        recommended_print_rotation_x=BAMBU_PRINT_ROTATIONS.get(spec.family),
-        apply_orientation_to_bambu=spec.family in BAMBU_PRINT_ROTATIONS,
+        recommended_print_rotation_x=rotation,
+        apply_orientation_to_bambu=rotation is not None,
+        bambu_object_settings=dict(BAMBU_OBJECT_SETTINGS.get(spec.family, {})),
     )
 
 

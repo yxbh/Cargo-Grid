@@ -218,7 +218,7 @@ def parser() -> argparse.ArgumentParser:
                 "--family",
                 default="tile",
                 choices=["tile", *FAMILIES],
-                help="vertical-tile-bracket carries a separate ordinary tile; lock-45 is an angled stop",
+                help="vertical-tile-bracket carries a separate tile; vertical-stop is a filled cargo wedge; lock-45 is angled",
             )
             p.add_argument(
                 "--cells",
@@ -226,7 +226,7 @@ def parser() -> argparse.ArgumentParser:
                 nargs=2,
                 default=argparse.SUPPRESS,
                 metavar=("X_CELLS", "Y_CELLS"),
-                help="whole cells X then Y (not mm); default 2 1 for vertical-tile-bracket, 1 1 otherwise; bracket X is panel width, Y is panel height/base depth",
+                help="whole cells X then Y (not mm); default 2 1 for vertical-tile-bracket/vertical-stop, 1 1 otherwise; X is width and Y is depth",
             )
             p.add_argument(
                 "--variant",
@@ -244,9 +244,9 @@ def parser() -> argparse.ArgumentParser:
             p.add_argument(
                 "--accessory-height",
                 type=float,
-                default=50,
+                default=argparse.SUPPRESS,
                 metavar="MM",
-                help="lock-45 height above its attachment shoulder including the base, in mm; bracket height follows --cells",
+                help="lock-45 or vertical-stop height above its attachment shoulder including the base, in mm; defaults: lock-45 50, vertical-stop 60",
             )
             p.add_argument(
                 "--quantity",
@@ -393,7 +393,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "part":
             count("quantity", args.quantity)
             cells = getattr(args, "cells", None) or (
-                (2, 1) if args.family == "vertical-tile-bracket" else (1, 1)
+                (2, 1) if args.family in ("vertical-tile-bracket", "vertical-stop") else (1, 1)
             )
             if args.family == "tile":
                 design = tile_design(
@@ -408,7 +408,11 @@ def main(argv: list[str] | None = None) -> int:
                         *cells,
                         args.variant,
                         args.length,
-                        args.accessory_height,
+                        getattr(
+                            args,
+                            "accessory_height",
+                            60 if args.family == "vertical-stop" else 50,
+                        ),
                         interface,
                     )
                 )

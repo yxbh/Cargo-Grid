@@ -11,7 +11,13 @@ from build123d import import_step
 from test_export import _project_facts
 
 from cargo_grid import BuildVolume
-from cargo_grid.accessories import VERTICAL_BRACKET_CELLS, Accessory
+from cargo_grid.accessories import (
+    VERTICAL_BRACKET_CELLS,
+    VERTICAL_STOP_CELLS,
+    VERTICAL_STOP_HEIGHTS_MM,
+    Accessory,
+    vertical_stop_print_rotation,
+)
 from cargo_grid.catalogue import accessory_design, catalogue_job
 from cargo_grid.cli import main
 from cargo_grid.export import BambuSettings, Material, export_job, write_3mf
@@ -23,21 +29,35 @@ BAMBU = BambuSettings((Material("Diagnostic PETG", "PETG", "#789784"),), 0.4, 0.
 
 
 @pytest.mark.parametrize(
-    "family,nx,ny,angle",
+    "family,nx,ny,height,angle",
     [
-        *(("vertical-tile-bracket", x, y, 135) for x, y in VERTICAL_BRACKET_CELLS),
-        ("lock-45", 1, 1, -135),
-        ("lock-45", 2, 2, -135),
+        *(("vertical-tile-bracket", x, y, 50, 135) for x, y in VERTICAL_BRACKET_CELLS),
+        *(
+            (
+                "vertical-stop",
+                x,
+                y,
+                height,
+                vertical_stop_print_rotation(Accessory("vertical-stop", nx=x, ny=y, height=height)),
+            )
+            for x, y in VERTICAL_STOP_CELLS
+            for height in VERTICAL_STOP_HEIGHTS_MM
+        ),
+        ("lock-45", 1, 1, 50, -135),
+        ("lock-45", 2, 2, 50, -135),
     ],
 )
-def test_bambu_mesh_has_broad_bed_contact_and_recorded_transform(family, nx, ny, angle, tmp_path):
+def test_bambu_mesh_has_broad_bed_contact_and_recorded_transform(
+    family, nx, ny, height, angle, tmp_path
+):
     from build123d import GeomType, Location
 
-    design = accessory_design(Accessory(family, nx=nx, ny=ny))
+    design = accessory_design(Accessory(family, nx=nx, ny=ny, height=height))
     path = tmp_path / "job.3mf"
     result = write_3mf(Job([design], BuildVolume(350, 320, 325), "part"), path, bambu=BAMBU)
     item = result["plates"][0]["items"][0]
     assert item["size_mm"] == pytest.approx(design.bambu_size)
+    assert ("object_settings" in item) == (family == "vertical-stop")
     transform = item["source_to_project_transform"]
     assert transform["rotation_x_degrees"] == angle and transform["applied_to_mesh"]
     assert len(transform["matrix_3mf"]) == 12
@@ -86,11 +106,12 @@ def test_transformed_catalogue_packing_respects_exclusions_and_quantity(tmp_path
     designs[0].quantity = 2
     designs.append(accessory_design(Accessory("plate")))
     designs.append(accessory_design(Accessory("lock-45")))
+    designs.append(accessory_design(Accessory("vertical-stop", nx=2, ny=1, height=60)))
     build = BuildVolume(250, 210, 115, margin=5, exclusions=(Exclusion(5, 5, 30, 30),))
     result = write_3mf(Job(designs, build, "catalogue"), tmp_path / "packed.3mf", bambu=BAMBU)
     _, plates, volumes = _project_facts(tmp_path / "packed.3mf")
-    assert sum(len(p[2]) for p in plates) == 6
-    assert sum(p["quantity"] for p in result["plates"]) == 6
+    assert sum(len(p[2]) for p in plates) == 7
+    assert sum(p["quantity"] for p in result["plates"]) == 7
     cols = ceil(sqrt(len(plates)))
     for record in result["plates"]:
         rectangles = []
@@ -278,6 +299,11 @@ def test_native_roundtrip_keeps_all_changed_accessories_in_their_project_pose(tm
             for x, y in VERTICAL_BRACKET_CELLS
         ),
         *(accessory_design(Accessory("lock-45", nx=n, ny=n)) for n in (1, 2)),
+        *(
+            accessory_design(Accessory("vertical-stop", nx=x, ny=y, height=height))
+            for x, y in VERTICAL_STOP_CELLS
+            for height in VERTICAL_STOP_HEIGHTS_MM
+        ),
     ]
     source, target = tmp_path / "input.3mf", tmp_path / "native.3mf"
     write_3mf(Job(designs, BuildVolume(250, 210, 115), "catalogue"), source, bambu=BAMBU)
@@ -308,7 +334,7 @@ def test_native_roundtrip_keeps_all_changed_accessories_in_their_project_pose(tm
     assert result.returncode == 0, (tmp_path / "native.log").read_text()
     _, after_plates, after = _project_facts(target)
     assert before_plates == after_plates
-    assert len(before) == len(after) == 5
+    assert len(before) == len(after) == 11
     for a, b in zip(before, after):
         assert a[:-1] == b[:-1]
         assert b[-1] == pytest.approx(a[-1], abs=0.001)
