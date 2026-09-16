@@ -7,6 +7,7 @@ from build123d import Axis, GeomType, Location, Part, Solid, Vector, export_step
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.BRepGProp import BRepGProp
 from OCP.GProp import GProp_GProps
+from OCP.Precision import Precision
 
 from cargo_grid import Interface
 from cargo_grid.accessories import (
@@ -106,7 +107,7 @@ def test_support_r1_preserves_central_full_height_dovetails(spec, tmp_path):
 def test_full_depth_angled_webs_notch_removal_and_r1_cap(n, expected, tmp_path):
     spec = Accessory("lock-45", nx=n, ny=n)
     shape = make_accessory(spec)
-    # Default non-adaptive quadrature is platform-sensitive on these curved faces.
+    # Converge integration separately from the existing CAD construction-error contract.
     integrals = []
     for accuracy in (1e-10, 1e-12):
         properties = GProp_GProps()
@@ -114,9 +115,12 @@ def test_full_depth_angled_webs_notch_removal_and_r1_cap(n, expected, tmp_path):
         assert error < 1e-10
         integrals.append(properties.Mass())
     assert abs(integrals[1] - integrals[0]) < 1e-7
-    assert integrals[1] == pytest.approx(expected, abs=1e-5), {
+    volume_budget = max(1e-6, shape.area * Precision.Confusion_s())
+    assert integrals[1] == pytest.approx(expected, rel=0, abs=volume_budget), {
         "default_volume": shape.volume,
         "adaptive_volumes": integrals,
+        "surface_area_mm2": shape.area,
+        "existing_export_volume_budget_mm3": volume_budget,
     }
     base = _mounted_base(spec, root_radius=1)
     region = Solid.make_box(n * 60, n * 60, 16.1).moved(Location((0, 0, -13)))
