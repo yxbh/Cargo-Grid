@@ -20,12 +20,23 @@ ROOT_FILES = {
     "tools/check_distributions.py",
     "tools/render_docs.py",
     "AGENTS.md",
+    "docs/images/attachments/manifest.json",
 }
 DOCUMENTATION_IMAGES = {
     "docs/images/hero.png",
-    "docs/images/straight-members.png",
-    "docs/images/corners-connectors.png",
     "docs/images/x-attachments.png",
+    *(
+        f"docs/images/attachments/{family}-{number}.png"
+        for family in ("edge-x", "edge-y", "support")
+        for number in range(1, 6)
+    ),
+    *(f"docs/images/attachments/corner-in-v{n}.png" for n in range(1, 5)),
+    *(f"docs/images/attachments/corner-out-v{n}.png" for n in range(1, 7)),
+    *(f"docs/images/attachments/support-end-v{n}.png" for n in range(1, 5)),
+    *(f"docs/images/attachments/support-bit-{n}mm.png" for n in (20, 30, 40, 50)),
+    *(f"docs/images/attachments/plate-{grid}.png" for grid in ("1x1", "1x2", "2x2")),
+    *(f"docs/images/attachments/lock-45-{grid}.png" for grid in ("1x1", "2x2")),
+    *(f"docs/images/attachments/lock-90-{x}x{y}.png" for x in (1, 2, 3) for y in (1, 2)),
 }
 FORBIDDEN_SUFFIXES = {
     ".step",
@@ -164,6 +175,7 @@ def check_sdist(path: Path, expected_version: str) -> None:
             "src/cargo_grid/__main__.py",
             "AGENTS.md",
             "docs/attachments.md",
+            "docs/images/attachments/manifest.json",
             *sorted(DOCUMENTATION_IMAGES),
         ):
             if required not in files:

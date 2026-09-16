@@ -5,9 +5,11 @@ import hashlib
 import json
 import math
 import os
+import re
 import struct
 import subprocess
 from dataclasses import asdict, dataclass
+from html import escape
 from pathlib import Path
 
 from cargo_grid import BuildVolume, Tile, make_tile
@@ -17,19 +19,61 @@ from cargo_grid.catalogue import accessory_variants
 ROOT = Path(__file__).resolve().parents[1]
 BUILD = BuildVolume(350, 320, 325)
 WORKBENCH_REVISION = "120024625ad5c76a5d8bc768556e04fc7eae4023"
+GEOMETRY_REVISION = "964ae082b82de6047397ce3ab4b3d86f42a25b18"
+GEOMETRY_FILES = (
+    "parameters.py",
+    "interfaces.py",
+    "tiles.py",
+    "accessories.py",
+    "catalogue.py",
+    "jobs.py",
+    "layout.py",
+    "packing.py",
+)
 CAMERA = "45:32"
 BACKGROUND = "#f2f1ec"
-IMAGE_NAMES = ("hero.png", "straight-members.png", "corners-connectors.png", "x-attachments.png")
-SHEETS = (
-    ("straight-members.png", "Straight members", ("edge-x", "edge-y", "support"), 5),
-    (
-        "corners-connectors.png",
-        "Corners & rail connectors",
-        ("corner-in", "corner-out", "support-end", "support-bit"),
-        6,
+IMAGE_NAMES = ("hero.png", "x-attachments.png")
+SHEETS = (("x-attachments.png", "X-plug attachments", ("plate", "lock-90", "lock-45"), 4),)
+FAMILIES = {
+    "plate": (
+        "Attachment plates",
+        "A flat surface with X plugs underneath for positioning an attachment on the mat.",
     ),
-    ("x-attachments.png", "X-plug attachments", ("plate", "lock-90", "lock-45"), 4),
-)
+    "lock-90": (
+        "Upright stops",
+        "An upright cargo stop on an X-plug base; the mounting grid varies by size.",
+    ),
+    "lock-45": ("Angled stops", "An angled cargo stop on an X-plug base."),
+    "edge-x": (
+        "Male edge strips",
+        "A straight finishing strip with male tile-facing joins; length follows the cell count.",
+    ),
+    "edge-y": (
+        "Female edge strips",
+        "A straight finishing strip with female tile-facing joins; length follows the cell count.",
+    ),
+    "corner-in": (
+        "Inner corners",
+        "A corner finishing piece in one of four supported joining arrangements.",
+    ),
+    "corner-out": (
+        "Outer corners",
+        "An outer-edge finishing piece in one of six supported arrangements.",
+    ),
+    "support": (
+        "Support rails",
+        "A physical bearing rail with separate end-to-end joins, not a slicer support or X-plug attachment.",
+    ),
+    "support-end": (
+        "Rail ends",
+        "A ramped rail-end piece; X, Xs, Y and Ys select the supported end arrangements.",
+    ),
+    "support-bit": (
+        "Rail connectors",
+        "A short rail connector with a projecting join; the label gives its specified length.",
+    ),
+}
+THUMBNAIL_SIZE = (480, 300)
 
 
 @dataclass(frozen=True)
@@ -107,6 +151,10 @@ def png_size(path: Path) -> tuple[int, int]:
     return struct.unpack(">II", header[16:24])
 
 
+def thumbnail_tag(entry: dict) -> str:
+    return f'<a href="{entry["file"]}"><img src="{entry["file"]}" alt="{escape(entry["alt"], quote=True)}" width="180" height="113"></a>'
+
+
 def verify_assets() -> dict:
     paths = [ROOT / "docs/images" / name for name in IMAGE_NAMES]
     report = {}
@@ -123,9 +171,46 @@ def verify_assets() -> dict:
     if sum(p.stat().st_size for p in paths) > 4_000_000:
         raise ValueError("Documentation composites exceed the 4 MB budget")
     table = (ROOT / "docs/attachments.md").read_text()
-    for item in inventory():
-        if f"`{item.key}`" not in table:
-            raise ValueError(f"Inventory omits {item.key}")
+    manifest = json.loads((ROOT / "docs/images/attachments/manifest.json").read_text())
+    items = inventory()
+    entries = manifest["items"]
+    if len(entries) != len(items) or {entry["key"] for entry in entries} != {
+        item.key for item in items
+    }:
+        raise ValueError("Thumbnail manifest does not match the complete API inventory")
+    actual_files = {p.name for p in (ROOT / "docs/images/attachments").iterdir()}
+    if actual_files != {"manifest.json", *(f"{item.key}.png" for item in items)}:
+        raise ValueError("Unexpected or missing attachment thumbnail files")
+    for item in items:
+        entry = next(entry for entry in entries if entry["key"] == item.key)
+        path = ROOT / "docs" / entry["file"]
+        if entry["file"] != f"images/attachments/{item.key}.png" or entry[
+            "parameters"
+        ] != json.loads(json.dumps(asdict(item.spec))):
+            raise ValueError(f"Thumbnail identity mismatch: {item.key}")
+        if png_size(path) != THUMBNAIL_SIZE or path.stat().st_size > 70_000:
+            raise ValueError(f"Thumbnail dimensions/size out of budget: {item.key}")
+        if hashlib.sha256(path.read_bytes()).hexdigest() != entry["sha256"]:
+            raise ValueError(f"Thumbnail hash mismatch: {item.key}")
+        image = thumbnail_tag(entry)
+        rows = [row for row in table.splitlines() if image in row]
+        if (
+            len(rows) != 1
+            or f"<code>{entry['public_name']}</code>" not in rows[0].replace("<wbr>", "")
+            or f"<code>{item.key}</code>" not in rows[0]
+        ):
+            raise ValueError(f"Thumbnail/name/alt mapping is not one-to-one: {item.key}")
+        report[f"attachments/{item.key}.png"] = {
+            "dimensions": list(THUMBNAIL_SIZE),
+            "bytes": path.stat().st_size,
+            "sha256": entry["sha256"],
+        }
+    if len(re.findall(r'<img src="images/attachments/[^"]+"', table)) != len(items):
+        raise ValueError("Expected exactly one visible thumbnail per inventory row")
+    if len({entry["sha256"] for entry in entries}) != len(items):
+        raise ValueError("Attachment thumbnails must be distinct, not repeated generic pictures")
+    if sum(asset["bytes"] for asset in report.values()) > 2_000_000:
+        raise ValueError("Documentation images exceed the 2 MB budget")
     return report
 
 
@@ -144,18 +229,11 @@ def render_items(workbench: Path, work: Path, only: set[str] | None) -> dict:
     ).strip()
     if revision != WORKBENCH_REVISION:
         raise ValueError(f"Use the documented workbench revision {WORKBENCH_REVISION}")
-    subprocess.run(
-        ["git", "diff", "--exit-code", "HEAD", "--", "src/cargo_grid"],
-        cwd=ROOT,
-        check=True,
-        stdout=subprocess.DEVNULL,
-    )
+    verify_geometry_source()
     source_tree = subprocess.check_output(
-        ["git", "rev-parse", "HEAD:src/cargo_grid"], cwd=ROOT, text=True
+        ["git", "rev-parse", f"{GEOMETRY_REVISION}:src/cargo_grid"], cwd=ROOT, text=True
     ).strip()
-    source_commit = subprocess.check_output(
-        ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True
-    ).strip()
+    source_commit = GEOMETRY_REVISION
     recipe_hash = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
     python = workbench / ".venv" / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
     tools = workbench / ".agents/skills/cad/scripts"
@@ -268,6 +346,103 @@ def render_items(workbench: Path, work: Path, only: set[str] | None) -> dict:
     }
 
 
+def verify_geometry_source() -> None:
+    for name in GEOMETRY_FILES:
+        relative = f"src/cargo_grid/{name}"
+        committed = subprocess.check_output(
+            ["git", "show", f"{GEOMETRY_REVISION}:{relative}"], cwd=ROOT
+        )
+        if committed != (ROOT / relative).read_bytes():
+            raise ValueError(f"Documentation geometry differs from {GEOMETRY_REVISION}: {relative}")
+
+
+def thumbnail_entries(work: Path, provenance: dict) -> list[dict]:
+    from PIL import Image
+
+    if (
+        provenance["generator_commit"] != GEOMETRY_REVISION
+        or provenance["workbench_commit"] != WORKBENCH_REVISION
+    ):
+        raise ValueError("Cached renders have unexpected geometry/workbench provenance")
+    target = ROOT / "docs/images/attachments"
+    target.mkdir(parents=True, exist_ok=True)
+    entries = []
+    for family in FAMILIES:
+        items = [item for item in inventory() if item.spec.family == family]
+        facts = {
+            item.key: json.loads((work / "facts" / f"{item.key}.json").read_text())
+            for item in items
+        }
+        spans = [projected_spans(facts[item.key]["size_mm"]) for item in items]
+        scale = 0.88 * min(
+            THUMBNAIL_SIZE[0] / max(s[0] for s in spans),
+            THUMBNAIL_SIZE[1] / max(s[1] for s in spans),
+        )
+        for item in items:
+            fact = facts[item.key]
+            if (
+                not fact["valid"]
+                or fact["solids"] != 1
+                or fact["cache"]["source_tree"] != provenance["generator_tree"]
+            ):
+                raise ValueError(f"Unverified render geometry: {item.key}")
+            source = work / "renders" / f"{item.key}.png"
+            inspection = json.loads((work / "logs" / f"{item.key}-inspect.json").read_text())
+            step = work / "steps" / f"{item.key}.step"
+            step_sha = hashlib.sha256(step.read_bytes()).hexdigest()
+            if (
+                not inspection["ok"]
+                or inspection["errors"]
+                or inspection["tokens"][0]["stepHash"] != step_sha
+            ):
+                raise ValueError(f"Cached STEP inspection no longer matches: {item.key}")
+            with Image.open(source) as raw:
+                raw = raw.convert("RGB")
+                sx, sy = projected_spans(fact["size_mm"])
+                units_per_pixel = 1.03 * max(sy, sx * raw.height / raw.width) / raw.height
+                factor = scale * units_per_pixel
+                resized = raw.resize(
+                    (round(raw.width * factor), round(raw.height * factor)),
+                    Image.Resampling.LANCZOS,
+                )
+                image = Image.new("RGB", THUMBNAIL_SIZE, raw.getpixel((0, 0)))
+                image.paste(
+                    resized,
+                    ((image.width - resized.width) // 2, (image.height - resized.height) // 2),
+                )
+            path = target / f"{item.key}.png"
+            image.save(path, optimize=True)
+            entries.append(
+                {
+                    "key": item.key,
+                    "family": family,
+                    "public_name": fact["public_name"],
+                    "parameters": asdict(item.spec),
+                    "size_mm": fact["size_mm"],
+                    "file": path.relative_to(ROOT / "docs").as_posix(),
+                    "alt": f"{item.title}, {item.detail}, original joints: isometric STEP-derived render",
+                    "description": FAMILIES[family][1],
+                    "dimensions": list(THUMBNAIL_SIZE),
+                    "pixels_per_mm": scale,
+                    "bytes": path.stat().st_size,
+                    "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+                    "source_render_sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
+                    "source_step_sha256": step_sha,
+                }
+            )
+    manifest = {
+        "geometry_commit": GEOMETRY_REVISION,
+        "workbench_commit": WORKBENCH_REVISION,
+        "catalogue_build_mm": {"width_x": 350, "depth_y": 320, "height_z": 325},
+        "camera": CAMERA,
+        "scale": "Common physical scale within each family; families differ.",
+        "source_render_recipe_sha256": provenance["recipe_sha256"],
+        "items": entries,
+    }
+    (target / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
+    return entries
+
+
 def composite(
     work: Path, items: list[Item], filename: str, title: str, columns: int, hero=False
 ) -> dict:
@@ -331,28 +506,38 @@ def composite(
 
 
 def compose_all(work: Path, provenance: dict) -> None:
+    verify_geometry_source()
     items = inventory()
     sheets = [composite(work, hero_items(), "hero.png", "", 2, hero=True)]
     for filename, title, families, columns in SHEETS:
         selected = [item for family in families for item in items if item.spec.family == family]
         sheets.append(composite(work, selected, filename, title, columns))
-    gallery = {key: sheet["file"] for sheet in sheets for key in sheet["items"]}
+    thumbnails = thumbnail_entries(work, provenance)
     lines = [
         "# Complete attachment inventory",
         "",
         "This gallery covers every attachment variant returned by `accessory_variants(BuildVolume(350, 320, 325))` with original joints and default accessory parameters. It contains 44 variants, all rendered from the generator's actual STEP geometry. Other build envelopes and explicit parametric lengths/heights can produce additional variants; this is not an exhaustive list of an unbounded parameter space.",
         "",
-        "All views use the same 45-degree azimuth / 32-degree elevation. Each sheet uses a common physical scale; scales differ between sheets for legibility. Colors are illustrative, not material/profile assignments. Open an image at full size for detail.",
+        "Every row has its own STEP-derived thumbnail, directly beside the exact public API name. Click any thumbnail to open its full-size image; on narrow screens, scroll the table horizontally for all columns. Images share a 45-degree azimuth / 32-degree elevation and neutral background, with a common physical scale within each family. Families use different scales for legibility; colors are illustrative, not material assignments.",
         "",
-        "| Inventory key | Public API shape label | Geometry parameters | Sheet |",
-        "| --- | --- | --- | --- |",
+        "[Back to the beginner guide](../README.md) / [Thumbnail dimensions, hashes and source provenance](images/attachments/manifest.json)",
+        "",
     ]
-    for item in items:
-        facts = json.loads((work / "facts" / f"{item.key}.json").read_text())
-        dims = " x ".join(f"{v:.1f}" for v in facts["size_mm"])
-        lines.append(
-            f"| `{item.key}` | `{facts['public_name']}` | {item.detail}; bounds {dims} mm | [View]({Path(gallery[item.key]).relative_to('docs').as_posix()}) |"
-        )
+    for family, (heading, _) in FAMILIES.items():
+        entries = [entry for entry in thumbnails if entry["family"] == family]
+        lines += [
+            f"## {heading}",
+            "",
+            '<table><thead><tr><th width="206">Thumbnail</th><th>Name</th><th>Size / variant</th><th>What it does</th></tr></thead><tbody>',
+        ]
+        for entry in entries:
+            item = next(item for item in items if item.key == entry["key"])
+            dims = " x ".join(f"{v:.1f}" for v in entry["size_mm"])
+            public_name = escape(entry["public_name"]).replace("_", "_<wbr>")
+            lines.append(
+                f'<tr><td width="206">{thumbnail_tag(entry)}</td><td><code>{public_name}</code><br>Key: <code>{item.key}</code></td><td>{escape(item.detail)}<br>Bounds: {dims} mm</td><td>{escape(entry["description"])}</td></tr>'
+            )
+        lines += ["</tbody></table>", ""]
     lines += [
         "",
         "## Reproduce the images",
@@ -363,7 +548,7 @@ def compose_all(work: Path, provenance: dict) -> None:
         "PYTHONPATH=src <workbench-python> tools/render_docs.py --workbench <workbench-checkout>",
         "```",
         "",
-        "Use the workbench's Python interpreter with Pillow already available; paths are supplied locally, not committed. In PowerShell, set `$env:PYTHONPATH='src'` before invoking that interpreter. The script invokes the workbench STEP, inspection and render launchers from this project, then composes only the four intentional PNG assets. Intermediate generators, STEP files, raw renders and detailed evidence stay under ignored outputs. Inventory, camera and layout are deterministic; exact raster pixels can depend on the graphics/Pillow environment.",
+        "Use the workbench's Python interpreter with Pillow already available; paths are supplied locally, not committed. In PowerShell, set `$env:PYTHONPATH='src'` before invoking that interpreter. The script checks geometry modules against the recorded commit, invokes STEP/inspection/render tools, then creates two overview PNGs and 44 family-scaled thumbnails. `--compose-only` reuses verified local STEP-derived renders; `--check` verifies the committed files and their one-to-one inventory mapping without Pillow. Intermediate STEP files and raw renders remain ignored. Layout is deterministic; raster bytes can depend on graphics/Pillow versions.",
         "",
         f"Generator source revision: `{provenance['generator_commit']}`. Generator tree: `{provenance['generator_tree']}`. Workbench revision: `{provenance['workbench_commit']}`.",
         "",

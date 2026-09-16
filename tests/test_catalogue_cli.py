@@ -43,5 +43,18 @@ def test_accessory_families_finite_and_complete():
 )
 def test_cli_rejects_incomplete_settings(tmp_path, extra):
     with pytest.raises(SystemExit) as caught:
-        main(["part", "--build", "150", "150", "50", "--output", str(tmp_path / "job"), *extra])
+        main(
+            [
+                "part",
+                "--build-width-mm",
+                "150",
+                "--build-depth-mm",
+                "150",
+                "--build-height-mm",
+                "50",
+                "--output",
+                str(tmp_path / "job"),
+                *extra,
+            ]
+        )
     assert caught.value.code == 2

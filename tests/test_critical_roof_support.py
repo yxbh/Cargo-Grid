@@ -121,9 +121,11 @@ def test_coverage_without_support_is_not_silently_ignored(tmp_path):
             main(
                 [
                     "part",
-                    "--build",
+                    "--build-width-mm",
                     "150",
+                    "--build-depth-mm",
                     "150",
+                    "--build-height-mm",
                     "50",
                     "--output",
                     str(tmp_path / coverage),
@@ -138,9 +140,11 @@ def test_coverage_without_support_is_not_silently_ignored(tmp_path):
 def test_cli_implicit_critical_and_explicit_full(tmp_path, nozzle_map):
     base = [
         "part",
-        "--build",
+        "--build-width-mm",
         "150",
+        "--build-depth-mm",
         "150",
+        "--build-height-mm",
         "50",
         "--no-stl",
         "--bambu",
@@ -181,7 +185,19 @@ def test_cli_implicit_critical_and_explicit_full(tmp_path, nozzle_map):
         )
     assert (
         parser()
-        .parse_args(["part", "--build", "150", "150", "50", "--output", "ignored"])
+        .parse_args(
+            [
+                "part",
+                "--build-width-mm",
+                "150",
+                "--build-depth-mm",
+                "150",
+                "--build-height-mm",
+                "50",
+                "--output",
+                "ignored",
+            ]
+        )
         .roof_support
         is False
     )

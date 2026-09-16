@@ -102,9 +102,11 @@ def test_cli_defaults_encode_contact_intent_and_preserve_markers(tmp_path):
         main(
             [
                 "part",
-                "--build",
+                "--build-width-mm",
                 "150",
+                "--build-depth-mm",
                 "150",
+                "--build-height-mm",
                 "50",
                 "--no-stl",
                 "--bambu",

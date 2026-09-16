@@ -40,4 +40,4 @@ jobs:
           cd .local
           env -u PYTHONPATH wheel-smoke/bin/python -m cargo_grid --version
           env -u PYTHONPATH wheel-smoke/bin/cargo-grid --help
-          env -u PYTHONPATH wheel-smoke/bin/cargo-grid part --build 150 150 50 --no-stl --output wheel-job
+          env -u PYTHONPATH wheel-smoke/bin/cargo-grid part --build-width-mm 150 --build-depth-mm 150 --build-height-mm 50 --no-stl --output wheel-job

@@ -301,7 +301,20 @@ def test_non_tile_job_is_rejected_before_creating_output(bambu, tmp_path):
 def test_incomplete_cli_support_or_scope_fails_early(tmp_path, extra):
     output = tmp_path / "new"
     with pytest.raises(SystemExit) as caught:
-        main(["part", "--build", "150", "150", "50", "--output", str(output), *extra])
+        main(
+            [
+                "part",
+                "--build-width-mm",
+                "150",
+                "--build-depth-mm",
+                "150",
+                "--build-height-mm",
+                "50",
+                "--output",
+                str(output),
+                *extra,
+            ]
+        )
     assert caught.value.code == 2 and not output.exists()
 
 

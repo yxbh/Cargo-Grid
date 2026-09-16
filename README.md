@@ -25,12 +25,12 @@ uv sync
 ### 3. Generate a real tile
 
 ```sh
-uv run cargo-grid part --build 150 150 50 --cells 2 1 --output outputs/first-tile
+uv run cargo-grid part --build-width-mm 150 --build-depth-mm 150 --build-height-mm 50 --cells 2 1 --output outputs/first-tile
 ```
 
 That creates one **2x1 tile**, nominally **126x66x13 mm**, using original roofed joints and no optional holes. Look in `outputs/first-tile`: the named STEP is your primary CAD file, the STL is a checked mesh, `job.3mf` carries geometry, and `manifest.json` explains what was generated.
 
-The `--build` values are an example usable print envelope, not an automatically detected printer. Replace them with your own limits. Open the result in a CAD viewer or slicer and choose actual printer/material settings before printing. Use a new output directory for each job; existing jobs are not overwritten.
+The three required build dimensions describe the printer, not the tile: `--build-width-mm` is X/left-right, `--build-depth-mm` is Y/front-back, and `--build-height-mm` is Z/maximum print height. All are millimeters with no assumed defaults. Replace the example values with your printer's limits, then inspect the result in your slicer. Use a new output directory for each job; existing jobs are not overwritten.
 
 ## Start simple. Add only what you need.
 
@@ -39,13 +39,13 @@ The `--build` values are an example usable print envelope, not an automatically 
 **Open up the pattern.** Optional round holes can cover only the interior or extend across retained edges and corners. The illustrated 2x1 full pattern has 13 additional 10 mm holes:
 
 ```sh
-uv run cargo-grid part --build 150 150 50 --cells 2 1 --holes --hole-diameter 10 --hole-scope full --output outputs/open-pattern
+uv run cargo-grid part --build-width-mm 150 --build-depth-mm 150 --build-height-mm 50 --cells 2 1 --holes --hole-diameter 10 --hole-scope full --output outputs/open-pattern
 ```
 
 **Fit a rectangle exactly.** Keep full-pitch cells in the middle and fill leftover dimensions with integrated edge/corner material—not stretched cells:
 
 ```sh
-uv run cargo-grid layout --build 150 150 50 --footprint 320 230 --filler balanced --output outputs/exact-floor
+uv run cargo-grid layout --build-width-mm 150 --build-depth-mm 150 --build-height-mm 50 --footprint 320 230 --filler balanced --output outputs/exact-floor
 ```
 
 **Make two, not a bigger one.** Add `--quantity 2` to a 2x1 part job. Each unique design gets one STEP/STL; quantities and placements are retained in the manifest and 3MF.
@@ -56,40 +56,67 @@ Use plates and upright stops to add attachment surfaces, edge/corner pieces to f
 
 ![All eleven X-plug attachment variants: three plates, six right-angle stops and two angled stops, each individually labeled.](docs/images/x-attachments.png)
 
-The complete pictured library contains **44 accessory variants** for the documented **350x320x325 mm catalogue envelope**, original joints and default accessory parameters. Every variant is rendered and listed in the [readable attachment inventory](docs/attachments.md). Other build envelopes, lengths and heights can produce additional parametric variants; this is not an exhaustive claim about an unbounded parameter space.
+The complete library contains **44 accessory variants** for the documented **350x320x325 mm catalogue envelope**, original joints and default accessory parameters. **[Browse all 44 parts, each with its own thumbnail beside its name, dimensions and purpose](docs/attachments.md).** The inventory is grouped by family: plates, upright/angled stops, edge strips, inner/outer corners, support rails, rail ends and connectors.
 
-<details>
-<summary><strong>See the other 33 variants: straight members, corners and rail connectors</strong></summary>
-
-![All fifteen straight members: five edge-x lengths, five edge-y lengths and five support-rail lengths, shown at a common scale.](docs/images/straight-members.png)
-
-![All eighteen corner and rail-connector variants: four inner corners, six outer corners, four support ends and four support-bit lengths.](docs/images/corners-connectors.png)
-
-</details>
-
-*All sheets use the same isometric camera and a common physical scale within each sheet. Scales differ between sheets to keep small connectors and long members legible. Open an image at full size or use the text inventory; colors are illustrative, not filament assignments.*
+*Every inventory row has a unique actual STEP-derived render and matching alt text. Camera and background are consistent; physical scale is shared within a family, not between families. The overview above is a quick introduction, not a substitute for the individual pictures. Colors are illustrative. Other build envelopes, lengths and heights can produce additional parametric variants beyond this bounded catalogue.*
 
 Generate the whole bounded catalogue in one command:
 
 ```sh
-uv run cargo-grid catalogue --build 350 320 325 --output outputs/catalogue
+uv run cargo-grid catalogue --build-width-mm 350 --build-depth-mm 320 --build-height-mm 325 --output outputs/catalogue
 ```
 
 It includes every ordered tile size that fits and the supported accessory variants. Oversized accessories are listed as omitted rather than shrunk. You can also request one piece, for example:
 
 ```sh
-uv run cargo-grid part --build 150 150 80 --family plate --cells 1 1 --output outputs/x-plate
+uv run cargo-grid part --build-width-mm 150 --build-depth-mm 150 --build-height-mm 80 --family plate --cells 1 1 --output outputs/x-plate
 ```
 
 ## Support the roofs without changing the mat
 
-Optional roof supports target the receiving edges—**west and south**—rather than becoming permanent mat geometry. A 2x1 tile has three female roofs and six critical support-selection pads. The slicer creates the actual supports; their contact can extend beyond the nominal pads.
+### The problem: a small ceiling over each receiving joint
 
-For the intentional PETG-base/PLA-interface workflow, the generator preserves zero top-contact distance, synchronized support/model layers, dense interface spacing and at least two interface layers. The scoped 0.40 mm side-clearance safeguard avoids measured unintended side contact. These are requests for a selected dissimilar-material pair, **not a chemical-compatibility guarantee**. Reusing zero contact with same-material support or an unverified substitution may fuse the parts.
+A **roof** is the thin ceiling above a female joining pocket on the tile's west or south edge. It has open space below it, so its first printed layer needs a temporary foundation to avoid sagging or curling. A 2x1 tile has three such roofs. Cargo-Grid marks those areas for removable support without changing the mat itself.
 
-On a full-hole 2x1 tile, the three female-edge round cutouts at `(0,30)`, `(30,0)` and `(90,0)` intentionally contain removable support during printing. Clear them from the underside afterward; the CAD holes are not permanently filled. Protected X openings remain clear in the checked paths.
+Use this workflow when printing a **PETG tile with a separate PLA interface on a two-material, two-nozzle setup**. The **interface** is the dense top layer of support that touches the roof; the support below it stays PETG. PLA and PETG are different polymers, which makes a touching, zero-air-gap interface a useful separation strategy for the intended pair. This is not a guarantee for every product or additive: verify your actual spools, and never reuse zero gap with same-material support or an unverified substitute that could fuse.
 
-Every generated Bambu plate defaults to automatic **Convenience Mode** (`Auto For Match`) without a requested physical nozzle map. Foot expansion stays automatic and build-plate-only stays off. Contact correction has scheduled-toolpath evidence; **corrected physical print quality and release still need applicable observations**.
+### Generate the two-tile support job
+
+This copy-paste example requests two full-hole 2x1 tiles and an H2D-sized build envelope. Change the three build dimensions and the nozzle/layer values if your setup differs; the example does not detect or calibrate hardware.
+
+```sh
+uv run cargo-grid part --build-width-mm 350 --build-depth-mm 320 --build-height-mm 325 --margin 37 --cells 2 1 --quantity 2 --holes --hole-diameter 10 --hole-scope full --bambu --material "Model PETG" PETG "#778877" --material "Interface PLA" PLA "#dddddd" --nozzle 0.8 --layer-height 0.32 --roof-support --output outputs/roof-job
+```
+
+Open **`outputs/roof-job/job.3mf` as a complete project** in Bambu Studio, not as imported geometry. It is an unsliced diagnostic project with two plates, not a ready-to-print factory profile. Select the actual printer, process, bed and PETG/PLA profiles. The same folder also contains the tile's STEP/STL and `manifest.json`.
+
+### What Cargo-Grid sets for this workflow
+
+Support is enabled under the marked west/south roofs, with PETG in logical slot 1 for the model/support base and PLA in slot 2 for the interface. Six guarded settings are preserved when process profiles change:
+
+| Setting | What it means |
+| --- | --- |
+| Top contact distance: **0 mm** | No deliberate empty air layer between the PLA interface and roof bottom. |
+| Independent support layer height: **off** | Support and model follow the same layer schedule. |
+| Top interface spacing: **0 mm** | Request a dense supporting surface, not sparse lines. |
+| Top interface layers: **2 by default** | Keep at least two dense PLA layers below each roof. |
+| On build plate only: **off** | Do not discard needed support merely because of that filter. |
+| Support/object XY distance: **0.40 mm** | Keep lateral clearance from pocket walls while the interface touches the roof vertically. |
+
+Every plate uses automatic **Convenience Mode** (`Auto For Match`); no physical nozzle assignment is locked. Initial support-foot expansion remains automatic. Cargo-Grid does not alter cooling, speeds, bridge thresholds or prime/flush behavior for this contact request.
+
+### Check the preview before printing
+
+1. Confirm the active printer/nozzles, PETG model/base and PLA interface assignments. Slice the project; an enabled Support checkbox alone is not proof that supports were generated.
+2. Inspect each west/south pocket in layer view or from below. The final PLA interface surface must directly meet the **bottom** of the first roof layer, with no empty layer. Their nozzle Z values need not match: a layer has thickness. At the checked 0.32 mm schedule, interface top and roof bottom meet at Z=10.32 while the first roof is extruded at Z=10.64.
+3. Confirm the protected X-shaped openings are clear and all three roofs retain support on both sides of their round cutout. On this full-hole 2x1 job, the round edge holes at **(0,30), (30,0) and (90,0) are intentionally not open during printing**: they contain removable support. Do not confuse them with blocked X openings or permanent CAD infill.
+4. Check for unwanted support touching pocket side walls, an out-of-bounds prime tower or new warnings. Inspect both plates and recheck after any profile/material change. Do not start a print with missing contacts or an unexplained material assignment.
+
+### After printing
+
+Let the part cool according to the material/bed guidance. Reach the support from the open underside and corresponding female edge, remove it, and clear the three temporary support-filled round cutouts before assembly. Check for remaining PLA, damaged roof lips, local curl and excessive joining force. Removal access does not prove easy or damage-free separation.
+
+The settings have geometry and headless toolpath evidence; **corrected physical roof finish, release force, long-term fit and strength are not yet verified**. Record the actual nozzle, layer height, materials and observations rather than assuming one trial validates every profile. Advanced contact, coverage and stacking options follow below.
 
 ## Advanced reference
 
@@ -108,7 +135,9 @@ uv run cargo-grid compare-reference --help
 
 `part` creates one design with a quantity; `layout` creates an exact rectangular assembly; `catalogue` enumerates the bounded library; `compare-reference` performs an explicit local comparison against a lawful compatible reference archive. No reference is downloaded or uploaded by the generator.
 
-All dimensions are millimeters. `--margin`, `--reserve` and repeatable `--exclude X Y WIDTH DEPTH` constrain the usable envelope. They do not know every printer's purge tower, brim, toolhead reach or sequential-print keep-outs. Inspect those in your selected slicer.
+`--build-width-mm`, `--build-depth-mm` and `--build-height-mm` are all required positive finite dimensions in millimeters: X/left-right, Y/front-back and Z/maximum print height. `--height` is different: it changes the tile model height. The manifest retains its existing `build.x`, `build.y` and `build.z` fields in millimeters, corresponding to the three named CLI options.
+
+`--margin MM` insets each X/Y side; `--reserve X_MM Y_MM Z_MM` withholds additional space at the positive X/Y edges and top Z. Repeatable `--exclude X_MM Y_MM WIDTH_MM DEPTH_MM` removes a rectangular plate area by its lower-left X/Y and width/depth. These inputs do not know every printer's prime tower, brim, toolhead reach or sequential-print keep-outs; inspect those in your slicer.
 
 `--filler balanced`, `positive` and `negative` control leftover layout material. Assembly frames describe the floor arrangement; print placement is separate. `--part-gap` controls catalogue packing separation. Native jobs are limited to 36 plates; an over-capacity job fails before export.
 
@@ -134,13 +163,9 @@ Read the [geometry contract](docs/geometry.md) before changing interfaces or val
 <details>
 <summary><strong>Explicit roof-support and identical-tile stack workflows</strong></summary>
 
-Roof support is off by default and limited to original-style tile `part`/`layout` jobs. `--roof-coverage critical` is the enabled default; `full` requests whole-roof coverage. At reference dimensions, selection volumes span Z=9.2 to 11.2 around the Z=10.2 roof to cover multiple layer schedules. The actual contact still needs checking after profile changes.
+Roof support is off by default and limited to original-style tile `part`/`layout` jobs. The [beginner workflow](#support-the-roofs-without-changing-the-mat) provides the complete command and preview/removal checks. `--roof-coverage critical` is the enabled default; `full` requests whole-roof coverage. At reference dimensions, selection volumes span Z=9.2 to 11.2 around the Z=10.2 roof to cover multiple layer schedules.
 
-```sh
-uv run cargo-grid part --build 350 320 325 --margin 37 --cells 2 1 --quantity 2 --holes --hole-diameter 10 --hole-scope full --bambu --material "Model PETG" PETG "#778877" --material "Interface PLA" PLA "#dddddd" --nozzle 0.8 --layer-height 0.32 --roof-support --output outputs/roof-job
-```
-
-This is an H2D-sized diagnostic example, not an embedded factory profile. Select the real printer, bed, materials and process in the slicer. Logical PETG model/base slot 1 and PLA interface slot 2 remain explicit. `--roof-top-gap` defaults to 0 for this intentional workflow; a positive value selects gapped contact. `--roof-interface-layers` defaults to 2 and `--roof-interface-spacing` to 0; zero contact requires a dense interface and at least two layers.
+`--roof-top-gap` defaults to 0 for the intentional PETG/PLA workflow; a positive value selects gapped contact. `--roof-interface-layers` defaults to 2 and `--roof-interface-spacing` to 0; zero contact requires a dense interface and at least two layers.
 
 The zero-contact workflow marks all five contact invariants plus its scoped 0.40 mm XY safeguard against profile resets. It does not change model geometry, masks, prime/flush behavior, thresholds, bridge detection, cooling or speeds. Positive-gap and general support behavior remain separate.
 
@@ -149,7 +174,7 @@ Convenience Mode is `Auto For Match`; Filament-Saving Mode is `Auto For Flush`; 
 Stacks use explicit sacrificial base and lower/upper release volumes between repeated identical tiles:
 
 ```sh
-uv run cargo-grid part --build 150 150 70 --cells 1 1 --quantity 4 --bambu --material "Model PETG" PETG "#778877" --material "Release PLA" PLA "#dddddd" --nozzle 0.4 --layer-height 0.2 --stack-count 2 --stack-gap 1 --interface-thickness 0.2 --material-roles 1 1 2 --output outputs/stack-job
+uv run cargo-grid part --build-width-mm 150 --build-depth-mm 150 --build-height-mm 70 --cells 1 1 --quantity 4 --bambu --material "Model PETG" PETG "#778877" --material "Release PLA" PLA "#dddddd" --nozzle 0.4 --layer-height 0.2 --stack-count 2 --stack-gap 1 --interface-thickness 0.2 --material-roles 1 1 2 --output outputs/stack-job
 ```
 
 `--stack-count auto` computes a bound from usable height; partial quantities are retained. **Roof supports cannot be combined with stacks.** Mixed catalogue stacking and catalogue/accessory roof support remain unsupported. Separation geometry is not a guarantee of successful physical detachment.

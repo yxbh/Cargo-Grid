@@ -17,10 +17,34 @@ from cargo_grid.roof_support import RoofSupportSettings
 from cargo_grid.stacking import StackSettings
 
 
+def _positive_mm(value: str) -> float:
+    try:
+        millimeters = float(value)
+        positive("dimension", millimeters)
+    except ValueError as error:
+        raise argparse.ArgumentTypeError(
+            "enter a finite number greater than 0, in millimeters"
+        ) from error
+    return millimeters
+
+
+class _ArgumentParser(argparse.ArgumentParser):
+    def parse_known_args(self, args=None, namespace=None):
+        arguments = list(sys.argv[1:] if args is None else args)
+        removed_option = "--" + "build"
+        if any(arg == removed_option or arg.startswith(removed_option + "=") for arg in arguments):
+            self.error(
+                f"unrecognized option {removed_option}; specify all three dimensions with "
+                "--build-width-mm MM --build-depth-mm MM --build-height-mm MM"
+            )
+        return super().parse_known_args(arguments, namespace)
+
+
 def parser() -> argparse.ArgumentParser:
-    root = argparse.ArgumentParser(
+    root = _ArgumentParser(
         description="Parametric cargo mats: STEP-first geometry and unsliced print-job exports.",
         epilog="Original roofed joints; optional holes and roof supports are off by default. No slicing or printer control.",
+        allow_abbrev=False,
     )
     root.add_argument("--version", action="version", version=f"cargo-grid {__version__}")
     commands = root.add_subparsers(dest="command", required=True)
@@ -35,23 +59,62 @@ def parser() -> argparse.ArgumentParser:
             help=descriptions[command],
             description=descriptions[command],
             formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+            allow_abbrev=False,
         )
-        p.add_argument("--build", type=float, nargs=3, required=True, metavar=("X", "Y", "Z"))
-        p.add_argument("--margin", type=float, default=0)
+        for axis, meaning in (
+            ("width", "X: build-plate left-right"),
+            ("depth", "Y: build-plate front-back"),
+            ("height", "Z: maximum print height"),
+        ):
+            p.add_argument(
+                f"--build-{axis}-mm",
+                type=_positive_mm,
+                required=True,
+                default=argparse.SUPPRESS,
+                metavar="MM",
+                help=f"required build {axis} in millimeters ({meaning}); no default",
+            )
+        p.add_argument(
+            "--margin",
+            type=float,
+            default=0,
+            metavar="MM",
+            help="inset on each X/Y side of the build plate, in mm",
+        )
         p.add_argument(
             "--part-gap", type=float, default=2, help="catalogue packing separation in mm"
         )
-        p.add_argument("--reserve", type=float, nargs=3, default=(0, 0, 0), metavar=("X", "Y", "Z"))
+        p.add_argument(
+            "--reserve",
+            type=float,
+            nargs=3,
+            default=(0, 0, 0),
+            metavar=("X_MM", "Y_MM", "Z_MM"),
+            help="additional space withheld at positive X, positive Y and top Z, in mm",
+        )
         p.add_argument(
             "--exclude",
             type=float,
             nargs=4,
             action="append",
             default=[],
-            metavar=("X", "Y", "WIDTH", "DEPTH"),
+            metavar=("X_MM", "Y_MM", "WIDTH_MM", "DEPTH_MM"),
+            help="exclude a plate rectangle: lower-left X/Y then width/depth, all in mm; repeat as needed",
         )
-        p.add_argument("--pitch", type=float, default=60)
-        p.add_argument("--height", type=float, default=13)
+        p.add_argument(
+            "--pitch",
+            type=float,
+            default=60,
+            metavar="MM",
+            help="grid spacing in mm; changing it changes interface assumptions",
+        )
+        p.add_argument(
+            "--height",
+            type=float,
+            default=13,
+            metavar="MM",
+            help="tile model height in mm, not the printer's maximum print height",
+        )
         p.add_argument(
             "--joint-style",
             choices=("original", "full-height"),
@@ -82,7 +145,12 @@ def parser() -> argparse.ArgumentParser:
             "--bambu", action="store_true", help="unsliced project, not calibrated print settings"
         )
         p.add_argument(
-            "--material", action="append", nargs=3, default=[], metavar=("LABEL", "TYPE", "#RRGGBB")
+            "--material",
+            action="append",
+            nargs=3,
+            default=[],
+            metavar=("LABEL", "TYPE", "#RRGGBB"),
+            help="declare a numbered filament slot in order: display label, material type and color; repeat per material",
         )
         p.add_argument("--nozzle", type=float, help="explicit diagnostic project setting, mm")
         p.add_argument("--layer-height", type=float, help="explicit diagnostic project setting, mm")
@@ -126,13 +194,24 @@ def parser() -> argparse.ArgumentParser:
         p.add_argument(
             "--stack-count", help="maximum identical tiles per batch: positive integer or auto"
         )
-        p.add_argument("--stack-gap", type=float)
-        p.add_argument("--interface-thickness", type=float)
+        p.add_argument(
+            "--stack-gap",
+            type=float,
+            metavar="MM",
+            help="vertical gap between stacked tiles, in mm",
+        )
+        p.add_argument(
+            "--interface-thickness",
+            type=float,
+            metavar="MM",
+            help="thickness of each stack release interface, in mm",
+        )
         p.add_argument(
             "--material-roles",
             type=int,
             nargs=3,
             metavar=("MODEL", "SUPPORT_BASE", "RELEASE_INTERFACE"),
+            help="1-based filament slot numbers for stacked models, support bases and release interfaces, in that order",
         )
         if command == "part":
             p.add_argument(
@@ -152,21 +231,59 @@ def parser() -> argparse.ArgumentParser:
                     "support-end",
                 ],
             )
-            p.add_argument("--cells", type=int, nargs=2, default=(1, 1), metavar=("X", "Y"))
-            p.add_argument("--variant", type=int, default=1)
-            p.add_argument("--length", type=float, default=60)
-            p.add_argument("--accessory-height", type=float, default=50)
-            p.add_argument("--quantity", type=int, default=1)
-        if command == "layout":
             p.add_argument(
-                "--footprint", type=float, nargs=2, required=True, metavar=("WIDTH", "DEPTH")
+                "--cells",
+                type=int,
+                nargs=2,
+                default=(1, 1),
+                metavar=("X_CELLS", "Y_CELLS"),
+                help="whole cell counts along X then Y; these are counts, not mm",
             )
             p.add_argument(
-                "--filler", choices=["balanced", "positive", "negative"], default="balanced"
+                "--variant",
+                type=int,
+                default=1,
+                help="numbered corner or support-end variant; see the attachment inventory",
+            )
+            p.add_argument(
+                "--length",
+                type=float,
+                default=60,
+                metavar="MM",
+                help="support-bit length excluding its projecting join, in mm",
+            )
+            p.add_argument(
+                "--accessory-height",
+                type=float,
+                default=50,
+                metavar="MM",
+                help="lock height above its attachment shoulder including the base, in mm",
+            )
+            p.add_argument(
+                "--quantity",
+                type=int,
+                default=1,
+                help="number of copies, not additional grid cells",
+            )
+        if command == "layout":
+            p.add_argument(
+                "--footprint",
+                type=float,
+                nargs=2,
+                required=True,
+                metavar=("WIDTH_MM", "DEPTH_MM"),
+                help="assembled floor width (X) then depth (Y), in mm; may span multiple printed parts",
+            )
+            p.add_argument(
+                "--filler",
+                choices=["balanced", "positive", "negative"],
+                default="balanced",
+                help="place leftover edge material on both ends, positive-X/Y ends, or negative-X/Y ends; cells are not scaled",
             )
     compare = commands.add_parser(
         "compare-reference",
         help="Compare measured interfaces with an explicitly supplied local reference; no upload.",
+        allow_abbrev=False,
     )
     compare.add_argument("reference", type=Path, help="explicit local 3MF, never uploaded")
     compare.add_argument(
@@ -197,7 +314,9 @@ def main(argv: list[str] | None = None) -> int:
         if args.hole_scope == "full" and not args.holes:
             raise ValueError("--hole-scope full requires --holes and --hole-diameter")
         build = BuildVolume(
-            *args.build,
+            args.build_width_mm,
+            args.build_depth_mm,
+            args.build_height_mm,
             margin=args.margin,
             reserve_x=args.reserve[0],
             reserve_y=args.reserve[1],

@@ -144,9 +144,11 @@ def test_auto_stack_invalid_gap_is_a_cli_error_not_traceback(tmp_path, capsys, g
         main(
             [
                 "part",
-                "--build",
+                "--build-width-mm",
                 "150",
+                "--build-depth-mm",
                 "150",
+                "--build-height-mm",
                 "50",
                 "--output",
                 str(tmp_path / "job"),

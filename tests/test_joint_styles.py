@@ -33,7 +33,17 @@ def test_default_contract_and_invalid_styles():
         with pytest.raises(ValueError, match="joint_style"):
             Interface(joint_style=value)
     for command in ("part", "layout", "catalogue"):
-        args = [command, "--build", "150", "150", "50", "--output", "outputs/example"]
+        args = [
+            command,
+            "--build-width-mm",
+            "150",
+            "--build-depth-mm",
+            "150",
+            "--build-height-mm",
+            "50",
+            "--output",
+            "outputs/example",
+        ]
         if command == "layout":
             args += ["--footprint", "120", "120"]
         assert parser().parse_args(args).joint_style == "original"
@@ -204,9 +214,11 @@ def test_cli_explicit_full_height_and_default_original_exports(tmp_path, capsys)
     for style in ("full-height", "original"):
         args = [
             "part",
-            "--build",
+            "--build-width-mm",
             "150",
+            "--build-depth-mm",
             "150",
+            "--build-height-mm",
             "50",
             "--output",
             str(tmp_path / style),

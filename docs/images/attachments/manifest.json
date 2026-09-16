@@ -1,0 +1,1598 @@
+{
+  "geometry_commit": "964ae082b82de6047397ce3ab4b3d86f42a25b18",
+  "workbench_commit": "120024625ad5c76a5d8bc768556e04fc7eae4023",
+  "catalogue_build_mm": {
+    "width_x": 350,
+    "depth_y": 320,
+    "height_z": 325
+  },
+  "camera": "45:32",
+  "scale": "Common physical scale within each family; families differ.",
+  "source_render_recipe_sha256": "5956b3c94425e7fffb3676564f5f25306de3f5fc2262b33acaed8e57bf4f07a6",
+  "items": [
+    {
+      "key": "plate-1x1",
+      "family": "plate",
+      "public_name": "plate_1x1_original",
+      "parameters": {
+        "family": "plate",
+        "nx": 1,
+        "ny": 1,
+        "variant": 1,
+        "length": 60,
+        "height": 50,
+        "interface": {
+          "pitch": 60.0,
+          "height": 13.0,
+          "fit_offset": 0.0,
+          "joint_style": "original"
+        }
+      },
+      "size_mm": [
+        60.0,
+        60.0,
+        16.900000000000006
+      ],
+      "file": "images/attachments/plate-1x1.png",
+      "alt": "plate, 1 x 1, original joints: isometric STEP-derived render",
+      "description": "A flat surface with X plugs underneath for positioning an attachment on the mat.",
+      "dimensions": [
+        480,
+        300
+      ],
+      "pixels_per_mm": 2.489015869776647,
+      "bytes": 9399,
+      "sha256": "ac8bd92ed2109458059e9004187ab9a4e3cdb612245e5a164f817b5181fd31bf",
+      "source_render_sha256": "5dade852f8819a4cc23c55706dd505e8f4c3eb82ecb9c03a4600fee76479c7a4",
+      "source_step_sha256": "0064e52905d3a26895e7667ce07fb33d7c77ca2c4a367bc0dc777c4b38fad29c"
+    },
+    {
+      "key": "plate-1x2",
+      "family": "plate",
+      "public_name": "plate_1x2_original",
+      "parameters": {
+        "family": "plate",
+        "nx": 1,
+        "ny": 2,
+        "variant": 1,
+        "length": 60,
+        "height": 50,
+        "interface": {
+          "pitch": 60.0,
+          "height": 13.0,
+          "fit_offset": 0.0,
+          "joint_style": "original"
+        }
+      },
+      "size_mm": [
+        60.0,
+        120.0,
+        16.900000000000006
+      ],
+      "file": "images/attachments/plate-1x2.png",
+      "alt": "plate, 1 x 2, original joints: isometric STEP-derived render",
+      "description": "A flat surface with X plugs underneath for positioning an attachment on the mat.",
+      "dimensions": [
+        480,
+        300
+      ],
+      "pixels_per_mm": 2.489015869776647,
+      "bytes": 13781,
+      "sha256": "eb40baf6349d18d423bf4fa4efeb13659b7095bd13fbec906903a6be72cd5ada",
+      "source_render_sha256": "dba1b84472b53f50e8513631128f70253878c6e742c059baced097159099816f",
+      "source_step_sha256": "dec397c2ffe6e87a631dcbc39b851ab61a27ad86dd19f77cc8f60a7cbe83ae20"
+    },
+    {
+      "key": "plate-2x2",
+      "family": "plate",
+      "public_name": "plate_2x2_original",
+      "parameters": {
+        "family": "plate",
+        "nx": 2,
+        "ny": 2,
+        "variant": 1,
+        "length": 60,
+        "height": 50,
+        "interface": {
+          "pitch": 60.0,
+          "height": 13.0,
+          "fit_offset": 0.0,
+          "joint_style": "original"
+        }
+      },
+      "size_mm": [
+        120.0,
+        120.0,
+        16.900000000000006
+      ],
+      "file": "images/attachments/plate-2x2.png",
+      "alt": "plate, 2 x 2, original joints: isometric STEP-derived render",
+      "description": "A flat surface with X plugs underneath for positioning an attachment on the mat.",
+      "dimensions": [
+        480,
+        300
+      ],
+      "pixels_per_mm": 2.489015869776647,
+      "bytes": 18265,
+      "sha256": "a9f0b03a55f8d34f08d19f79b83f15cb6783b1476e126bdda54fcaa3999ffe01",
+      "source_render_sha256": "ca328f52d34e5d268e46b5a42c024f0c2c87db11622ecc63e8c5776a0e67e5cd",
+      "source_step_sha256": "b09328fb53d8ee9df0732d8bc9f60ca57bc59138569e2f6e0c512285d2975670"
+    },
+    {
+      "key": "lock-90-1x1",
+      "family": "lock-90",
+      "public_name": "lock-90_1x1_h50_original",
+      "parameters": {
+        "family": "lock-90",
+        "nx": 1,
+        "ny": 1,
+        "variant": 1,
+        "length": 60,
+        "height": 50,
+        "interface": {
+          "pitch": 60.0,
+          "height": 13.0,
+          "fit_offset": 0.0,
+          "joint_style": "original"
+        }
+      },
+      "size_mm": [
+        60.0,
+        60.0,
+        62.800000000000004
+      ],
+      "file": "images/attachments/lock-90-1x1.png",
+      "alt": "lock-90, 1 x 1 / H 50 mm, original joints: isometric STEP-derived render",
+      "description": "An upright cargo stop on an X-plug base; the mounting grid varies by size.",
+      "dimensions": [
+        480,
+        300
+      ],
+      "pixels_per_mm": 1.5935266881022927,
+      "bytes": 6999,
+      "sha256": "519578c6a96d8251c3484995a46a8c46b465eecc76432b5be180a87ed69e34cb",
+      "source_render_sha256": "62dfa0f73f4d719020239f7e71c42302872381af7d218f3a0acad481f61af85d",
+      "source_step_sha256": "821141fb48dc3b49bdf508961b4de460d112dc8c3829d5ad06fc686b6f87b5f9"
+    },
+    {
+      "key": "lock-90-1x2",
+      "family": "lock-90",
+      "public_name": "lock-90_1x2_h50_original",
+      "parameters": {
+        "family": "lock-90",
+        "nx": 1,
+        "ny": 2,
+        "variant": 1,
+        "length": 60,
+        "height": 50,
+        "interface": {
+          "pitch": 60.0,
+          "height": 13.0,
+          "fit_offset": 0.0,
+          "joint_style": "original"
+        }
+      },
+      "size_mm": [
+        60.0,
+        120.0,
+        62.800000000000004
+      ],
+      "file": "images/attachments/lock-90-1x2.png",
+      "alt": "lock-90, 1 x 2 / H 50 mm, original joints: isometric STEP-derived render",
+      "description": "An upright cargo stop on an X-plug base; the mounting grid varies by size.",
+      "dimensions": [
+        480,
+        300
+      ],
+      "pixels_per_mm": 1.5935266881022927,
+      "bytes": 10070,
+      "sha256": "5c72c0a5a8f514399bb85916324e7ab8bbcc7edc908c30c96f8c433e91bb5b16",
+      "source_render_sha256": "955e910a7ebe703d5f969713fa1ab599ec1079a517ce24630e3182abbda1d13d",
+      "source_step_sha256": "0641b29ba0c597c402a2e135e1058a17749f8859f4ee158cacc8c3aa60dc9140"
+    },
+    {
+      "key": "lock-90-2x1",
+      "family": "lock-90",
+      "public_name": "lock-90_2x1_h50_original",
+      "parameters": {
+        "family": "lock-90",
+        "nx": 2,
+        "ny": 1,
+        "variant": 1,
+        "length": 60,
+        "height": 50,
+        "interface": {
+          "pitch": 60.0,
+          "height": 13.0,
+          "fit_offset": 0.0,
+          "joint_style": "original"
+        }
+      },
+      "size_mm": [
+        120.0,
+        60.0,
+        62.800000000000004
+      ],
+      "file": "images/attachments/lock-90-2x1.png",
+      "alt": "lock-90, 2 x 1 / H 50 mm, original joints: isometric STEP-derived render",
+      "description": "An upright cargo stop on an X-plug base; the mounting grid varies by size.",
+      "dimensions": [
+        480,
+        300
+      ],
+      "pixels_per_mm": 1.5935266881022927,
+      "bytes": 9845,
+      "sha256": "b72e67dc92eb41e9f2e3ee1225be167762bdf83716d4c9a2c57a03b329c4eba0",
+      "source_render_sha256": "d5b70030231542c9aecc54dd0983c1f1899c335e1091dd99bb075ce9215a4fe7",
+      "source_step_sha256": "d5cbbbc86778dbcb6f8ece191550360d84d069cfe01612e48ed560fb0b59b734"
+    },
+    {
+      "key": "lock-90-2x2",
+      "family": "lock-90",
+      "public_name": "lock-90_2x2_h50_original",
+      "parameters": {
+        "family": "lock-90",
+        "nx": 2,
+        "ny": 2,
+        "variant": 1,
+        "length": 60,
+        "height": 50,
+        "interface": {
+          "pitch": 60.0,
+          "height": 13.0,
+          "fit_offset": 0.0,
+          "joint_style": "original"
+        }
+      },
+      "size_mm": [
+        120.0,
+        120.0,
+        62.800000000000004
+      ],
+      "file": "images/attachments/lock-90-2x2.png",
+      "alt": "lock-90, 2 x 2 / H 50 mm, original joints: isometric STEP-derived render",
+      "description": "An upright cargo stop on an X-plug base; the mounting grid varies by size.",
+      "dimensions": [
+        480,
+        300
+      ],
+      "pixels_per_mm": 1.5935266881022927,
+      "bytes": 13296,
+      "sha256": "b0d6207cb9863512195679c03ae224760cb650b04ac76c1d434acd947697de56",
+      "source_render_sha256": "c8876df9b5b31ddd4838948da502aef3ef2f01801ddbbb62e9858c0766554d5e",
+      "source_step_sha256": "8c0f87bea3449ca84c3fe459266113e3e81a71743e326b51feb771fa666edadd"
+    },
+    {
+      "key": "lock-90-3x1",
+      "family": "lock-90",
+      "public_name": "lock-90_3x1_h50_original",
+      "parameters": {
+        "family": "lock-90",
+        "nx": 3,
+        "ny": 1,
+        "variant": 1,
+        "length": 60,
+        "height": 50,
+        "interface": {
+          "pitch": 60.0,
+          "height": 13.0,
+          "fit_offset": 0.0,
+          "joint_style": "original"
+        }
+      },
+      "size_mm": [
+        180.0,
+        60.0,
+        62.800000100000005
+      ],
+      "file": "images/attachments/lock-90-3x1.png",
+      "alt": "lock-90, 3 x 1 / H 50 mm, original joints: isometric STEP-derived render",
+      "description": "An upright cargo stop on an X-plug base; the mounting grid varies by size.",
+      "dimensions": [
+        480,
+        300
+      ],
+      "pixels_per_mm": 1.5935266881022927,
+      "bytes": 12996,
+      "sha256": "97172928c74d278979d0491797babc0e8edddc1cfc9fcf2a23aff0bb85601bdd",
+      "source_render_sha256": "d5cba0f12f4cf2ee973bee2c05410c437a75c17b4406782c493bd1b81f01ec1c",
+      "source_step_sha256": "4b672ebf302313ef2cbacf365642111fd2e0849e5417b35cacd8b041c15a5e3a"
+    },
+    {
+      "key": "lock-90-3x2",
+      "family": "lock-90",
+      "public_name": "lock-90_3x2_h50_original",
+      "parameters": {
+        "family": "lock-90",
+        "nx": 3,
+        "ny": 2,
+        "variant": 1,
+        "length": 60,
+        "height": 50,
+        "interface": {
+          "pitch": 60.0,
+          "height": 13.0,
+          "fit_offset": 0.0,
+          "joint_style": "original"
+        }
+      },
+      "size_mm": [
+        180.0,
+        120.0,
+        62.800000100000005
+      ],
+      "file": "images/attachments/lock-90-3x2.png",
+      "alt": "lock-90, 3 x 2 / H 50 mm, original joints: isometric STEP-derived render",
+      "description": "An upright cargo stop on an X-plug base; the mounting grid varies by size.",
+      "dimensions": [
+        480,
+        300
+      ],
+      "pixels_per_mm": 1.5935266881022927,
+      "bytes": 17240,
+      "sha256": "239f5e3eb4d7e2762e833f44715a33866a84bb6bcd4131fe23071736be514500",
+      "source_render_sha256": "9adbe84c9c26f00f97924442f9508bf408c4de8edaa0b8ea5bfb34b11602699d",
+      "source_step_sha256": "e0feffa809692f3c85c7d021f727a40751fa748774d8920343cf4bf21cece4f9"
+    },
+    {
+      "key": "lock-45-1x1",
+      "family": "lock-45",
+      "public_name": "lock-45_1x1_h50_original",
+      "parameters": {
+        "family": "lock-45",
+        "nx": 1,
+        "ny": 1,
+        "variant": 1,
+        "length": 60,
+        "height": 50,
+        "interface": {
+          "pitch": 60.0,
+          "height": 13.0,
+          "fit_offset": 0.0,
+          "joint_style": "original"
+        }
+      },
+      "size_mm": [
+        60.0,
+        60.0,
+        62.800000000000004
+      ],
+      "file": "images/attachments/lock-45-1x1.png",
+      "alt": "lock-45, 1 x 1 / H 50 mm, original joints: isometric STEP-derived render",
+      "description": "An angled cargo stop on an X-plug base.",
+      "dimensions": [
+        480,
+        300
+      ],
+      "pixels_per_mm": 1.8437337626148205,
+      "bytes": 10211,
+      "sha256": "735fc04e1cf338e99ef2ac01bda878f758ee3f8f86799fdd7c419a278156d1b0",
+      "source_render_sha256": "708994c605e81a055df53ec72b85b41e251061f817828968b45bf680ace3647c",
+      "source_step_sha256": "bd07d6eb23c2260b5593c55001ea04e01e85f66b761d8a12b4b1fc6c3f7f407c"
+    },
+    {
+      "key": "lock-45-2x2",
+      "family": "lock-45",
+      "public_name": "lock-45_2x2_h50_original",
+      "parameters": {
+        "family": "lock-45",
+        "nx": 2,
+        "ny": 2,
+        "variant": 1,
+        "length": 60,
+        "height": 50,
+        "interface": {
+          "pitch": 60.0,
+          "height": 13.0,
+          "fit_offset": 0.0,
+          "joint_style": "original"
+        }
+      },
+      "size_mm": [
+        120.0,
+        120.0,
+        62.80000000000001
+      ],
+      "file": "images/attachments/lock-45-2x2.png",
+      "alt": "lock-45, 2 x 2 / H 50 mm, original joints: isometric STEP-derived render",
+      "description": "An angled cargo stop on an X-plug base.",
+      "dimensions": [
+        480,
+        300
+      ],
+      "pixels_per_mm": 1.8437337626148205,
+      "bytes": 18697,
+      "sha256": "f872c5d274c1def9340cb395afc9d3ac9da85cdc9886d7e2f239dde476f53073",
+      "source_render_sha256": "8f808d30918edf4395391270d4db0e593be6268099e8a9c5f67d86e060979850",
+      "source_step_sha256": "36c1f6a1c11bb555411069823775fd79a637c77d3723468a068768efbe4b3557"
+    },
+    {
+      "key": "edge-x-1",
+      "family": "edge-x",
+      "public_name": "edge-x_1_original",
+      "parameters": {
+        "family": "edge-x",
+        "nx": 1,
+        "ny": 1,
+        "variant": 1,
+        "length": 60,
+        "height": 50,
+        "interface": {
+          "pitch": 60.0,
+          "height": 13.0,
+          "fit_offset": 0.0,
+          "joint_style": "original"
+        }
+      },
+      "size_mm": [
+        60.0000002,
+        16.0,
+        13.0000001
+      ],
+      "file": "images/attachments/edge-x-1.png",
+      "alt": "edge-x, 1 cell, original joints: isometric STEP-derived render",
+      "description": "A straight finishing strip with male tile-facing joins; length follows the cell count.",
+      "dimensions": [
+        480,
+        300
+      ],
+      "pixels_per_mm": 1.8903917986339145,
+      "bytes": 5112,
+      "sha256": "26ce2da1b2833992b46b2a9847f10f2e4aeb8e20c2e032b47b81690286176a88",
+      "source_render_sha256": "78b3adaa6c1a63caad412d8f8ce4556e4b91a679fc58c7d77248519cda6d5757",
+      "source_step_sha256": "51af0935ab4f01c494778f39dfbf35c55f2a486eca3d1e98f4ea5ec54502ae90"
+    },
+    {
+      "key": "edge-x-2",
+      "family": "edge-x",
+      "public_name": "edge-x_2_original",
+      "parameters": {
+        "family": "edge-x",
+        "nx": 2,
+        "ny": 1,
+        "variant": 1,
+        "length": 60,
+        "height": 50,
+        "interface": {
+          "pitch": 60.0,
+          "height": 13.0,
+          "fit_offset": 0.0,
+          "joint_style": "original"
+        }
+      },
+      "size_mm": [
+        120.00000019999999,
+        16.0,
+        13.0000001
+      ],
+      "file": "images/attachments/edge-x-2.png",
+      "alt": "edge-x, 2 cells, original joints: isometric STEP-derived render",
+      "description": "A straight finishing strip with male tile-facing joins; length follows the cell count.",
+      "dimensions": [
+        480,
+        300
+      ],
+      "pixels_per_mm": 1.8903917986339145,
+      "bytes": 8977,
+      "sha256": "1994f30a89bc3a7991e83904afa8fb3e623046c4c2edd9987f7d2f6bbd10e6e5",
+      "source_render_sha256": "402e754eb07feb3a48de606a2b8e4a277aa252caa996a6eb4ccb474500292603",
+      "source_step_sha256": "04d804d8137ae723687befa9d433ddaecffa8613c3d42fd909daaa9bc9c3f062"
+    },
+    {
+      "key": "edge-x-3",
+      "family": "edge-x",
+      "public_name": "edge-x_3_original",
+      "parameters": {
+        "family": "edge-x",
+        "nx": 3,
+        "ny": 1,
+        "variant": 1,
+        "length": 60,
+        "height": 50,
+        "interface": {
+          "pitch": 60.0,
+          "height": 13.0,
+          "fit_offset": 0.0,
+          "joint_style": "original"
+        }
+      },
+      "size_mm": [
+        180.0000002,
+        16.0,
+        13.0000001
+      ],
+      "file": "images/attachments/edge-x-3.png",
+      "alt": "edge-x, 3 cells, original joints: isometric STEP-derived render",
+      "description": "A straight finishing strip with male tile-facing joins; length follows the cell count.",
+      "dimensions": [
+        480,
+        300
+      ],
+      "pixels_per_mm": 1.8903917986339145,
+      "bytes": 12597,
+      "sha256": "8a930cacd57586d875028677b5f5362e28b4cdb8eacbdccd56bbc48d945a9b51",
+      "source_render_sha256": "b528e79cceb2215f2176dee7b63431fc1b408d95b4e943338abc1ecbd4b933ad",
+      "source_step_sha256": "48fde618d3ab7ea4a117702416f1adf6efccd72c1d76942601ca85dab56660da"
+    },
+    {
+      "key": "edge-x-4",
+      "family": "edge-x",
+      "public_name": "edge-x_4_original",
+      "parameters": {
+        "family": "edge-x",
+        "nx": 4,
+        "ny": 1,
+        "variant": 1,
+        "length": 60,
+        "height": 50,
+        "interface": {
+          "pitch": 60.0,
+          "height": 13.0,
+          "fit_offset": 0.0,
+          "joint_style": "original"
+        }
+      },
+      "size_mm": [
+        240.0000002,
+        16.0,
+        13.0000001
+      ],
+      "file": "images/attachments/edge-x-4.png",
+      "alt": "edge-x, 4 cells, original joints: isometric STEP-derived render",
+      "description": "A straight finishing strip with male tile-facing joins; length follows the cell count.",
+      "dimensions": [
+        480,
+        300
+      ],
+      "pixels_per_mm": 1.8903917986339145,
+      "bytes": 16839,
+      "sha256": "5ddebb4e82e812269c3aeed398eaa8067b1ee9b3ab1a2cf2c8b3aa82f7b97a86",
+      "source_render_sha256": "bf397bf540a94477955be3a4db9ad6013436d302c6edf082515b400f0d244af1",
+      "source_step_sha256": "58395011915ea93d9ca782e1c6d7276bdd50db61e5d8cbaa064e6bba63d01af1"
+    },
+    {
+      "key": "edge-x-5",
+      "family": "edge-x",
+      "public_name": "edge-x_5_original",
+      "parameters": {
+        "family": "edge-x",
+        "nx": 5,
+        "ny": 1,
+        "variant": 1,
+        "length": 60,
+        "height": 50,
+        "interface": {
+          "pitch": 60.0,
+          "height": 13.0,
+          "fit_offset": 0.0,
+          "joint_style": "original"
+        }
+      },
+      "size_mm": [
+        300.00000020000004,
+        16.0,
+        13.0000001
+      ],
+      "file": "images/attachments/edge-x-5.png",
+      "alt": "edge-x, 5 cells, original joints: isometric STEP-derived render",
+      "description": "A straight finishing strip with male tile-facing joins; length follows the cell count.",
+      "dimensions": [
+        480,
+        300
+      ],
+      "pixels_per_mm": 1.8903917986339145,
+      "bytes": 21296,
+      "sha256": "60159383cdd09e0aa3874768760d754d780701e4689ff3008cdb15669cdf1c66",
+      "source_render_sha256": "6039568e7a19cfd3ea20c371ac36ddbfeebdf1bc26b5bd7e82189fa054af1098",
+      "source_step_sha256": "fe00b7fa64baad91ca3719c5f88e8e2a08f272c0e11ef518857c4c831433cfdb"
+    },
+    {
+      "key": "edge-y-1",
+      "family": "edge-y",
+      "public_name": "edge-y_1_original",
+      "parameters": {
+        "family": "edge-y",
+        "nx": 1,
+        "ny": 1,
+        "variant": 1,
+        "length": 60,
+        "height": 50,
+        "interface": {
+          "pitch": 60.0,
+          "height": 13.0,
+          "fit_offset": 0.0,
+          "joint_style": "original"
+        }
+      },
+      "size_mm": [
+        60.0000002,
+        10.000000100000003,
+        13.0000001
+      ],
+      "file": "images/attachments/edge-y-1.png",
+      "alt": "edge-y, 1 cell, original joints: isometric STEP-derived render",
+      "description": "A straight finishing strip with female tile-facing joins; length follows the cell count.",
+      "dimensions": [
+        480,
+        300
+      ],
+      "pixels_per_mm": 1.926980026349359,
+      "bytes": 4493,
+      "sha256": "592775f99db155eef3ff3e08068dd5b63907c45f5fb754d557332c391d38cf90",
+      "source_render_sha256": "2cef9d15e44a2fdd807ce3f6416ff4580ba406836632d35057007a1a69b9ede5",
+      "source_step_sha256": "4b1a4c5055a2a574e5486d8d8c66c2521bd4799a48c6008347e0884812d178fe"
+    },
+    {
+      "key": "edge-y-2",
+      "family": "edge-y",
+      "public_name": "edge-y_2_original",
+      "parameters": {
+        "family": "edge-y",
+        "nx": 2,
+        "ny": 1,
+        "variant": 1,
+        "length": 60,
+        "height": 50,
+        "interface": {
+          "pitch": 60.0,
+          "height": 13.0,
+          "fit_offset": 0.0,
+          "joint_style": "original"
+        }
+      },
+      "size_mm": [
+        120.00000019999999,
+        10.000000100000003,
+        13.0000001
+      ],
+      "file": "images/attachments/edge-y-2.png",
+      "alt": "edge-y, 2 cells, original joints: isometric STEP-derived render",
+      "description": "A straight finishing strip with female tile-facing joins; length follows the cell count.",
+      "dimensions": [
+        480,
+        300
+      ],
+      "pixels_per_mm": 1.926980026349359,
+      "bytes": 7091,
+      "sha256": "adbc439dddc619517c4732d133e51ac7d223e9e69af02ff3ce6bbcf0a0520b43",
+      "source_render_sha256": "7fe5b07a26d93b53184712a77cfe7b2667ced37310c850cf61bd5a8a77a736d9",
+      "source_step_sha256": "85138e1796a32eabe562e170c278408bc2c4b974899b16ae02657325007358c4"
+    },
+    {
+      "key": "edge-y-3",
+      "family": "edge-y",
+      "public_name": "edge-y_3_original",
+      "parameters": {
+        "family": "edge-y",
+        "nx": 3,
+        "ny": 1,
+        "variant": 1,
+        "length": 60,
+        "height": 50,
+        "interface": {
+          "pitch": 60.0,
+          "height": 13.0,
+          "fit_offset": 0.0,
+          "joint_style": "original"
+        }
+      },
+      "size_mm": [
+        180.0000002,
+        10.000000100000003,
+        13.0000001
+      ],
+      "file": "images/attachments/edge-y-3.png",
+      "alt": "edge-y, 3 cells, original joints: isometric STEP-derived render",
+      "description": "A straight finishing strip with female tile-facing joins; length follows the cell count.",
+      "dimensions": [
+        480,
+        300
+      ],
+      "pixels_per_mm": 1.926980026349359,
+      "bytes": 9363,
+      "sha256": "8996fd3a7b7438a9cd1e49e175955e5f93a15e1233eb21d9a7390ceb18c01e04",
+      "source_render_sha256": "b1930f41c4037a77eb4b13fdcdf839676e2d9b70f83e4ba7bffd6a1117ddc843",
+      "source_step_sha256": "47c2f3e32d1af1cc3f6fbd263b28952f7e9c653fd3e71f2f95c0be1aa4f43d26"
+    },
+    {
+      "key": "edge-y-4",
+      "family": "edge-y",
+      "public_name": "edge-y_4_original",
+      "parameters": {
+        "family": "edge-y",
+        "nx": 4,
+        "ny": 1,
+        "variant": 1,
+        "length": 60,
+        "height": 50,
+        "interface": {
+          "pitch": 60.0,
+          "height": 13.0,
+          "fit_offset": 0.0,
+          "joint_style": "original"
+        }
+      },
+      "size_mm": [
+        240.0000002,
+        10.000000100000003,
+        13.0000001
+      ],
+      "file": "images/attachments/edge-y-4.png",
+      "alt": "edge-y, 4 cells, original joints: isometric STEP-derived render",
+      "description": "A straight finishing strip with female tile-facing joins; length follows the cell count.",
+      "dimensions": [
+        480,
+        300
+      ],
+      "pixels_per_mm": 1.926980026349359,
+      "bytes": 13092,
+      "sha256": "d9f7259f7172131363e0fe986ba149498480b1af12eba0091f61a32f9bcce487",
+      "source_render_sha256": "eb28983ba688db665ddbfa65add4bdd72457865f2350d989bcf8089c9e4c97a9",
+      "source_step_sha256": "10a9796aa0eb11be98c989f2c55ccf90ae260c7dd8184b3cf47106f9e57a158b"
+    },
+    {
+      "key": "edge-y-5",
+      "family": "edge-y",
+      "public_name": "edge-y_5_original",
+      "parameters": {
+        "family": "edge-y",
+        "nx": 5,
+        "ny": 1,
+        "variant": 1,
+        "length": 60,
+        "height": 50,
+        "interface": {
+          "pitch": 60.0,
+          "height": 13.0,
+          "fit_offset": 0.0,
+          "joint_style": "original"
+        }
+      },
+      "size_mm": [
+        300.00000020000004,
+        10.000000100000003,
+        13.0000001
+      ],
+      "file": "images/attachments/edge-y-5.png",
+      "alt": "edge-y, 5 cells, original joints: isometric STEP-derived render",
+      "description": "A straight finishing strip with female tile-facing joins; length follows the cell count.",
+      "dimensions": [
+        480,
+        300
+      ],
+      "pixels_per_mm": 1.926980026349359,
+      "bytes": 16779,
+      "sha256": "0cf149902349e5bdaca0d5bdc495c0fa89be50a33f3f941501c58b38a95dfadd",
+      "source_render_sha256": "8aa5c54b09087e12bb014ffde159cfe333841e6b3d5e2c67702036807c4d67c4",
+      "source_step_sha256": "97c28eb2db083051904168c2fb3afff41c44357b495920eaee2d5864a9ff38c9"
+    },
+    {
+      "key": "corner-in-v1",
+      "family": "corner-in",
+      "public_name": "corner-in_v1_original",
+      "parameters": {
+        "family": "corner-in",
+        "nx": 1,
+        "ny": 1,
+        "variant": 1,
+        "length": 60,
+        "height": 50,
+        "interface": {
+          "pitch": 60.0,
+          "height": 13.0,
+          "fit_offset": 0.0,
+          "joint_style": "original"
+        }
+      },
+      "size_mm": [
+        60.0000002,
+        66.0000001,
+        13.0000001
+      ],
+      "file": "images/attachments/corner-in-v1.png",
+      "alt": "corner-in, variant 1, original joints: isometric STEP-derived render",
+      "description": "A corner finishing piece in one of four supported joining arrangements.",
+      "dimensions": [
+        480,
+        300
+      ],
+      "pixels_per_mm": 4.364626152712514,
+      "bytes": 17598,
+      "sha256": "058e2bbb58d0b8dbe2c591814dfbd6649bd6cf83dcc9fe0b4a7a3acd046a1d87",
+      "source_render_sha256": "3a1a70902fe5307159d4952f321408ad5a533af44760f0c81144740fa581da77",
+      "source_step_sha256": "e5e2eda3754630b9e1e354fb91811495cc17036a15702bb92768f3ba077f750b"
+    },
+    {
+      "key": "corner-in-v2",
+      "family": "corner-in",
+      "public_name": "corner-in_v2_original",
+      "parameters": {
+        "family": "corner-in",
+        "nx": 1,
+        "ny": 1,
+        "variant": 2,
+        "length": 60,
+        "height": 50,
+        "interface": {
+          "pitch": 60.0,
+          "height": 13.0,
+          "fit_offset": 0.0,
+          "joint_style": "original"
+        }
+      },
+      "size_mm": [
+        66.0000001,
+        66.0000001,
+        13.0000001
+      ],
+      "file": "images/attachments/corner-in-v2.png",
+      "alt": "corner-in, variant 2, original joints: isometric STEP-derived render",
+      "description": "A corner finishing piece in one of four supported joining arrangements.",
+      "dimensions": [
+        480,
+        300
+      ],
+      "pixels_per_mm": 4.364626152712514,
+      "bytes": 21335,
+      "sha256": "098f36a2651f3820dd46fdeb896dbd2cc6e0c2e70529e6267e863ef8fa6f7633",
+      "source_render_sha256": "4215bc151c262cbc71cbbee247b7c055351d381be138fb57c6d6292b957a3bd0",
+      "source_step_sha256": "0c72bfbecdf762f084d03790e4313c32f1d93f4cc7e2723fa6f5dcb3f03f8875"
+    },
+    {
+      "key": "corner-in-v3",
+      "family": "corner-in",
+      "public_name": "corner-in_v3_original",
+      "parameters": {
+        "family": "corner-in",
+        "nx": 1,
+        "ny": 1,
+        "variant": 3,
+        "length": 60,
+        "height": 50,
+        "interface": {
+          "pitch": 60.0,
+          "height": 13.0,
+          "fit_offset": 0.0,
+          "joint_style": "original"
+        }
+      },
+      "size_mm": [
+        66.0000001,
+        60.0000002,
+        13.0000001
+      ],
+      "file": "images/attachments/corner-in-v3.png",
+      "alt": "corner-in, variant 3, original joints: isometric STEP-derived render",
+      "description": "A corner finishing piece in one of four supported joining arrangements.",
+      "dimensions": [
+        480,
+        300
+      ],
+      "pixels_per_mm": 4.364626152712514,
+      "bytes": 18196,
+      "sha256": "8784b129a641487b7d5aedd47f165d5ecdaf71f737d2a7178879f1f10cd41050",
+      "source_render_sha256": "b5f81494656b2577fa77c6ff42b72669c6f368664068010344b480b2c3f29a45",
+      "source_step_sha256": "6295ca084617ddeffefc30f0c9062ad35102dc67f77d05e8bc527ec46857f59c"
+    },
+    {
+      "key": "corner-in-v4",
+      "family": "corner-in",
+      "public_name": "corner-in_v4_original",
+      "parameters": {
+        "family": "corner-in",
+        "nx": 1,
+        "ny": 1,
+        "variant": 4,
+        "length": 60,
+        "height": 50,
+        "interface": {
+          "pitch": 60.0,
+          "height": 13.0,
+          "fit_offset": 0.0,
+          "joint_style": "original"
+        }
+      },
+      "size_mm": [
+        60.0000002,
+        60.0000002,
+        13.0000001
+      ],
+      "file": "images/attachments/corner-in-v4.png",
+      "alt": "corner-in, variant 4, original joints: isometric STEP-derived render",
+      "description": "A corner finishing piece in one of four supported joining arrangements.",
+      "dimensions": [
+        480,
+        300
+      ],
+      "pixels_per_mm": 4.364626152712514,
+      "bytes": 15742,
+      "sha256": "5a6d65a33cb64cd280cea4c618ea84475cf97fe3672c114560926a76c4272e84",
+      "source_render_sha256": "129e8021e9aff5cb7293d2a65d1519c39461620e661e0ba15a748ea5424f6cf4",
+      "source_step_sha256": "bf6a7451e68f39249dc11dbde529630b6cd79fc2a4410ed7ef784e84ef5e3cdf"
+    },
+    {
+      "key": "corner-out-v1",
+      "family": "corner-out",
+      "public_name": "corner-out_v1_original",
+      "parameters": {
+        "family": "corner-out",
+        "nx": 1,
+        "ny": 1,
+        "variant": 1,
+        "length": 60,
+        "height": 50,
+        "interface": {
+          "pitch": 60.0,
+          "height": 13.0,
+          "fit_offset": 0.0,
+          "joint_style": "original"
+        }
+      },
+      "size_mm": [
+        16.000000000000004,
+        67.07106791186547,
+        13.0000001
+      ],
+      "file": "images/attachments/corner-out-v1.png",
+      "alt": "corner-out, variant 1, original joints: isometric STEP-derived render",
+      "description": "An outer-edge finishing piece in one of six supported arrangements.",
+      "dimensions": [
+        480,
+        300
+      ],
+      "pixels_per_mm": 4.158531006085914,
+      "bytes": 11427,
+      "sha256": "24b05135dd33c169c61208a077ef0277703c5d2e450d1527a30cb9ba7d2b785c",
+      "source_render_sha256": "61633afd86e4848833f4c81ef739626610d0268f13b1b987c56c2207ad558c2c",
+      "source_step_sha256": "5eb596e5e83b010a53020f5375b90176a1993183dd9132c27c940b4dc55f43df"
+    },
+    {
+      "key": "corner-out-v2",
+      "family": "corner-out",
+      "public_name": "corner-out_v2_original",
+      "parameters": {
+        "family": "corner-out",
+        "nx": 1,
+        "ny": 1,
+        "variant": 2,
+        "length": 60,
+        "height": 50,
+        "interface": {
+          "pitch": 60.0,
+          "height": 13.0,
+          "fit_offset": 0.0,
+          "joint_style": "original"
+        }
+      },
+      "size_mm": [
+        67.07106791186548,
+        10.000000100000003,
+        13.0000001
+      ],
+      "file": "images/attachments/corner-out-v2.png",
+      "alt": "corner-out, variant 2, original joints: isometric STEP-derived render",
+      "description": "An outer-edge finishing piece in one of six supported arrangements.",
+      "dimensions": [
+        480,
+        300
+      ],
+      "pixels_per_mm": 4.158531006085914,
+      "bytes": 8719,
+      "sha256": "663e99ddffaf4360ba1a7bcc227189963627423994c10241e33de18428ae6756",
+      "source_render_sha256": "8539b2011b8f56dea858fe828bc9269f458eb8d912f02abaa4b3e742e3b9a224",
+      "source_step_sha256": "07dce149f5b71ea8975e632d52ab7f4e4f8139af3983bfc254766beece5d8e1c"
+    },
+    {
+      "key": "corner-out-v3",
+      "family": "corner-out",
+      "public_name": "corner-out_v3_original",
+      "parameters": {
+        "family": "corner-out",
+        "nx": 1,
+        "ny": 1,
+        "variant": 3,
+        "length": 60,
+        "height": 50,
+        "interface": {
+          "pitch": 60.0,
+          "height": 13.0,
+          "fit_offset": 0.0,
+          "joint_style": "original"
+        }
+      },
+      "size_mm": [
+        70.0000001,
+        70.0000001,
+        13.0000001
+      ],
+      "file": "images/attachments/corner-out-v3.png",
+      "alt": "corner-out, variant 3, original joints: isometric STEP-derived render",
+      "description": "An outer-edge finishing piece in one of six supported arrangements.",
+      "dimensions": [
+        480,
+        300
+      ],
+      "pixels_per_mm": 4.158531006085914,
+      "bytes": 17514,
+      "sha256": "3dce18db6a8e7e8ea6c828709573f97f7a8dd003eeb6474276001bcbbb25a73b",
+      "source_render_sha256": "12814f05a8787f67ec40fdb9b3ff2e09dd6a9cd6429ce0c9125e6fe0aa7c8a08",
+      "source_step_sha256": "3cac0e291628b9907162becb4657a495f15e0c1ce57b16368fa018742e98d331"
+    },
+    {
+      "key": "corner-out-v4",
+      "family": "corner-out",
+      "public_name": "corner-out_v4_original",
+      "parameters": {
+        "family": "corner-out",
+        "nx": 1,
+        "ny": 1,
+        "variant": 4,
+        "length": 60,
+        "height": 50,
+        "interface": {
+          "pitch": 60.0,
+          "height": 13.0,
+          "fit_offset": 0.0,
+          "joint_style": "original"
+        }
+      },
+      "size_mm": [
+        10.000000100000006,
+        67.07106791186548,
+        13.0000001
+      ],
+      "file": "images/attachments/corner-out-v4.png",
+      "alt": "corner-out, variant 4, original joints: isometric STEP-derived render",
+      "description": "An outer-edge finishing piece in one of six supported arrangements.",
+      "dimensions": [
+        480,
+        300
+      ],
+      "pixels_per_mm": 4.158531006085914,
+      "bytes": 9293,
+      "sha256": "5132a4fc60f5af912934f3d8a60a74556e6e517e706ecabb854ff7c026e82dcd",
+      "source_render_sha256": "e112905c34d9db03d3651d9624e068f3da51ddc65ecafaff2600ff407d8a72f4",
+      "source_step_sha256": "b2a21e523c29a098fd223a6d7089d62426c0038f30b5c83d2f8004c57603f8fc"
+    },
+    {
+      "key": "corner-out-v5",
+      "family": "corner-out",
+      "public_name": "corner-out_v5_original",
+      "parameters": {
+        "family": "corner-out",
+        "nx": 1,
+        "ny": 1,
+        "variant": 5,
+        "length": 60,
+        "height": 50,
+        "interface": {
+          "pitch": 60.0,
+          "height": 13.0,
+          "fit_offset": 0.0,
+          "joint_style": "original"
+        }
+      },
+      "size_mm": [
+        67.07106791186547,
+        16.0,
+        13.0000001
+      ],
+      "file": "images/attachments/corner-out-v5.png",
+      "alt": "corner-out, variant 5, original joints: isometric STEP-derived render",
+      "description": "An outer-edge finishing piece in one of six supported arrangements.",
+      "dimensions": [
+        480,
+        300
+      ],
+      "pixels_per_mm": 4.158531006085914,
+      "bytes": 10245,
+      "sha256": "517cc76fa3be06939f92797f8a327aec90b4ff346b5281eb5f77cbcbb83a4546",
+      "source_render_sha256": "d9d0fcdcc4ec15057e26260822580a6594a108ab7a467141109f7107152205de",
+      "source_step_sha256": "79ee272bf6a37cd95fbd506fdb54e76c42ea902fa10bae19f7128a12216fb987"
+    },
+    {
+      "key": "corner-out-v6",
+      "family": "corner-out",
+      "public_name": "corner-out_v6_original",
+      "parameters": {
+        "family": "corner-out",
+        "nx": 1,
+        "ny": 1,
+        "variant": 6,
+        "length": 60,
+        "height": 50,
+        "interface": {
+          "pitch": 60.0,
+          "height": 13.0,
+          "fit_offset": 0.0,
+          "joint_style": "original"
+        }
+      },
+      "size_mm": [
+        70.0000001,
+        70.0000001,
+        13.0000001
+      ],
+      "file": "images/attachments/corner-out-v6.png",
+      "alt": "corner-out, variant 6, original joints: isometric STEP-derived render",
+      "description": "An outer-edge finishing piece in one of six supported arrangements.",
+      "dimensions": [
+        480,
+        300
+      ],
+      "pixels_per_mm": 4.158531006085914,
+      "bytes": 22318,
+      "sha256": "2e3541f1648f287d98060732b92dc00504141b1f8cdc74ec8569e46658d99c52",
+      "source_render_sha256": "40c0c3f956c41765bf10c0d94a7929685cd34db5fc0584d3c5c0dddd496ec3f5",
+      "source_step_sha256": "fb3d3554a6453a537449b672258308c150e52612db9970164dfb7c61566266be"
+    },
+    {
+      "key": "support-1",
+      "family": "support",
+      "public_name": "support_1_original",
+      "parameters": {
+        "family": "support",
+        "nx": 1,
+        "ny": 1,
+        "variant": 1,
+        "length": 60,
+        "height": 50,
+        "interface": {
+          "pitch": 60.0,
+          "height": 13.0,
+          "fit_offset": 0.0,
+          "joint_style": "original"
+        }
+      },
+      "size_mm": [
+        45.0,
+        65.00000010068499,
+        25.0
+      ],
+      "file": "images/attachments/support-1.png",
+      "alt": "support, 1 cell, original joints: isometric STEP-derived render",
+      "description": "A physical bearing rail with separate end-to-end joins, not a slicer support or X-plug attachment.",
+      "dimensions": [
+        480,
+        300
+      ],
+      "pixels_per_mm": 1.706753738784431,
+      "bytes": 7632,
+      "sha256": "78cf18118ec1cee9882d0e99c4afbc9e93e6603bbac7ebb64931d0a6db9e6f05",
+      "source_render_sha256": "eb44401e6669bfc6ec49a93c602ec5f56572bbe35e1b7230570d3145784fd966",
+      "source_step_sha256": "61c0dd537f780222c22d341aa04192cba146cbeb94f4304a07d2ec5dc9a13618"
+    },
+    {
+      "key": "support-2",
+      "family": "support",
+      "public_name": "support_2_original",
+      "parameters": {
+        "family": "support",
+        "nx": 2,
+        "ny": 1,
+        "variant": 1,
+        "length": 60,
+        "height": 50,
+        "interface": {
+          "pitch": 60.0,
+          "height": 13.0,
+          "fit_offset": 0.0,
+          "joint_style": "original"
+        }
+      },
+      "size_mm": [
+        45.0,
+        125.00000010068499,
+        25.0
+      ],
+      "file": "images/attachments/support-2.png",
+      "alt": "support, 2 cells, original joints: isometric STEP-derived render",
+      "description": "A physical bearing rail with separate end-to-end joins, not a slicer support or X-plug attachment.",
+      "dimensions": [
+        480,
+        300
+      ],
+      "pixels_per_mm": 1.706753738784431,
+      "bytes": 11925,
+      "sha256": "55a2efd2602c749cefbc300b9e34c3dab5865ee99329c953fbf18f9f6c856d24",
+      "source_render_sha256": "9dff2432a4b0a34d862567173b65c96177701f94d00ae758871e24a74348958d",
+      "source_step_sha256": "ccf327979147794a9631eb3aabfc5f3f6f8d40bcddee91bc69f7d63acc5bed0a"
+    },
+    {
+      "key": "support-3",
+      "family": "support",
+      "public_name": "support_3_original",
+      "parameters": {
+        "family": "support",
+        "nx": 3,
+        "ny": 1,
+        "variant": 1,
+        "length": 60,
+        "height": 50,
+        "interface": {
+          "pitch": 60.0,
+          "height": 13.0,
+          "fit_offset": 0.0,
+          "joint_style": "original"
+        }
+      },
+      "size_mm": [
+        45.0,
+        185.00000010068496,
+        25.0
+      ],
+      "file": "images/attachments/support-3.png",
+      "alt": "support, 3 cells, original joints: isometric STEP-derived render",
+      "description": "A physical bearing rail with separate end-to-end joins, not a slicer support or X-plug attachment.",
+      "dimensions": [
+        480,
+        300
+      ],
+      "pixels_per_mm": 1.706753738784431,
+      "bytes": 15864,
+      "sha256": "995da859e8c9f50c123fdff486c797f8ac859eeb11def2db6bc2abe661c81f07",
+      "source_render_sha256": "7bac23eb1911138642bfc29b1c78a66d239973b55092b70d0f4512712e4907fc",
+      "source_step_sha256": "71dd10364616ab336a10006b5a1a859ea826a91cfa94d824fd87a9d396089a6e"
+    },
+    {
+      "key": "support-4",
+      "family": "support",
+      "public_name": "support_4_original",
+      "parameters": {
+        "family": "support",
+        "nx": 4,
+        "ny": 1,
+        "variant": 1,
+        "length": 60,
+        "height": 50,
+        "interface": {
+          "pitch": 60.0,
+          "height": 13.0,
+          "fit_offset": 0.0,
+          "joint_style": "original"
+        }
+      },
+      "size_mm": [
+        45.0,
+        245.00000010068496,
+        25.0
+      ],
+      "file": "images/attachments/support-4.png",
+      "alt": "support, 4 cells, original joints: isometric STEP-derived render",
+      "description": "A physical bearing rail with separate end-to-end joins, not a slicer support or X-plug attachment.",
+      "dimensions": [
+        480,
+        300
+      ],
+      "pixels_per_mm": 1.706753738784431,
+      "bytes": 20025,
+      "sha256": "d569f1fe2cc3350cc840aa5bf62776c3a9b4426236b4a39a5c9585de41460f49",
+      "source_render_sha256": "ac0eb34df4f155ace923a19610f034945f8e50ac9d10fc2775dd70d5ed7f1b6c",
+      "source_step_sha256": "e5df1d7da3bc15998e5ff861ac74faab32fa754c19e33019b0087402ef4ab9de"
+    },
+    {
+      "key": "support-5",
+      "family": "support",
+      "public_name": "support_5_original",
+      "parameters": {
+        "family": "support",
+        "nx": 5,
+        "ny": 1,
+        "variant": 1,
+        "length": 60,
+        "height": 50,
+        "interface": {
+          "pitch": 60.0,
+          "height": 13.0,
+          "fit_offset": 0.0,
+          "joint_style": "original"
+        }
+      },
+      "size_mm": [
+        45.0,
+        305.000000100685,
+        25.0
+      ],
+      "file": "images/attachments/support-5.png",
+      "alt": "support, 5 cells, original joints: isometric STEP-derived render",
+      "description": "A physical bearing rail with separate end-to-end joins, not a slicer support or X-plug attachment.",
+      "dimensions": [
+        480,
+        300
+      ],
+      "pixels_per_mm": 1.706753738784431,
+      "bytes": 25307,
+      "sha256": "20f9aa1bfd4570fd4d413912a04c1cc46647ce9b40ff5212c4b2a1e57263cc5a",
+      "source_render_sha256": "327f3d37e0e184bfd4d50088b009010791e51cba88ecdbb2ebaf4eceb9d98960",
+      "source_step_sha256": "f41000619feaa412c9a1d33af6af05f101fba29131f7b9f2129683d3a09dbef4"
+    },
+    {
+      "key": "support-end-v1",
+      "family": "support-end",
+      "public_name": "support-end_v1_original",
+      "parameters": {
+        "family": "support-end",
+        "nx": 1,
+        "ny": 1,
+        "variant": 1,
+        "length": 60,
+        "height": 50,
+        "interface": {
+          "pitch": 60.0,
+          "height": 13.0,
+          "fit_offset": 0.0,
+          "joint_style": "original"
+        }
+      },
+      "size_mm": [
+        45.0,
+        120.00000005208246,
+        25.0
+      ],
+      "file": "images/attachments/support-end-v1.png",
+      "alt": "support-end, variant 1 / X, original joints: isometric STEP-derived render",
+      "description": "A ramped rail-end piece; X, Xs, Y and Ys select the supported end arrangements.",
+      "dimensions": [
+        480,
+        300
+      ],
+      "pixels_per_mm": 3.109474040204719,
+      "bytes": 22711,
+      "sha256": "b90a4bcbe374cc2e5a7d4389db2bd3561e5bc565bb39abbefb18939572ae3a67",
+      "source_render_sha256": "32f28a360a5d8428a4aae4636118caf741c7ef9e84ffd6f014790699147755e6",
+      "source_step_sha256": "3357b597ae9204fa5168107633fee44149354cff462c5bf6e3a730ddb2f67530"
+    },
+    {
+      "key": "support-end-v2",
+      "family": "support-end",
+      "public_name": "support-end_v2_original",
+      "parameters": {
+        "family": "support-end",
+        "nx": 1,
+        "ny": 1,
+        "variant": 2,
+        "length": 60,
+        "height": 50,
+        "interface": {
+          "pitch": 60.0,
+          "height": 13.0,
+          "fit_offset": 0.0,
+          "joint_style": "original"
+        }
+      },
+      "size_mm": [
+        45.0,
+        120.00000005208246,
+        25.0
+      ],
+      "file": "images/attachments/support-end-v2.png",
+      "alt": "support-end, variant 2 / Xs, original joints: isometric STEP-derived render",
+      "description": "A ramped rail-end piece; X, Xs, Y and Ys select the supported end arrangements.",
+      "dimensions": [
+        480,
+        300
+      ],
+      "pixels_per_mm": 3.109474040204719,
+      "bytes": 22633,
+      "sha256": "6274039598cebd75a279f94c743be1d98e991da5b4f4f8eb197c7a29e1159f65",
+      "source_render_sha256": "65f0a4d4ce22d43082f64b390cba973b60992648ac81d4afa062d7ecfff86f31",
+      "source_step_sha256": "75124f3a11ea62b428c95bdd91000eb2a5fe0711927c7184fa413296cb2a97ad"
+    },
+    {
+      "key": "support-end-v3",
+      "family": "support-end",
+      "public_name": "support-end_v3_original",
+      "parameters": {
+        "family": "support-end",
+        "nx": 1,
+        "ny": 1,
+        "variant": 3,
+        "length": 60,
+        "height": 50,
+        "interface": {
+          "pitch": 60.0,
+          "height": 13.0,
+          "fit_offset": 0.0,
+          "joint_style": "original"
+        }
+      },
+      "size_mm": [
+        45.0,
+        125.00000004860253,
+        25.0
+      ],
+      "file": "images/attachments/support-end-v3.png",
+      "alt": "support-end, variant 3 / Y, original joints: isometric STEP-derived render",
+      "description": "A ramped rail-end piece; X, Xs, Y and Ys select the supported end arrangements.",
+      "dimensions": [
+        480,
+        300
+      ],
+      "pixels_per_mm": 3.109474040204719,
+      "bytes": 21307,
+      "sha256": "39a42a53e864b78165bf73a541b7ebedd66e7800440ddb979e33a3b81a7b8c23",
+      "source_render_sha256": "062636918a8a96c0e079709243f4aa3d44c1fbaa4b5ce857362991be1ac022ef",
+      "source_step_sha256": "98b52a56b3ca4f0bca6f83733e53eac0f08240f7736bdae6d03d67fb9638e3a0"
+    },
+    {
+      "key": "support-end-v4",
+      "family": "support-end",
+      "public_name": "support-end_v4_original",
+      "parameters": {
+        "family": "support-end",
+        "nx": 1,
+        "ny": 1,
+        "variant": 4,
+        "length": 60,
+        "height": 50,
+        "interface": {
+          "pitch": 60.0,
+          "height": 13.0,
+          "fit_offset": 0.0,
+          "joint_style": "original"
+        }
+      },
+      "size_mm": [
+        45.0,
+        125.00000004860253,
+        25.0
+      ],
+      "file": "images/attachments/support-end-v4.png",
+      "alt": "support-end, variant 4 / Ys, original joints: isometric STEP-derived render",
+      "description": "A ramped rail-end piece; X, Xs, Y and Ys select the supported end arrangements.",
+      "dimensions": [
+        480,
+        300
+      ],
+      "pixels_per_mm": 3.109474040204719,
+      "bytes": 21266,
+      "sha256": "02787f46888732b911082ac4f72eeee2f3bf82150957bca10b2b6a3ab5506dd1",
+      "source_render_sha256": "8fd317a939b54aa19c2071cb5d1126aae9ec291c4e96d6164e91781e0dd805d5",
+      "source_step_sha256": "437edc000b39744a0ee82d5526a0893c511bde31ab34dc74053e14cb30561deb"
+    },
+    {
+      "key": "support-bit-20mm",
+      "family": "support-bit",
+      "public_name": "support-bit_20mm_original",
+      "parameters": {
+        "family": "support-bit",
+        "nx": 1,
+        "ny": 1,
+        "variant": 1,
+        "length": 20,
+        "height": 50,
+        "interface": {
+          "pitch": 60.0,
+          "height": 13.0,
+          "fit_offset": 0.0,
+          "joint_style": "original"
+        }
+      },
+      "size_mm": [
+        45.0,
+        25.00000010068498,
+        25.0
+      ],
+      "file": "images/attachments/support-bit-20mm.png",
+      "alt": "support-bit, 20 mm length, original joints: isometric STEP-derived render",
+      "description": "A short rail connector with a projecting join; the label gives its specified length.",
+      "dimensions": [
+        480,
+        300
+      ],
+      "pixels_per_mm": 4.499579215429579,
+      "bytes": 10441,
+      "sha256": "65cc81284d65157addb561e13d2e1b6a7c5e3e978532843e117c3ffb7fb2a805",
+      "source_render_sha256": "b1ad0464d34a25065b31459d1f8eaaeadb6d486cfe50c0b954b1a494f4420e5c",
+      "source_step_sha256": "fa63b3f00a07934e1015799583c4fc370a397bfd3c2bd1c611cca72abf426e3d"
+    },
+    {
+      "key": "support-bit-30mm",
+      "family": "support-bit",
+      "public_name": "support-bit_30mm_original",
+      "parameters": {
+        "family": "support-bit",
+        "nx": 1,
+        "ny": 1,
+        "variant": 1,
+        "length": 30,
+        "height": 50,
+        "interface": {
+          "pitch": 60.0,
+          "height": 13.0,
+          "fit_offset": 0.0,
+          "joint_style": "original"
+        }
+      },
+      "size_mm": [
+        45.0,
+        35.00000010068498,
+        25.0
+      ],
+      "file": "images/attachments/support-bit-30mm.png",
+      "alt": "support-bit, 30 mm length, original joints: isometric STEP-derived render",
+      "description": "A short rail connector with a projecting join; the label gives its specified length.",
+      "dimensions": [
+        480,
+        300
+      ],
+      "pixels_per_mm": 4.499579215429579,
+      "bytes": 11846,
+      "sha256": "ec34bab9e7245b6bd74ce13231a94754a5117a2a0395eb712a93731f65b6380e",
+      "source_render_sha256": "fff90945f5d13346adc3fa0de1b36c1c2139955f47e4a14abda30ae54179c55e",
+      "source_step_sha256": "e6c348a3c507e0851e2cb0c14c50b952a3ade12f9cd83e8e1bd3e09befcdefa8"
+    },
+    {
+      "key": "support-bit-40mm",
+      "family": "support-bit",
+      "public_name": "support-bit_40mm_original",
+      "parameters": {
+        "family": "support-bit",
+        "nx": 1,
+        "ny": 1,
+        "variant": 1,
+        "length": 40,
+        "height": 50,
+        "interface": {
+          "pitch": 60.0,
+          "height": 13.0,
+          "fit_offset": 0.0,
+          "joint_style": "original"
+        }
+      },
+      "size_mm": [
+        45.0,
+        45.000000100684986,
+        25.0
+      ],
+      "file": "images/attachments/support-bit-40mm.png",
+      "alt": "support-bit, 40 mm length, original joints: isometric STEP-derived render",
+      "description": "A short rail connector with a projecting join; the label gives its specified length.",
+      "dimensions": [
+        480,
+        300
+      ],
+      "pixels_per_mm": 4.499579215429579,
+      "bytes": 15923,
+      "sha256": "b4dc37b801360fb5c6d89c415321fcf7aca69e84f2cba7f77387d2ad86df4f50",
+      "source_render_sha256": "9258609dcfdfde5a22effc5ebaa09563da073301dc03a926da593e26008af988",
+      "source_step_sha256": "ffc8db3a7c9babfd726d2ff36b4d9cc223e0b9f16ea10ff6353900d4f47344d4"
+    },
+    {
+      "key": "support-bit-50mm",
+      "family": "support-bit",
+      "public_name": "support-bit_50mm_original",
+      "parameters": {
+        "family": "support-bit",
+        "nx": 1,
+        "ny": 1,
+        "variant": 1,
+        "length": 50,
+        "height": 50,
+        "interface": {
+          "pitch": 60.0,
+          "height": 13.0,
+          "fit_offset": 0.0,
+          "joint_style": "original"
+        }
+      },
+      "size_mm": [
+        45.0,
+        55.000000100684986,
+        25.0
+      ],
+      "file": "images/attachments/support-bit-50mm.png",
+      "alt": "support-bit, 50 mm length, original joints: isometric STEP-derived render",
+      "description": "A short rail connector with a projecting join; the label gives its specified length.",
+      "dimensions": [
+        480,
+        300
+      ],
+      "pixels_per_mm": 4.499579215429579,
+      "bytes": 18470,
+      "sha256": "a2fac0dec011c8f7ce1cefe6b01ce3b2d7e22584fb0bc030e762170e5bf5a558",
+      "source_render_sha256": "df1daa08cc2b20bf9c1ca05fe40147e6ac954cd6c1b9cb99354358d39f65c29b",
+      "source_step_sha256": "6bce8dd7878194bfd7e0eb03039df891bff43fd71e4904c85d05ab32749cd8cd"
+    }
+  ]
+}
