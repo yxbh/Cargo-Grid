@@ -5,6 +5,8 @@ from math import sqrt
 import pytest
 from build123d import Axis, GeomType, Location, Part, Solid, Vector, export_step, import_step
 from OCP.BRepAdaptor import BRepAdaptor_Surface
+from OCP.BRepGProp import BRepGProp
+from OCP.GProp import GProp_GProps
 
 from cargo_grid import Interface
 from cargo_grid.accessories import (
@@ -104,7 +106,18 @@ def test_support_r1_preserves_central_full_height_dovetails(spec, tmp_path):
 def test_full_depth_angled_webs_notch_removal_and_r1_cap(n, expected, tmp_path):
     spec = Accessory("lock-45", nx=n, ny=n)
     shape = make_accessory(spec)
-    assert shape.volume == pytest.approx(expected, abs=1e-5)
+    # Default non-adaptive quadrature is platform-sensitive on these curved faces.
+    integrals = []
+    for accuracy in (1e-10, 1e-12):
+        properties = GProp_GProps()
+        error = BRepGProp.VolumeProperties_s(shape.wrapped, properties, accuracy, True, False)
+        assert error < 1e-10
+        integrals.append(properties.Mass())
+    assert abs(integrals[1] - integrals[0]) < 1e-7
+    assert integrals[1] == pytest.approx(expected, abs=1e-5), {
+        "default_volume": shape.volume,
+        "adaptive_volumes": integrals,
+    }
     base = _mounted_base(spec, root_radius=1)
     region = Solid.make_box(n * 60, n * 60, 16.1).moved(Location((0, 0, -13)))
     assert volume(Part(base.intersect(region).solids()).cut(shape)) < 1e-5
