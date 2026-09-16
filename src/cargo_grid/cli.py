@@ -7,7 +7,7 @@ from math import floor
 from pathlib import Path
 
 from cargo_grid._version import __version__
-from cargo_grid.accessories import Accessory
+from cargo_grid.accessories import FAMILIES, Accessory
 from cargo_grid.catalogue import accessory_design, catalogue_job
 from cargo_grid.export import BambuSettings, Material, export_job
 from cargo_grid.jobs import Job, layout_job, tile_design
@@ -217,27 +217,16 @@ def parser() -> argparse.ArgumentParser:
             p.add_argument(
                 "--family",
                 default="tile",
-                choices=[
-                    "tile",
-                    "edge-x",
-                    "edge-y",
-                    "corner-in",
-                    "corner-out",
-                    "lock-90",
-                    "lock-45",
-                    "plate",
-                    "support",
-                    "support-bit",
-                    "support-end",
-                ],
+                choices=["tile", *FAMILIES],
+                help="vertical-tile-bracket carries a separate ordinary tile; lock-45 is an angled stop",
             )
             p.add_argument(
                 "--cells",
                 type=int,
                 nargs=2,
-                default=(1, 1),
+                default=argparse.SUPPRESS,
                 metavar=("X_CELLS", "Y_CELLS"),
-                help="whole cell counts along X then Y; these are counts, not mm",
+                help="whole cells X then Y (not mm); default 2 1 for vertical-tile-bracket, 1 1 otherwise; bracket X is panel width, Y is panel height/base depth",
             )
             p.add_argument(
                 "--variant",
@@ -257,7 +246,7 @@ def parser() -> argparse.ArgumentParser:
                 type=float,
                 default=50,
                 metavar="MM",
-                help="lock height above its attachment shoulder including the base, in mm",
+                help="lock-45 height above its attachment shoulder including the base, in mm; bracket height follows --cells",
             )
             p.add_argument(
                 "--quantity",
@@ -403,9 +392,12 @@ def main(argv: list[str] | None = None) -> int:
             )
         if args.command == "part":
             count("quantity", args.quantity)
+            cells = getattr(args, "cells", None) or (
+                (2, 1) if args.family == "vertical-tile-bracket" else (1, 1)
+            )
             if args.family == "tile":
                 design = tile_design(
-                    Tile(*args.cells, interface, args.hole_diameter, hole_scope=args.hole_scope)
+                    Tile(*cells, interface, args.hole_diameter, hole_scope=args.hole_scope)
                 )
             else:
                 if args.holes:
@@ -413,7 +405,7 @@ def main(argv: list[str] | None = None) -> int:
                 design = accessory_design(
                     Accessory(
                         args.family,
-                        *args.cells,
+                        *cells,
                         args.variant,
                         args.length,
                         args.accessory_height,
@@ -421,8 +413,9 @@ def main(argv: list[str] | None = None) -> int:
                     )
                 )
             design.quantity = args.quantity
-            if build.placement(design.size) is None:
-                raise ValueError(f"actual part bounds {design.size} exceed usable print area")
+            print_size = design.bambu_size if bambu else design.size
+            if build.placement(print_size) is None:
+                raise ValueError(f"actual part bounds {print_size} exceed usable print area")
             job = Job([design], build, "part")
         elif args.command == "layout":
             layout = exact_layout(
@@ -440,6 +433,7 @@ def main(argv: list[str] | None = None) -> int:
                 interface=interface,
                 hole_diameter=args.hole_diameter,
                 hole_scope=args.hole_scope,
+                orient_for_bambu=bool(bambu),
             )
         job.part_gap = args.part_gap
         manifest = export_job(job, args.output, stl=not args.no_stl, bambu=bambu, stack=stack)

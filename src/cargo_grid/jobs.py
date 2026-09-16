@@ -3,8 +3,9 @@
 import json
 from dataclasses import asdict, dataclass, field
 from hashlib import sha256
+from math import isfinite
 
-from build123d import Part
+from build123d import Axis, Part
 
 from cargo_grid.layout import Layout
 from cargo_grid.parameters import BuildVolume, Tile, count, positive
@@ -19,14 +20,35 @@ class Design:
     quantity: int = 1
     assembly_frames: list[tuple[float, float, float]] = field(default_factory=list)
     holes: list[dict] = field(default_factory=list)
+    recommended_print_rotation_x: float | None = None
+    apply_orientation_to_bambu: bool = False
 
     def __post_init__(self):
         count("design quantity", self.quantity)
+        if self.recommended_print_rotation_x is not None and not isfinite(
+            self.recommended_print_rotation_x
+        ):
+            raise ValueError("recommended print rotation must be finite degrees")
+        if not isinstance(self.apply_orientation_to_bambu, bool):
+            raise ValueError("apply_orientation_to_bambu must be a boolean")
+        if self.apply_orientation_to_bambu and self.recommended_print_rotation_x is None:
+            raise ValueError("Bambu orientation requires an explicit recommended rotation")
 
     @property
     def size(self) -> tuple[float, float, float]:
         box = self.shape.bounding_box()
         return tuple(box.size)
+
+    @property
+    def bambu_shape(self) -> Part:
+        if self.apply_orientation_to_bambu:
+            assert self.recommended_print_rotation_x is not None
+            return self.shape.rotate(Axis.X, self.recommended_print_rotation_x)
+        return self.shape
+
+    @property
+    def bambu_size(self) -> tuple[float, float, float]:
+        return tuple(self.bambu_shape.bounding_box().size)
 
 
 @dataclass

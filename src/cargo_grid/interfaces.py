@@ -142,6 +142,8 @@ def full_height_part(
     height: float,
     *,
     round_body_corners: bool = True,
+    free_top_rims: list[tuple[str, float]] | None = None,
+    free_top_radius: float = 2.0,
 ) -> Part:
     """Build roofless joints in the planar outline, avoiding coincident 3D cuts."""
     outline = body
@@ -162,6 +164,27 @@ def full_height_part(
     if vertices:
         face = face.fillet_2d(1, vertices)
     part = prism(face, height)
+    if free_top_rims is not None:
+        operation = BRepFilletAPI_MakeFillet(part.wrapped)
+        selected = 0
+        for edge in horizontal_edges(part, height):
+            box = edge.bounding_box()
+            free = any(
+                abs(getattr(box.min, axis) - coordinate) < 1e-5
+                and abs(getattr(box.max, axis) - coordinate) < 1e-5
+                for axis, coordinate in free_top_rims
+            )
+            selected += free
+            operation.Add(free_top_radius if free else 1.0, edge.wrapped)
+        if not selected:
+            raise ValueError("full-height accessory has no selected free top rims")
+        try:
+            rounded = Part(Solid(operation.Shape()).wrapped)
+        except (Standard_Failure, StdFail_NotDone) as error:
+            raise ValueError("could not solve selective full-height top radii") from error
+        if not rounded.is_valid or len(rounded.solids()) != 1:
+            raise ValueError("selective full-height top rounding produced invalid geometry")
+        return rounded
     return part.fillet(1, horizontal_edges(part, height))
 
 

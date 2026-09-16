@@ -2,7 +2,7 @@
 
 import json
 from dataclasses import asdict, dataclass
-from math import ceil, sqrt
+from math import ceil, cos, radians, sin, sqrt
 from pathlib import Path
 from shutil import copyfileobj
 from tempfile import TemporaryFile
@@ -15,6 +15,7 @@ from build123d import Axis, Compound, export_step, import_step
 from OCP.Precision import Precision
 
 from cargo_grid._version import __version__
+from cargo_grid.accessories import BAMBU_PRINT_ROTATIONS
 from cargo_grid.jobs import Job
 from cargo_grid.meshes import checked_mesh, write_stl
 from cargo_grid.packing import pack_sizes
@@ -110,6 +111,21 @@ def _validate_request(job: Job, bambu: BambuSettings | None, stack: StackSetting
     }
     for design in job.designs:
         count("design quantity", design.quantity)
+        required_pose = BAMBU_PRINT_ROTATIONS.get(design.parameters.get("family"))
+        if (
+            bambu
+            and required_pose is not None
+            and (
+                not design.apply_orientation_to_bambu
+                or design.recommended_print_rotation_x != required_pose
+            )
+        ):
+            raise ValueError(
+                f"{design.name}: Bambu accessory export requires its validated print orientation; "
+                "create the design with accessory_design()"
+            )
+        if bambu and design.apply_orientation_to_bambu and (stack or bambu.roof_support):
+            raise ValueError("Bambu-oriented models cannot use stacking or tile roof support")
         name = design.name
         if (
             not isinstance(name, str)
@@ -199,6 +215,9 @@ def _write_3mf(
     plates = []
     next_id = 1
     batches = []
+    project_shapes = {
+        id(design): design.bambu_shape if bambu else design.shape for design in job.designs
+    }
     for design in job.designs:
         remaining = 1 if catalogue else design.quantity
         while remaining:
@@ -214,7 +233,7 @@ def _write_3mf(
                 )
                 volumes = stack_volumes(design, settings, job.build)
             else:
-                volumes = [Volume(design.name, design.shape, "model", 1)]
+                volumes = [Volume(design.name, project_shapes[id(design)], "model", 1)]
                 if bambu and bambu.roof_support:
                     volumes.extend(
                         roof_enforcers(design, bambu.layer_height, bambu.roof_support.coverage)
@@ -354,6 +373,33 @@ def _write_3mf(
                 "size_mm": size,
             }
         )
+        if bambu and design.apply_orientation_to_bambu:
+            angle = design.recommended_print_rotation_x
+            assert angle is not None
+            cx, sx = cos(radians(angle)), sin(radians(angle))
+            cz, sz = cos(radians(rotation)), sin(radians(rotation))
+            # 3MF stores basis columns; this translation includes the displayed plate origin.
+            record["items"][-1]["source_to_project_transform"] = {
+                "rotation_x_degrees": angle,
+                "packing_rotation_z_degrees": rotation,
+                "translation_mm": translation,
+                "packed_size_mm": tuple(rotated_bounds.size),
+                "plate_local_lower_corner_mm": (px, py, 0),
+                "matrix_3mf": (
+                    cz,
+                    sz,
+                    0,
+                    -sz * cx,
+                    cz * cx,
+                    sx,
+                    sz * sx,
+                    -cz * sx,
+                    cx,
+                    *translation,
+                ),
+                "applied_to_mesh": True,
+            }
+            _metadata(configured, "cargo_grid_source_rotation_x", angle)
         record["volumes"].extend(
             {
                 "name": v.name,
@@ -522,7 +568,7 @@ def export_job(
             remaining = design.quantity
             while remaining:
                 n = min(remaining, stack.count) if stack else 1
-                width, depth, height = design.size
+                width, depth, height = design.bambu_size
                 sizes.append((width, depth, n * height + (n - 1) * stack.gap if stack else height))
                 remaining -= n
         preflight = pack_sizes(sizes, job.build, gap=job.part_gap, pack=job.kind == "catalogue")
@@ -574,7 +620,7 @@ def export_job(
             compatibility["x_attachment_interface_present"] = family in (
                 "tile",
                 "plate",
-                "lock-90",
+                "vertical-tile-bracket",
                 "lock-45",
             )
             if family != "tile":
@@ -602,6 +648,22 @@ def export_job(
                 "compatibility": compatibility,
             }
         )
+        if design.recommended_print_rotation_x is not None:
+            oriented = design.shape.rotate(Axis.X, design.recommended_print_rotation_x)
+            bounds = oriented.bounding_box()
+            entries[-1]["recommended_print_orientation"] = {
+                "rotation_axis": "X",
+                "rotation_degrees": design.recommended_print_rotation_x,
+                "translation_mm": tuple(-bounds.min),
+                "size_mm": tuple(bounds.size),
+                "applied_to_exports": {
+                    "step": False,
+                    "stl": False,
+                    "core_3mf": False,
+                    "bambu_3mf": bool(bambu and design.apply_orientation_to_bambu),
+                },
+                "note": "Standalone recommended pose. Bambu-oriented designs are rotated before packing; exact source-to-project transforms are recorded per plate item. Source STEP/STL and core 3MF retain model orientation.",
+            }
     project = write_3mf(job, output / "job.3mf", bambu=bambu, stack=stack)
     manifest = {
         "schema_version": MANIFEST_SCHEMA_VERSION,

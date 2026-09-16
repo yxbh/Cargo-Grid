@@ -16,7 +16,7 @@ def test_complete_ordered_tile_family():
 
 def test_accessory_families_finite_and_complete():
     variants = accessory_variants(BuildVolume(246, 246, 120))
-    assert len(variants) == 41
+    assert len(variants) == 38
     assert {v.family for v in variants} == {
         "edge-x",
         "edge-y",
@@ -25,7 +25,7 @@ def test_accessory_families_finite_and_complete():
         "support",
         "support-bit",
         "support-end",
-        "lock-90",
+        "vertical-tile-bracket",
         "lock-45",
         "plate",
     }

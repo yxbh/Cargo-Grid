@@ -1,7 +1,7 @@
 """Original accessory bodies surrounding the shared functional interfaces.
 
-Plug accessories have their attachment shoulder at Z=0 and plugs pointing
-down. Edging uses the tile's underside datum, Z=0. Physical support rails have
+Base X plugs point down from their attachment shoulder at Z=0; vertical tile
+brackets also carry panel plugs along positive Y. Edging uses the tile's underside datum, Z=0. Physical support rails have
 their upper bearing surface at Z=0 and extend down 25 mm; these are not slicer
 supports and have no X-shaped attachment plugs.
 
@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from functools import lru_cache
 from math import sqrt
 
-from build123d import Axis, Face, Location, Part, Solid, Wire
+from build123d import Axis, Face, GeomType, Location, Part, Solid, Wire
 
 from cargo_grid.interfaces import (
     dovetail_face,
@@ -26,6 +26,7 @@ from cargo_grid.interfaces import (
     prism,
     rectangle,
     tile_join_tool,
+    x_profile,
 )
 from cargo_grid.parameters import Interface, count, positive
 
@@ -34,7 +35,7 @@ FAMILIES = (
     "edge-y",
     "corner-in",
     "corner-out",
-    "lock-90",
+    "vertical-tile-bracket",
     "lock-45",
     "plate",
     "support",
@@ -42,6 +43,19 @@ FAMILIES = (
     "support-end",
 )
 SUPPORT_END_NAMES = ("X", "Xs", "Y", "Ys")
+VERTICAL_BRACKET_CELLS = ((1, 2), (2, 1), (2, 2))
+BASE_HEIGHT_MM = 4.1
+PANEL_BOTTOM_MM = 6.1
+BRACKET_INSET_MM = 13.0
+BRACKET_BACKING_MM = 4.1
+BRACKET_ENVELOPE_MARGIN_MM = 0.1
+STOP_WALL_MM = 6.0
+STOP_WEB_MM = 6.0
+STOP_CAP_RADIUS_MM = 1.0
+EDGE_TOP_RADIUS_MM = 2.0
+SUPPORT_TOP_RADIUS_MM = 1.0
+BRACKET_LIP_RADIUS_MM = 1.0
+BAMBU_PRINT_ROTATIONS = {"vertical-tile-bracket": 135.0, "lock-45": -135.0}
 
 
 @dataclass(frozen=True)
@@ -49,8 +63,10 @@ class Accessory:
     """Accessory dimensions in mm; ``nx`` counts straight edge/support cells.
 
     ``length`` controls support-bit length excluding its projecting join.
-    ``height`` is the height above the shoulder of a lock, including its base.
-    A 100 mm lock-90 2x1 provides the optional double-height configuration.
+    ``height`` is the angled lock-45 height above its shoulder, including its base.
+    Vertical tile brackets use explicit ``nx, ny`` of 1x2, 2x1 or 2x2:
+    X counts panel columns; Y counts base rows and vertical panel rows.
+    Their height follows the tile grid, not ``height``.
     ``variant`` selects corner and support-end types. Pitch and tile height can
     follow a custom Interface, but only reference defaults imply nominal
     reference dimensions; fixed attachment and support joins are not scaled.
@@ -65,6 +81,10 @@ class Accessory:
     interface: Interface = Interface()
 
     def __post_init__(self) -> None:
+        if self.family == "lock-90":
+            raise ValueError(
+                "lock-90 was replaced by vertical-tile-bracket; use nx/ny 1x2, 2x1 or 2x2"
+            )
         if self.family not in FAMILIES:
             raise ValueError(f"unknown accessory family: {self.family!r}")
         for name in ("nx", "ny", "variant"):
@@ -79,7 +99,7 @@ class Accessory:
         grids = {
             "plate": {(1, 1), (1, 2), (2, 2)},
             "lock-45": {(1, 1), (2, 2)},
-            "lock-90": {(x, y) for x in (1, 2, 3) for y in (1, 2)},
+            "vertical-tile-bracket": set(VERTICAL_BRACKET_CELLS),
         }
         if self.family in grids and (self.nx, self.ny) not in grids[self.family]:
             raise ValueError(f"unsupported mounting grid for {self.family}")
@@ -93,6 +113,15 @@ class Accessory:
             raise ValueError("lock height must be at least 12 mm")
         if self.family == "lock-45" and self.height > self.ny * self.interface.pitch:
             raise ValueError("45-degree lock height must not exceed its base depth")
+        if self.family == "vertical-tile-bracket":
+            if not self.interface.reference_socket_dimensions:
+                raise ValueError(
+                    "vertical-tile-bracket requires 60 mm pitch, 13 mm tile height and zero fit offset"
+                )
+            if self.height != 50:
+                raise ValueError(
+                    "vertical-tile-bracket height follows its cells; accessory height is only for lock-45"
+                )
 
 
 def _box(x: float, y: float, w: float, d: float, h: float, z: float = 0) -> Part:
@@ -214,16 +243,27 @@ def _mount_centers(spec: Accessory) -> list[tuple[float, float, float]]:
     return [((x + 0.5) * p, (y + 0.5) * p, 0) for x in range(spec.nx) for y in range(spec.ny)]
 
 
-def _cross_prism(points: list[tuple[float, float]], width: float, x: float = 0) -> Part:
+def _cross_prism(
+    points: list[tuple[float, float]],
+    width: float,
+    x: float = 0,
+    *,
+    cap_z: float | None = None,
+) -> Part:
     face = Face(Wire.make_polygon([(x, y, z) for y, z in points], close=True))
+    if cap_z is not None:
+        corners = [v for v in face.vertices() if abs(v.Z - cap_z) < 1e-5]
+        if len(corners) != 2:
+            raise ValueError("expected two exposed stop-cap profile corners")
+        face = face.fillet_2d(STOP_CAP_RADIUS_MM, corners)
     return Part(Solid.extrude(face, (width, 0, 0)).wrapped)
 
 
-def _mounted(spec: Accessory) -> Part:
+def _mounted_base(spec: Accessory, *, root_radius: float, round_top: bool = True) -> Part:
     w, d = spec.nx * spec.interface.pitch, spec.ny * spec.interface.pitch
-    base_height = 4.1
-    part = _box(0, 0, w, d, base_height)
-    part = part.fillet(1, horizontal_edges(part, base_height))
+    part = _box(0, 0, w, d, BASE_HEIGHT_MM)
+    if round_top:
+        part = part.fillet(1, horizontal_edges(part, BASE_HEIGHT_MM))
     centers = _mount_centers(spec)
     for center in centers:
         part = part.fuse(_downward_plug().moved(Location(center)))
@@ -234,32 +274,120 @@ def _mounted(spec: Accessory) -> Part:
             abs(edge.center().X - x) < 23 and abs(edge.center().Y - y) < 23 for x, y, _ in centers
         )
     ]
-    part = part.fillet(2 if spec.family == "plate" else 1, roots)
-    if spec.family != "plate":
-        rise = spec.height - base_height
-        lean = rise if spec.family == "lock-45" else 0
-        wall_points = [(d - 6, base_height - 1), (d, base_height - 1)]
-        if lean:
-            wall_points.append((d, base_height))
-        wall_points.extend([(d - lean, spec.height), (d - lean - 6, spec.height)])
-        if lean:
-            wall_points.append((d - 6, base_height))
-        wall = _cross_prism(wall_points, w)
-        part = part.fuse(wall)
-        reach = max(18, lean)
-        for x in (0, w - 4):
-            part = part.fuse(
-                _cross_prism(
-                    [
-                        (max(0, d - 6 - reach), base_height - 1),
-                        (d - 3, base_height - 1),
-                        (d - lean - 3, spec.height - 3),
-                    ],
-                    4,
-                    x,
-                )
-            )
+    return part.fillet(root_radius, roots)
+
+
+def _mounted(spec: Accessory) -> Part:
+    part = _mounted_base(spec, root_radius=2 if spec.family == "plate" else 1)
+    if spec.family == "plate":
+        return part.clean()
+    w, d = spec.nx * spec.interface.pitch, spec.ny * spec.interface.pitch
+    lean = spec.height - BASE_HEIGHT_MM
+    top_front = d - lean - STOP_WALL_MM
+    wall = [
+        (d - STOP_WALL_MM, BASE_HEIGHT_MM - 1),
+        (d, BASE_HEIGHT_MM - 1),
+        (d, BASE_HEIGHT_MM),
+        (d - lean, spec.height),
+        (top_front, spec.height),
+        (d - STOP_WALL_MM, BASE_HEIGHT_MM),
+    ]
+    web = [
+        (0, BASE_HEIGHT_MM - 1),
+        (d, BASE_HEIGHT_MM - 1),
+        (d, BASE_HEIGHT_MM),
+        (d - lean, spec.height),
+        (top_front, spec.height),
+    ]
+    part = part.fuse(_cross_prism(wall, w, cap_z=spec.height))
+    for x in (0, w - STOP_WEB_MM):
+        part = part.fuse(_cross_prism(web, STOP_WEB_MM, x, cap_z=spec.height))
     return part.clean()
+
+
+@lru_cache(maxsize=1)
+def _panel_connector() -> Part:
+    plate = _mounted_base(Accessory("plate"), root_radius=2)
+    domain = prism(x_profile(offset=5), 18).moved(Location((30, 30, -13)))
+    return Part(plate.intersect(domain).solids())
+
+
+def _vertical_bracket(spec: Accessory, *, round_lip: bool = True) -> Part:
+    p = spec.interface.pitch
+    w, d = spec.nx * p, spec.ny * p
+    seat = d - BRACKET_INSET_MM
+    base = _mounted_base(spec, root_radius=1, round_top=False)
+    node = _panel_connector()
+    # Cover the highest rear backing corner, retaining the exact45-degree bed plane.
+    intercept = (
+        PANEL_BOTTOM_MM
+        + node.bounding_box().max.Y
+        + BRACKET_BACKING_MM
+        + BRACKET_INSET_MM
+        - p
+        + BRACKET_ENVELOPE_MARGIN_MM
+    )
+    wedge = _cross_prism(
+        [(0, BASE_HEIGHT_MM), (seat, BASE_HEIGHT_MM), (seat, seat + intercept), (0, intercept)],
+        w,
+    )
+    connectors = [
+        node.rotate(Axis.X, 90).moved(Location((column * p, seat, PANEL_BOTTOM_MM + row * p)))
+        for row in range(spec.ny)
+        for column in range(spec.nx)
+    ]
+    land = _box(0, seat, w, BRACKET_INSET_MM, PANEL_BOTTOM_MM - BASE_HEIGHT_MM, BASE_HEIGHT_MM)
+    if round_lip:
+        # The outermost1mm lies beyond the tile's rounded-edge planar bearing land.
+        edges = [
+            e
+            for e in horizontal_edges(land, PANEL_BOTTOM_MM)
+            if abs(e.bounding_box().min.Y - d) < 1e-5 and abs(e.bounding_box().max.Y - d) < 1e-5
+        ]
+        land = land.fillet(BRACKET_LIP_RADIUS_MM, edges)
+    return base.fuse(wedge, *connectors, land).clean()
+
+
+def _free_top_rims(spec: Accessory) -> list[tuple[str, float]]:
+    p = spec.interface.pitch
+    if spec.family == "edge-x":
+        return [("Y", -10)]
+    if spec.family == "edge-y":
+        return [("Y", 10)]
+    if spec.family == "corner-in":
+        return [
+            ("X", p - 10 if spec.variant in (2, 3) else 10),
+            ("Y", p - 10 if spec.variant in (1, 2) else 10),
+        ]
+    if spec.family == "corner-out":
+        return {
+            1: [("X", -10)],
+            2: [("Y", 10)],
+            3: [("X", p + 10), ("Y", p + 10)],
+            4: [("X", 10)],
+            5: [("Y", -10)],
+            6: [("X", -10), ("Y", -10)],
+        }[spec.variant]
+    return [("X", -22.5), ("X", 22.5)]
+
+
+def _round_free_top(part: Part, spec: Accessory) -> Part:
+    support = spec.family.startswith("support")
+    top = 0 if support else spec.interface.height
+    rims = _free_top_rims(spec)
+    edges = [
+        edge
+        for edge in horizontal_edges(part, top)
+        if edge.geom_type == GeomType.LINE
+        and any(
+            abs(getattr(edge.bounding_box().min, axis) - coordinate) < 1e-5
+            and abs(getattr(edge.bounding_box().max, axis) - coordinate) < 1e-5
+            for axis, coordinate in rims
+        )
+    ]
+    if not edges:
+        raise ValueError(f"{spec.family}: no non-mating top rim edges found")
+    return part.fillet(SUPPORT_TOP_RADIUS_MM if support else EDGE_TOP_RADIUS_MM, edges)
 
 
 def _support_plan(spec: Accessory) -> tuple[float, list[dict]]:
@@ -281,7 +409,7 @@ def _support_plan(spec: Accessory) -> tuple[float, list[dict]]:
     ]
 
 
-def _support(spec: Accessory) -> Part:
+def _support(spec: Accessory, *, round_top: bool = True) -> Part:
     length, joins = _support_plan(spec)
     if spec.family == "support-end":
         ramp = 55 if spec.variant in (2, 4) else 75
@@ -297,12 +425,36 @@ def _support(spec: Accessory) -> Part:
         span = min(32, length - start - 24)
         if span >= 12:
             part = part.cut(_box(-10, start + 12, 20, span, 27, -26))
-    return _apply_joins(part, joins)
+    part = _apply_joins(part, joins)
+    return _round_free_top(part, spec) if round_top else part
 
 
 def accessory_datums(spec: Accessory) -> dict:
     """Machine-readable nominal mating datums; no physical-fit assertions."""
-    if spec.family in ("plate", "lock-90", "lock-45"):
+    if spec.family in ("plate", "vertical-tile-bracket", "lock-45"):
+        if spec.family == "vertical-tile-bracket":
+            p = spec.interface.pitch
+            seat = spec.ny * p - BRACKET_INSET_MM
+            return {
+                "shoulder_z": 0,
+                "plug_tip_z": -12.8,
+                "mount_centers": _mount_centers(spec),
+                "joins": [],
+                "panel_cells_x_z": (spec.nx, spec.ny),
+                "panel_seat_y": seat,
+                "panel_plug_tip_y": seat + 12.8,
+                "panel_plug_centers": [
+                    ((column + 0.5) * p, seat, PANEL_BOTTOM_MM + (row + 0.5) * p)
+                    for row in range(spec.ny)
+                    for column in range(spec.nx)
+                ],
+                "panel_bottom_z": PANEL_BOTTOM_MM,
+                "bearing_z": PANEL_BOTTOM_MM,
+                "nominal_bearing_gap": 0,
+                "panel_inset": BRACKET_INSET_MM,
+                "outward_tile_face": "underside",
+                "backing": "solid; backed interior round holes are blind",
+            }
         return {
             "shoulder_z": 0,
             "plug_tip_z": -12.8,
@@ -343,7 +495,9 @@ def make_accessory(spec: Accessory) -> Part:
     """Build one connected, labeled accessory without changing print orientation."""
     if not isinstance(spec, Accessory):
         raise ValueError("spec must be an Accessory")
-    if spec.family in ("plate", "lock-90", "lock-45"):
+    if spec.family == "vertical-tile-bracket":
+        part = _vertical_bracket(spec)
+    elif spec.family in ("plate", "lock-45"):
         part = _mounted(spec)
     elif spec.family.startswith("support"):
         part = _support(spec)
@@ -356,14 +510,22 @@ def make_accessory(spec: Accessory) -> Part:
                 profile = profile.moved(Location(join["position"]))
                 (males if join["sex"] == "male" else females).append(profile)
             part = full_height_part(
-                face, males, females, spec.interface.height, round_body_corners=False
+                face,
+                males,
+                females,
+                spec.interface.height,
+                round_body_corners=False,
+                free_top_rims=_free_top_rims(spec),
+                free_top_radius=EDGE_TOP_RADIUS_MM,
             )
         else:
             part = _apply_joins(prism(face, spec.interface.height), joins, interface=spec.interface)
         part = part.fillet(1, horizontal_edges(part, 0))
+        if spec.interface.joint_style == "original":
+            part = _round_free_top(part, spec)
     suffix = (
         f"{spec.nx}x{spec.ny}"
-        if spec.family in ("plate", "lock-90", "lock-45")
+        if spec.family in ("plate", "vertical-tile-bracket", "lock-45")
         else f"v{spec.variant}"
         if spec.family in ("corner-in", "corner-out", "support-end")
         else f"{spec.length:g}mm"

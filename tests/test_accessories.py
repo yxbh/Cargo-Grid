@@ -14,12 +14,11 @@ STANDARD = [
     *(Accessory(family, nx=n) for family in ("edge-x", "edge-y", "support") for n in range(1, 5)),
     *(Accessory("corner-in", variant=v) for v in range(1, 5)),
     *(Accessory("corner-out", variant=v) for v in range(1, 7)),
-    *(Accessory("lock-90", nx=x, ny=y) for x in (1, 2, 3) for y in (1, 2)),
+    *(Accessory("vertical-tile-bracket", nx=x, ny=y) for x, y in ((1, 2), (2, 1), (2, 2))),
     *(Accessory("lock-45", nx=n, ny=n) for n in (1, 2)),
     *(Accessory("plate", nx=x, ny=y) for x, y in ((1, 1), (1, 2), (2, 2))),
     *(Accessory("support-bit", length=n) for n in (20, 30, 40, 50)),
     *(Accessory("support-end", variant=v) for v in range(1, 5)),
-    Accessory("lock-90", nx=2, height=100),
 ]
 
 
@@ -35,9 +34,16 @@ def test_standard_families_are_connected_and_labeled(spec, joint_style):
     assert part.volume > 0
     assert part.label.startswith(spec.family)
     box = part.bounding_box()
-    if spec.family in ("lock-90", "lock-45", "plate"):
+    if spec.family in ("vertical-tile-bracket", "lock-45", "plate"):
         assert box.min.Z == pytest.approx(-12.8)
-        assert box.max.Z == pytest.approx(4.1 if spec.family == "plate" else spec.height)
+        top = (
+            spec.ny * 60 + 7.578174593052
+            if spec.family == "vertical-tile-bracket"
+            else 4.1
+            if spec.family == "plate"
+            else spec.height
+        )
+        assert box.max.Z == pytest.approx(top)
         assert len(accessory_datums(spec)["mount_centers"]) == spec.nx * spec.ny
     elif spec.family.startswith("support"):
         assert box.size.X == pytest.approx(45)
@@ -147,11 +153,10 @@ def test_plug_shoulder_registration_preserves_shared_plug():
     assert accessory_datums(spec)["plug_tip_z"] == -12.8
 
 
-@pytest.mark.parametrize("family", ["lock-90", "lock-45"])
-def test_lock_wall_angle_above_base(family):
-    part = make_accessory(Accessory(family))
+def test_lock_wall_angle_above_base():
+    part = make_accessory(Accessory("lock-45"))
     for height in (10, 30, 45):
-        lean = height - 4.1 if family == "lock-45" else 0
+        lean = height - 4.1
         y = 60 - lean
         assert part.is_inside(Vector(30, y - 3, height))
         assert not part.is_inside(Vector(30, y + 0.1, height))
@@ -211,6 +216,10 @@ def test_custom_pitch_and_extended_rails():
         {"family": "edge-x", "nx": 1.5},
         {"family": "plate", "nx": 2, "ny": 1},
         {"family": "lock-90", "nx": 4},
+        {"family": "vertical-tile-bracket"},
+        {"family": "vertical-tile-bracket", "nx": 3},
+        {"family": "vertical-tile-bracket", "nx": 2, "height": 100},
+        {"family": "vertical-tile-bracket", "nx": 2, "interface": Interface(pitch=65)},
         {"family": "lock-45", "ny": 2},
         {"family": "corner-in", "variant": 5},
         {"family": "corner-out", "variant": 7},

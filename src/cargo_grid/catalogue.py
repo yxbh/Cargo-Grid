@@ -6,7 +6,12 @@ from hashlib import sha256
 from math import floor
 from typing import Literal
 
-from cargo_grid.accessories import Accessory, make_accessory
+from cargo_grid.accessories import (
+    BAMBU_PRINT_ROTATIONS,
+    VERTICAL_BRACKET_CELLS,
+    Accessory,
+    make_accessory,
+)
 from cargo_grid.jobs import Design, Job, tile_design
 from cargo_grid.parameters import BuildVolume, Interface, Tile
 
@@ -37,10 +42,11 @@ def accessory_variants(build: BuildVolume, interface: Interface = Interface()) -
     result.extend(
         Accessory("support-bit", length=length, interface=interface) for length in (20, 30, 40, 50)
     )
-    result.extend(
-        Accessory("lock-90", nx=x, ny=y, interface=interface)
-        for x, y in ((1, 1), (1, 2), (2, 1), (2, 2), (3, 1), (3, 2))
-    )
+    if interface.reference_socket_dimensions:
+        result.extend(
+            Accessory("vertical-tile-bracket", nx=x, ny=y, interface=interface)
+            for x, y in VERTICAL_BRACKET_CELLS
+        )
     result.extend(
         Accessory("lock-45", nx=x, ny=y, interface=interface) for x, y in ((1, 1), (2, 2))
     )
@@ -56,7 +62,13 @@ def accessory_design(spec: Accessory) -> Design:
     name = f"{spec.family}_{spec.nx}x{spec.ny}_v{spec.variant}_{spec.interface.joint_style}_{token}"
     shape = make_accessory(spec)
     shape.label = name
-    return Design(name, shape, parameters)
+    return Design(
+        name,
+        shape,
+        parameters,
+        recommended_print_rotation_x=BAMBU_PRINT_ROTATIONS.get(spec.family),
+        apply_orientation_to_bambu=spec.family in BAMBU_PRINT_ROTATIONS,
+    )
 
 
 def catalogue_job(
@@ -65,6 +77,7 @@ def catalogue_job(
     interface: Interface = Interface(),
     hole_diameter: float | None = None,
     hole_scope: Literal["interior", "full"] = "interior",
+    orient_for_bambu: bool = False,
 ) -> Job:
     designs = [
         tile_design(Tile(x, y, interface, hole_diameter, hole_scope=hole_scope))
@@ -73,19 +86,20 @@ def catalogue_job(
     omitted = []
     for spec in accessory_variants(build, interface):
         design = accessory_design(spec)
-        if build.placement(design.size) is None:
+        size = design.bambu_size if orient_for_bambu else design.size
+        if build.placement(size) is None:
             omitted.append(
                 {
                     "name": design.name,
                     "parameters": design.parameters,
-                    "size_mm": design.size,
+                    "size_mm": size,
                     "reason": "actual bounds exceed usable envelope",
                 }
             )
         else:
             designs.append(design)
     for design in designs:
-        if build.placement(design.size) is None:
+        if build.placement(design.bambu_size if orient_for_bambu else design.size) is None:
             raise ValueError(f"unexpected actual-bounds fit failure: {design.name}")
     if not designs:
         raise ValueError("no supported designs fit the configured build envelope")
