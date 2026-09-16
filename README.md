@@ -52,11 +52,11 @@ uv run cargo-grid layout --build-width-mm 150 --build-depth-mm 150 --build-heigh
 
 ## A parts drawer, not just a floor tile
 
-Use plates, vertical tile brackets and angled stops to add attachment surfaces, edge/corner pieces to finish a run, and the separate rail/connector family where your design needs physical support members. Those rails are not slicer-generated supports and do not imply an unmeasured latch to the mat.
+Use plates, vertical tile brackets, normal full-solid stops and angled stops to add attachment surfaces, edge/corner pieces to finish a run, and the separate rail/connector family where your design needs physical support members. Those rails are not slicer-generated supports and do not imply an unmeasured latch to the mat.
 
-![Eight X-plug attachment variants: three plates, three vertical tile brackets and two angled stops, each individually labeled.](docs/images/x-attachments.png)
+![Fourteen X-plug attachment variants: three plates, three vertical tile brackets, six normal full-solid stops and two angled stops, each individually labeled.](docs/images/x-attachments.png)
 
-The complete library contains **41 accessory variants** for the documented **350x320x325 mm catalogue envelope**, original joints and default accessory parameters. **[Browse all 41 parts, each with its own thumbnail beside its name, dimensions and purpose](docs/attachments.md).** The inventory is grouped by family: plates, vertical tile brackets, angled stops, edge strips, inner/outer corners, support rails, rail ends and connectors.
+The complete library contains **47 accessory variants** for the documented **350x320x325 mm catalogue envelope**, original joints and default accessory parameters. **[Browse all 47 parts, each with its own thumbnail beside its name, dimensions and purpose](docs/attachments.md).** The inventory is grouped by family: plates, vertical tile brackets, normal full-solid stops, angled stops, edge strips, inner/outer corners, support rails, rail ends and connectors.
 
 *Every inventory row has a unique actual STEP-derived render and matching alt text. Camera and background are consistent; physical scale is shared within a family, not between families. The overview above is a quick introduction, not a substitute for the individual pictures. Colors are illustrative. Other build envelopes, lengths and heights can produce additional parametric variants beyond this bounded catalogue.*
 
@@ -86,13 +86,29 @@ Generate a narrow, tall bracket as an unsliced Bambu project:
 uv run cargo-grid part --family vertical-tile-bracket --cells 1 2 --build-width-mm 350 --build-depth-mm 320 --build-height-mm 325 --bambu --material "Model PETG" PETG "#637b70" --nozzle 0.4 --layer-height 0.2 --output outputs/vertical-bracket
 ```
 
-This exports **only the bracket**. Generate its tile separately with the same `--cells 1 2` using the ordinary tile command. The three bracket sizes are `1 2`, `2 1` and `2 2`; omitting `--cells` for this family chooses `2 1`. They require the reference 60 mm pitch, 13 mm tile height and zero fit offset. The unreleased `lock-90` family is replaced by `vertical-tile-bracket`, without an alias; `--accessory-height` applies to angled `lock-45` stops, not these brackets.
+This exports **only the bracket**. Generate its tile separately with the same `--cells 1 2` using the ordinary tile command. The three bracket sizes are `1 2`, `2 1` and `2 2`; omitting `--cells` for this family chooses `2 1`. They require the reference 60 mm pitch, 13 mm tile height and zero fit offset. The unreleased `lock-90` family is replaced by `vertical-tile-bracket`, without an alias; `--accessory-height` applies to normal `vertical-stop` and angled `lock-45` stops, not these brackets.
 
 The solid backing makes the tile's backed interior round holes **13 mm-deep blind pockets while assembled**, not through-routes for cords or bolts. Perimeter half/quarter cutouts are not all closed bores. Tiles can extend left, right and upward at the same wall origin; downward extension is obstructed by the bracket/base. Detaching the tile exposes its unchanged holes for cleaning; printed removal force and strength are unverified.
 
-**Bambu projects rotate brackets diagonal-face-down and angled stops back-face-down before fit checks and plate packing.** This applies to both single-part and catalogue `--bambu` jobs. STEP, STL and core 3MF keep their model datums; when using those files directly, apply the manifest's recommended print pose in your slicer. Other accessory families retain their existing project orientation. Always inspect bed contact, actual supports, material assignments and warnings; an unsliced project is not print approval.
+**Bambu projects rotate brackets diagonal-face-down, normal stops by their per-design broad-rear-face-down angle and angled stops back-face-down before fit checks and plate packing.** This applies to both single-part and catalogue `--bambu` jobs. STEP, STL and core 3MF keep their model datums; when using those files directly, apply the manifest's recommended print pose in your slicer. Normal Auto support is scoped to normal-stop objects; other accessory families retain their existing project orientation and support behavior. Always inspect bed contact, actual supports, material assignments and warnings; an unsliced project is not print approval.
 
-Edges and corners have selective R2 free top rims. Rails and exposed stop caps use smaller R1 rounds. Bracket front lips use R1 outside the tile's planar bearing land; protected bed-face, plug and seating boundaries are not blanket-rounded. Angled stops have full-length 6 mm side webs, not narrow reverse-notched gussets.
+Edges and corners have selective R2 free top rims. Rails and angled-stop caps use smaller R1 rounds. Bracket front lips use R1 outside the tile's planar bearing land; protected bed-face, plug and seating boundaries are not blanket-rounded. Angled stops have full-length 6 mm side webs, not narrow reverse-notched gussets.
+
+## Hold cargo with a normal full-solid stop
+
+**`vertical-stop` is a filled CAD wedge, not a tile carrier, open web or 100% infill instruction.** It spans the full base width with a solid cargo face and broad rear print face. There are no wall holes, panel plugs, ledges or separate ribs. The slicer still applies its ordinary perimeter and infill choices to the exported solid.
+
+![Six normal full-solid stops: 1x2, 2x1 and 2x2 bases at 60 mm and 120 mm shoulder heights.](docs/images/vertical-stops.png)
+
+The first cell count is base **X width**, the second is base **Y depth**, and `--accessory-height` is the shoulder-relative **Z height**. The supported catalogue variants are `1 2`, `2 1` and `2 2`, each at exactly 60 or 120 mm. Omitting both options chooses `2 1` and 60 mm. The 2x1/H120 part is the natural full wedge; it does not add an extra raised 45-degree toe.
+
+```sh
+uv run cargo-grid part --family vertical-stop --cells 2 1 --accessory-height 120 --build-width-mm 350 --build-depth-mm 320 --build-height-mm 325 --bambu --material "Model PETG" PETG "#637b70" --nozzle 0.4 --layer-height 0.2 --output outputs/vertical-stop
+```
+
+Every free exterior edge is rounded R2 in one coupled operation, including the cargo perimeter, diagonal rear boundaries, front/toe outline and underside outer perimeter. The downward X plugs and their existing roots remain exact. STEP, STL and core 3MF retain the source datum; Bambu projects apply each design's measured broad-rear-face-down X rotation before bounds checks and packing.
+
+Normal Auto support is scoped to each `vertical-stop` object without globally enabling support for tiles, brackets or other catalogue entries. In the documented H2D PETG CLI checks, only 2x1/H120 generated support: about 3.87 g at 0.8/0.32 and 2.19 g at 0.4/0.20, reaching the mounting region. Inspect the actual sliced paths and remove support completely before checking fit. Other tested variants generated no Auto support, but profile changes can change that result. These observations are not physical print, removal, strength or load verification.
 
 ## Support the roofs without changing the mat
 
@@ -163,7 +179,7 @@ uv run cargo-grid compare-reference --help
 
 `--filler balanced`, `positive` and `negative` control leftover layout material. Assembly frames describe the floor arrangement; print placement is separate. `--part-gap` controls catalogue packing separation. Native jobs are limited to 36 plates; an over-capacity job fails before export.
 
-Outputs are one checked STEP and optional STL per unique design, `job.3mf`, and a versioned `manifest.json` with parameters, modes, quantities, assembly frames, actual bounds, validation results and omitted/rejected entries. `--no-stl` suppresses STL output. Filenames include parameter hashes. For brackets and angled stops, `recommended_print_orientation` distinguishes source-file orientation from the applied Bambu pose; per-plate items record the exact source-to-project matrix, packing rotation and transformed bounds.
+Outputs are one checked STEP and optional STL per unique design, `job.3mf`, and a versioned `manifest.json` with parameters, modes, quantities, assembly frames, actual bounds, validation results and omitted/rejected entries. `--no-stl` suppresses STL output. Filenames include parameter hashes. For brackets, normal stops and angled stops, `recommended_print_orientation` distinguishes source-file orientation from the applied Bambu pose; per-plate items record the exact source-to-project matrix, packing rotation and transformed bounds. Normal-stop manifests also record the object-scoped normal Auto support request.
 
 Core 3MF is geometry, not a multi-plate print configuration. `--bambu` adds native-compatible plate/material/modifier metadata with **diagnostic**, unsliced profile IDs. It does not embed calibrated factory profiles or produce G-code. Existing non-empty output directories, standalone 3MFs and comparison reports are not overwritten; a later CAD/I/O failure can leave diagnostic partial output to inspect before retrying in a new directory.
 
@@ -220,6 +236,8 @@ export_job(Job([design], BuildVolume(150, 150, 50), "part"), Path("outputs/pytho
 `Interface`, `Tile` and `BuildVolume` own geometry/space parameters. `exact_layout`/`layout_job` and `catalogue_job` create the larger workflows. `BambuSettings`/`Material`, `RoofSupportSettings` and `StackSettings` describe optional export requests. `RoofSupportSettings()` selects the guarded PETG/PLA zero-contact defaults; same-material/unsupported roof pairs are rejected.
 
 Use `accessory_design(Accessory("vertical-tile-bracket", nx=1, ny=2))` from `cargo_grid.catalogue` / `cargo_grid.accessories` for the narrow tall bracket. API calls use explicit supported mounting cells. For a Bambu catalogue, call `catalogue_job(build, orient_for_bambu=True)` so eligibility uses the same transformed bounds as Bambu packing; the CLI does this automatically with `--bambu`. Custom-interface catalogues retain other supported families but omit the reference-only bracket family.
+
+Use `accessory_design(Accessory("vertical-stop", nx=2, ny=1, height=120))` for the selected tall normal stop. API height is explicit and uses millimeters above the attachment shoulder. The resulting `Design` carries its dynamic print rotation and object-scoped normal Auto settings; source geometry remains in the model datum.
 
 ```sh
 uv sync --group dev

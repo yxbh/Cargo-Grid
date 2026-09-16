@@ -26,6 +26,7 @@ DOCUMENTATION_IMAGES = {
     "docs/images/hero.png",
     "docs/images/x-attachments.png",
     "docs/images/vertical-tile-brackets.png",
+    "docs/images/vertical-stops.png",
     *(
         f"docs/images/attachments/{family}-{number}.png"
         for family in ("edge-x", "edge-y", "support")
@@ -40,6 +41,11 @@ DOCUMENTATION_IMAGES = {
     *(
         f"docs/images/attachments/vertical-tile-bracket-{grid}.png"
         for grid in ("1x2", "2x1", "2x2")
+    ),
+    *(
+        f"docs/images/attachments/vertical-stop-{grid}-h{height}.png"
+        for grid in ("1x2", "2x1", "2x2")
+        for height in (60, 120)
     ),
 }
 FORBIDDEN_SUFFIXES = {

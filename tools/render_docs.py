@@ -18,8 +18,8 @@ from cargo_grid.catalogue import accessory_variants
 
 ROOT = Path(__file__).resolve().parents[1]
 BUILD = BuildVolume(350, 320, 325)
-WORKBENCH_REVISION = "120024625ad5c76a5d8bc768556e04fc7eae4023"
-GEOMETRY_REVISION = "ecd1349da4cef5f73b197861d59d4a165bab5459"
+WORKBENCH_REVISION = "c3f63ef8d8604d3ec7eeba40a229047887c03d86"
+GEOMETRY_REVISION = "b5b0538bc34dec2e284a7406e182dc4206df712c"
 GEOMETRY_FILES = (
     "parameters.py",
     "interfaces.py",
@@ -32,9 +32,19 @@ GEOMETRY_FILES = (
 )
 CAMERA = "45:32"
 BACKGROUND = "#f2f1ec"
-IMAGE_NAMES = ("hero.png", "x-attachments.png", "vertical-tile-brackets.png")
+IMAGE_NAMES = (
+    "hero.png",
+    "x-attachments.png",
+    "vertical-tile-brackets.png",
+    "vertical-stops.png",
+)
 SHEETS = (
-    ("x-attachments.png", "X-plug attachments", ("plate", "vertical-tile-bracket", "lock-45"), 4),
+    (
+        "x-attachments.png",
+        "X-plug attachments",
+        ("plate", "vertical-tile-bracket", "vertical-stop", "lock-45"),
+        4,
+    ),
 )
 FAMILIES = {
     "plate": (
@@ -44,6 +54,10 @@ FAMILIES = {
     "vertical-tile-bracket": (
         "Vertical tile brackets",
         "A one-piece inset wedge carrying a separate ordinary tile vertically. Solid backing makes backed round holes blind; the internal strip has nominal zero gap. Bambu projects place it diagonal-face-down.",
+    ),
+    "vertical-stop": (
+        "Normal full-solid stops",
+        "A full-width filled cargo wedge with no wall holes or open ribs. Every free outer edge is R2 while X plugs remain exact. Bambu projects place its broad rear face down and scope normal Auto support to this object.",
     ),
     "lock-45": (
         "Angled stops",
@@ -100,6 +114,9 @@ def inventory() -> list[Item]:
             suffix, detail = f"v{spec.variant}", f"variant {spec.variant}"
             if spec.family == "support-end":
                 detail += f" / {SUPPORT_END_NAMES[spec.variant - 1]}"
+        elif spec.family == "vertical-stop":
+            suffix = f"{spec.nx}x{spec.ny}-h{spec.height:g}"
+            detail = f"{spec.nx} x {spec.ny} / H {spec.height:g} mm"
         else:
             suffix, detail = f"{spec.nx}x{spec.ny}", f"{spec.nx} x {spec.ny}"
             if spec.family.startswith("lock-"):
@@ -156,7 +173,7 @@ def documentation_shape(key: str):
         shape = make_accessory(item.spec)
         color = (
             "#637b70"
-            if item.spec.family in ("plate", "vertical-tile-bracket", "lock-45")
+            if item.spec.family in ("plate", "vertical-tile-bracket", "vertical-stop", "lock-45")
             else "#626b68"
         )
     if not shape.is_valid or len(shape.solids()) != 1 or shape.volume <= 0:
@@ -578,6 +595,15 @@ def compose_all(work: Path, provenance: dict) -> None:
             3,
         )
     )
+    sheets.append(
+        composite(
+            work,
+            [item for item in items if item.spec.family == "vertical-stop"],
+            "vertical-stops.png",
+            "Normal full-solid vertical stops",
+            3,
+        )
+    )
     thumbnails = thumbnail_entries(work, provenance)
     lines = [
         "# Complete attachment inventory",
@@ -592,9 +618,11 @@ def compose_all(work: Path, provenance: dict) -> None:
         "",
         "Bracket thumbnails show the exported one-piece bracket only. The [family view](images/vertical-tile-brackets.png) adds separate ordinary tiles for assembly context; these tiles are not fused into or included with bracket exports. Their entry faces meet the brackets, so their undersides face outward. Backed interior round holes are blind, and downward wall extension is obstructed; left/right/up joins remain available at a common wall origin.",
         "",
-        "Edge/corner free top rims use selective R2 rounding. Rail outer top rims and angled-stop cap profiles use R1. Brackets use R1 on the exposed front lip outside the tile's planar bearing land; bed-face boundaries, plug shoulders, mounting faces and the protected base are not blanket-filleted. Nominal zero-gap bearing is not calibrated fit or a physical load rating.",
+        "Normal `vertical-stop` names use base X cells, base Y cells and an explicit H60/H120 shoulder height. These six parts are filled CAD wedges, not hollow shells or tile brackets; ordinary slicer perimeters and 15% infill remain separate manufacturing choices. They have no wall holes, panel connectors or ledges.",
         "",
-        "Bambu projects apply the bracket's diagonal-face-down and angled stop's back-face-down rigid rotations before fit checks and packing. Source STEP/STL and core 3MF retain model orientation; manifests record recommendations and exact applied source-to-project transforms. Edge/corner/plate/rail families retain their project orientation.",
+        "Edge/corner free top rims and every normal-stop free exterior edge use R2 rounding. Rail outer top rims, angled-stop cap profiles and the bracket's nonbearing front lip use R1. Exact X plugs, tile-facing joins, support joins, bracket bed face and bearing land remain protected rather than blanket-filleted. Nominal geometry is not calibrated fit or a physical load rating.",
+        "",
+        "Bambu projects apply the bracket's diagonal-face-down, normal stop's per-design broad-rear-face-down and angled stop's back-face-down rotations before fit checks and packing. Source STEP/STL and core 3MF retain model orientation; manifests record recommendations and exact applied source-to-project transforms. Normal Auto support is scoped only to normal-stop objects; the 2x1/H120 variant generated mounting-region support in both documented native profiles, so inspect removal and fit. Edge/corner/plate/rail families retain their project orientation.",
         "",
     ]
     for family, (heading, _) in FAMILIES.items():
@@ -622,7 +650,7 @@ def compose_all(work: Path, provenance: dict) -> None:
         "PYTHONPATH=src <workbench-python> tools/render_docs.py --workbench <workbench-checkout>",
         "```",
         "",
-        f"Use the workbench's Python interpreter with Pillow already available; paths are supplied locally, not committed. In PowerShell, set `$env:PYTHONPATH='src'` before invoking that interpreter. The script checks geometry modules against the recorded commit, invokes STEP/inspection/render tools, then creates three overview PNGs and {len(items)} family-scaled thumbnails. `--compose-only` reuses verified local STEP-derived renders; `--check` verifies the committed files and their one-to-one inventory mapping without Pillow. Intermediate STEP files and raw renders remain ignored. Layout is deterministic; raster bytes can depend on graphics/Pillow versions.",
+        f"Use the workbench's Python interpreter with Pillow already available; paths are supplied locally, not committed. In PowerShell, set `$env:PYTHONPATH='src'` before invoking that interpreter. The script checks geometry modules against the recorded commit, invokes STEP/inspection/render tools, then creates {len(IMAGE_NAMES)} overview PNGs and {len(items)} family-scaled thumbnails. `--compose-only` reuses verified local STEP-derived renders; `--check` verifies the committed files and their one-to-one inventory mapping without Pillow. Intermediate STEP files and raw renders remain ignored. Layout is deterministic; raster bytes can depend on graphics/Pillow versions.",
         "",
         f"Generator source revision: {revision_tag(provenance['generator_commit'])}. Generator tree: {revision_tag(provenance['generator_tree'])}. Workbench revision: {revision_tag(provenance['workbench_commit'])}.",
         "",

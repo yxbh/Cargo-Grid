@@ -52,9 +52,9 @@ Expansion changes the first support/raft layer, not the model CAD. It may affect
 
 Stacking creates explicit sacrificial support-base and lower/upper release volumes between repeated identical tiles. The gap must leave positive base thickness after both interfaces. Quantities, maximum stack height, partial batches, material roles and usable build reservations remain explicit. Generated contact/separation geometry does not prove successful physical detachment.
 
-The accessory catalogue contains independently authored functional edge/corner pieces, X-plug plates, angled stops, vertical tile brackets and physical support rails. It is not a promise that every contour or secondary mechanism matches another design. Physical support rails use separate end-to-end dovetails and a 25 mm supporting depth; they are not X-plug attachments, and no positive mat-to-rail latch is assumed.
+The accessory catalogue contains independently authored functional edge/corner pieces, X-plug plates, normal full-solid stops, angled stops, vertical tile brackets and physical support rails. It is not a promise that every contour or secondary mechanism matches another design. Physical support rails use separate end-to-end dovetails and a 25 mm supporting depth; they are not X-plug attachments, and no positive mat-to-rail latch is assumed.
 
-Catalogue membership is finite and build-volume-dependent. Oversized accessory variants are listed as omitted rather than shrunk. Ordered tile sizes remain distinct even if either orientation fits the same bed. Bambu bracket and angled-stop jobs first apply their validated X-axis print rotation; bounding-rectangle packing then permits its existing 90-degree XY rotation. Other families are not reoriented. This is not an optimal-packing guarantee.
+Catalogue membership is finite and build-volume-dependent. Oversized accessory variants are listed as omitted rather than shrunk. Ordered tile sizes remain distinct even if either orientation fits the same bed. Bambu bracket, normal-stop and angled-stop jobs first apply their validated X-axis print rotation; bounding-rectangle packing then permits its existing 90-degree XY rotation. Other families are not reoriented. This is not an optimal-packing guarantee.
 
 ### Vertical tile brackets
 
@@ -66,9 +66,19 @@ For base depth `d`, the vertical tile seat is Y=`d-13`, panel plug tips end at Y
 
 The ordinary tile remains a separate part and is not fused into bracket STEP/STL/3MF geometry. Its entry face seats on the plugs; its original underside is outward. Solid backing makes backed interior round holes nominally 13 mm-deep blind pockets. Edge half/quarter cutouts are not all sealed bores. Same-origin left/right/up extensions retain their mating placement, while downward extension is obstructed. The existing nominal plug/socket overlap is preserved, not replaced by a false zero-collision fit claim.
 
+### Normal full-solid vertical stops
+
+`vertical-stop` is distinct from `vertical-tile-bracket` and does not restore the obsolete `lock-90` name. Its finite catalogue grids are 1x2, 2x1 and 2x2 at H60 and H120 mm. The first count is base X width, the second is base Y depth and height is measured from the attachment shoulder Z=0. Base shoulder, pitch and downward X plugs reuse the existing mounted-base construction; plug tips remain Z=-12.8.
+
+The body is one full-width filled triangular wedge from the 4.1 mm front toe to a solid cargo face at positive Y. It has no open central bay, separate side ribs, wall holes, panel connectors, ledge or tile. The 2x1/H120 geometry is the natural wedge selected for the family rather than an extra-material raised 45-degree toe. A solid CAD body does not request 100% slicer infill.
+
+The retangent profile is solved so the coupled R2 blend reaches the exact requested H60/H120 maximum while the cargo-face Y datum remains exact. One fillet operation rounds all twelve free source edges: cargo cap/perimeter, both diagonal rear boundaries, front/toe perimeter and the complete underside outer perimeter. The protected X plug profiles and existing R1 roots have zero geometric change. R2 on both horizontal boundaries of the 4.1 mm toe leaves a 0.1 mm planar center land at the extreme front; source bodies, STEP roundtrips and closed meshes remain valid.
+
+Each Bambu export computes its X rotation from the actual depth, height and R2 retangent slope so the broad rear face is down before fit checks and packing. Normal Auto support metadata is scoped to the stop object. In the documented H2D PETG native checks, 2x1/H120 alone generated mounting-region support at both 0.8/0.32 and 0.4/0.20; this requires sliced-path and removal review and does not imply physical print approval. Other profiles can make different support decisions.
+
 ### Selective rounds and angled stops
 
-Free edge/corner top rims use R2; central dovetail flanks, shoulders and roof boundaries retain their interface geometry. Full-height accessory outlines solve the free R2 rims together with their existing R1 upper joining rounds; the tile generator's default rounding path is unchanged. Rail/support outer top rims use R1 outside the central support-dovetail envelope, retaining the lower body and its full-height joint.
+Free edge/corner top rims and all normal-stop free exterior edges use R2; central dovetail flanks, shoulders, roof boundaries and X attachment profiles retain their interface geometry. Full-height accessory outlines solve the free R2 rims together with their existing R1 upper joining rounds; the tile generator's default rounding path is unchanged. Rail/support outer top rims use R1 outside the central support-dovetail envelope, retaining the lower body and its full-height joint.
 
 Angled `lock-45` stops retain a 4.1 mm base, a 6 mm horizontal wall thickness (about 4.243 mm normal to the 45-degree wall), and unchanged lower geometry through Z3.1. Full-length 6 mm side webs meet the cap directly without a reverse corner/notch. The exposed cap is rounded R1 in its generating profile rather than attempting a blanket fillet across wall/web junctions.
 
@@ -84,7 +94,7 @@ A remaining isolated three-edge crack can be closed only when it is an unambiguo
 
 Manifests include a schema version, generator version, design modes, resolved parameters, compatibility qualifications and unsupported combinations. Core 3MF preserves model orientation and quantities; native-compatible 3MF adds plate/material/modifier metadata with diagnostic profile IDs. Neither means the exported job has been sliced or physically verified.
 
-Bambu single-part and catalogue exports rotate vertical tile brackets X=135 degrees (diagonal face down) and angled stops X=-135 degrees (back face down) before bounds checks and packing. STEP/STL and core 3MF retain model orientation. Recommendations include per-artifact applied flags; Bambu plate items include the exact source-to-project transform, composed with their in-plane packing rotation and translation. The pose is already baked into the Bambu mesh and must not be applied twice. API catalogue callers use `orient_for_bambu=True` for the matching eligibility calculation. Roof-support and stack workflows keep their existing orientation and cannot be combined with independently oriented models.
+Bambu single-part and catalogue exports rotate vertical tile brackets X=135 degrees (diagonal face down), normal stops by their per-design broad-rear-face-down angle and angled stops X=-135 degrees (back face down) before bounds checks and packing. STEP/STL and core 3MF retain model orientation. Recommendations include per-artifact applied flags; Bambu plate items include the exact source-to-project transform, composed with their in-plane packing rotation and translation. Normal-stop items additionally carry object-scoped `enable_support=1` and `support_type=normal(auto)` without changing global tile/bracket support behavior. The pose is already baked into the Bambu mesh and must not be applied twice. API catalogue callers use `orient_for_bambu=True` for the matching eligibility calculation. Roof-support and stack workflows keep their existing orientation and cannot be combined with independently oriented models.
 
 ## Optional reference comparison
 
