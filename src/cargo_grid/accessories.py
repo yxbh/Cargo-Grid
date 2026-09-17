@@ -72,10 +72,11 @@ SUPPORT_TOP_RADIUS_MM = 1.0
 SUPPORT_BODY_RADIUS_MM = 3.0
 SUPPORT_WINDOW_RADIUS_MM = 2.0
 SUPPORT_END_PROFILE_RADII_MM = {2: 0.25}
-SUPPORT_END_BODY_RADII_MM = {1: 1.0, 3: 3.0, 4: 3.0}
+SUPPORT_END_BODY_RADII_MM = {1: 0.75, 3: 3.0, 4: 3.0}
 SUPPORT_END_CAP_RADIUS_MM = 3.0
-SUPPORT_END_WINDOW_RADII_MM = {1: 1.5, 2: 2.0, 3: 3.0, 4: 3.0}
-SUPPORT_END_SLOPED_WINDOW_RIM_RADII_MM = {2: 1.5, 3: 1.0, 4: 0.75}
+SUPPORT_END_WINDOW_RADII_MM = {1: 2.5, 2: 2.0, 3: 3.0, 4: 3.0}
+SUPPORT_END_HORIZONTAL_WINDOW_RIM_RADII_MM = {1: 1.0, 2: 2.0, 3: 2.0, 4: 2.0}
+SUPPORT_END_SLOPED_WINDOW_RIM_RADII_MM = {1: 1.5, 2: 1.5, 3: 1.0, 4: 0.75}
 BRACKET_LIP_RADIUS_MM = 1.0
 BRACKET_FREE_EDGE_RADIUS_MM = 2.0
 BRACKET_FRONT_SLOPE_RADIUS_MM = 3.0
@@ -1149,30 +1150,15 @@ def _support(spec: Accessory, *, round_top: bool = True) -> Part:
         and edge.center().Y <= length - rim_margin
         and (abs(edge.bounding_box().min.Z) < 1e-5 or abs(edge.bounding_box().max.Z + 25) < 1e-5)
     ]
-    if spec.family == "support-end" and spec.variant == 1:
-        all_window_rims = [
-            edge
-            for edge in part.edges()
-            if edge.bounding_box().min.X >= -10.01
-            and edge.bounding_box().max.X <= 10.01
-            and edge.center().Y >= rim_margin
-            and edge.center().Y <= length - rim_margin
-            and not (edge.bounding_box().size.X < 1e-5 and edge.bounding_box().size.Y < 1e-5)
-        ]
-        part = part.fillet(
-            SUPPORT_WINDOW_RADIUS_MM * min(1.0, spec.interface.unit_scale),
-            all_window_rims,
-        )
-    elif window_rims:
+    if window_rims:
         if spec.family == "support-end":
-            rim_radius = SUPPORT_WINDOW_RADIUS_MM * min(
-                1.0,
-                spec.interface.unit_scale,
+            rim_radius = SUPPORT_END_HORIZONTAL_WINDOW_RIM_RADII_MM[spec.variant] * min(
+                1.0, spec.interface.unit_scale
             )
         else:
             rim_radius = SUPPORT_WINDOW_RADIUS_MM
         part = part.fillet(rim_radius, window_rims)
-    if spec.family == "support-end" and spec.variant != 1:
+    if spec.family == "support-end":
         sloped_window_rims = [
             edge
             for edge in part.edges()

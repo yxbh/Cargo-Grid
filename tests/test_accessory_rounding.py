@@ -120,7 +120,7 @@ def test_support_rounding_preserves_full_height_dovetails(spec, tmp_path):
     ]
     expected_radii = (
         {
-            1: {1.0, 1.5, 2.0},
+            1: {0.75, 1.0, 1.5, 2.5},
             2: {0.25, 1.5, 2.0, 3.0},
             3: {1.0, 2.0, 3.0},
             4: {0.75, 1.0, 2.0, 3.0},
