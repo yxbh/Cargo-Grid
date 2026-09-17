@@ -106,13 +106,30 @@ def test_support_rounding_preserves_full_height_dovetails(spec, tmp_path):
     restored = import_step(path)
     volume_budget = max(1e-6, after.area * Precision.Confusion_s())
     assert abs(restored.volume - after.volume) <= volume_budget
-    expected_radius = (
-        {1: 0.75, 2: 1.0, 3: 3.0, 4: 3.0}[spec.variant] if spec.family == "support-end" else 3.0
-    )
-    assert any(
-        face.geom_type == GeomType.CYLINDER
-        and BRepAdaptor_Surface(face.wrapped).Cylinder().Radius() == pytest.approx(expected_radius)
+    adaptive_volumes = []
+    for shape in (after, restored):
+        properties = GProp_GProps()
+        error = BRepGProp.VolumeProperties_s(shape.wrapped, properties, 1e-12, True, False)
+        assert error < 1e-10
+        adaptive_volumes.append(properties.Mass())
+    assert abs(adaptive_volumes[1] - adaptive_volumes[0]) <= volume_budget
+    radii = [
+        BRepAdaptor_Surface(face.wrapped).Cylinder().Radius()
         for face in restored.faces()
+        if face.geom_type == GeomType.CYLINDER
+    ]
+    expected_radii = (
+        {
+            1: {0.5, 0.75, 1.0, 2.5, 3.0},
+            2: {0.25, 1.5, 2.0, 3.0},
+            3: {1.0, 2.0, 3.0},
+            4: {1.0, 2.0, 3.0},
+        }[spec.variant]
+        if spec.family == "support-end"
+        else {3.0}
+    )
+    assert all(
+        any(radius == pytest.approx(expected) for radius in radii) for expected in expected_radii
     )
 
 
