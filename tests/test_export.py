@@ -140,7 +140,7 @@ def test_bracket_display_name_is_bambu_metadata_not_design_identity(materials, t
     )
     _, plates, _ = _project_facts(tmp_path / "bracket.3mf")
     assert any(
-        name.startswith("Wide tile bracket — 2 columns, 1 row (2x1)")
+        name.startswith("Wide low tile bracket — floor 2x1, wall 2x1")
         for _, _, members in plates
         for name, _ in members
     )

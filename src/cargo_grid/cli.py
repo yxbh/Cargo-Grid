@@ -479,7 +479,13 @@ def parser() -> argparse.ArgumentParser:
                 "--depth-cells",
                 type=int,
                 metavar="COUNT",
-                help="one design's Y depth in grid cells; bracket depth also sets upright tile rows",
+                help="one design's Y depth in grid cells; for a bracket, floor-base rows only",
+            )
+            p.add_argument(
+                "--panel-height-cells",
+                type=int,
+                metavar="COUNT",
+                help="vertical-tile-bracket wall height in 60 mm rows; omit to match --depth-cells",
             )
             p.add_argument(
                 "--length-cells",
@@ -603,6 +609,12 @@ def main(argv: list[str] | None = None) -> int:
                 {"lock-45", "vertical-stop"},
                 60 if args.family == "vertical-stop" else 50,
             )
+            panel_height = _part_option(
+                args,
+                "panel_height_cells",
+                {"vertical-tile-bracket"},
+                None,
+            )
             if args.family == "tile":
                 design = tile_design(
                     Tile(*cells, interface, args.hole_diameter_mm, hole_scope=args.hole_scope)
@@ -618,6 +630,7 @@ def main(argv: list[str] | None = None) -> int:
                         length,
                         stop_height,
                         interface,
+                        panel_height_cells=panel_height,
                     )
                 )
             design.quantity = args.copy_count

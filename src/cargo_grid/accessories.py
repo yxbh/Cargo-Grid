@@ -47,6 +47,13 @@ FAMILIES = (
 )
 SUPPORT_END_NAMES = ("X", "Xs", "Y", "Ys")
 VERTICAL_BRACKET_CELLS = ((1, 2), (2, 1), (2, 2))
+VERTICAL_BRACKET_CONFIGS = (
+    (1, 2, 2),
+    (2, 1, 1),
+    (2, 2, 2),
+    (1, 1, 2),
+    (2, 1, 2),
+)
 VERTICAL_STOP_CELLS = ((1, 1), (1, 2), (2, 1), (2, 2))
 VERTICAL_STOP_HEIGHTS_MM = (60.0, 120.0)
 RAMP_RUN_MM = 50.0
@@ -76,8 +83,9 @@ class Accessory:
 
     ``length`` controls support-bit length excluding its projecting join.
     ``height`` is the lock-45 or vertical-stop height above its shoulder, including its base.
-    Vertical tile brackets use explicit ``nx, ny`` of 1x2, 2x1 or 2x2:
-    X counts panel columns; Y counts base rows and vertical panel rows.
+    Vertical tile brackets use ``nx, ny`` for base columns/rows.
+    ``panel_height_cells`` optionally gives independent upright panel rows;
+    when omitted, panel rows equal base rows for backward compatibility.
     Their height follows the tile grid, not ``height``.
     Vertical stops use explicit 1x2, 2x1 or 2x2 mounting cells and an explicit
     60 or 120 mm height. They are filled cargo wedges without wall holes.
@@ -95,6 +103,7 @@ class Accessory:
     length: float = 60
     height: float = 50
     interface: Interface = Interface()
+    panel_height_cells: int | None = None
 
     def __post_init__(self) -> None:
         if self.family == "lock-90":
@@ -105,6 +114,8 @@ class Accessory:
             raise ValueError(f"unknown accessory family: {self.family!r}")
         for name in ("nx", "ny", "variant"):
             count(name, getattr(self, name))
+        if self.panel_height_cells is not None:
+            count("panel height cells", self.panel_height_cells)
         positive("length", self.length)
         positive("height", self.height)
         if not isinstance(self.interface, Interface):
@@ -115,13 +126,15 @@ class Accessory:
         grids = {
             "plate": {(1, 1), (1, 2), (2, 2)},
             "lock-45": {(1, 1), (2, 2)},
-            "vertical-tile-bracket": set(VERTICAL_BRACKET_CELLS),
             "vertical-stop": set(VERTICAL_STOP_CELLS),
         }
         if self.family in grids and (self.nx, self.ny) not in grids[self.family]:
             raise ValueError(f"unsupported mounting grid for {self.family}")
         if self.family not in grids and self.ny != 1:
-            raise ValueError(f"{self.family} uses nx, not ny")
+            if self.family != "vertical-tile-bracket":
+                raise ValueError(f"{self.family} uses nx, not ny")
+        if self.family != "vertical-tile-bracket" and self.panel_height_cells is not None:
+            raise ValueError(f"panel height cells do not apply to {self.family}")
         if self.family in variants and self.nx != 1:
             raise ValueError(f"{self.family} uses variant, not nx")
         if self.family == "support-bit" and (self.length < 20 or self.nx != 1):
@@ -131,6 +144,14 @@ class Accessory:
         if self.family == "lock-45" and self.height > self.ny * self.interface.pitch:
             raise ValueError("45-degree lock height must not exceed its base depth")
         if self.family == "vertical-tile-bracket":
+            panel_rows = self.panel_height_cells or self.ny
+            if (self.nx, self.ny, panel_rows) not in VERTICAL_BRACKET_CONFIGS:
+                raise ValueError(
+                    "vertical-tile-bracket supports floor base 1x2 -> wall 1x2, "
+                    "2x1 -> 2x1, 2x2 -> 2x2, 1x1 -> 1x2 or 2x1 -> 2x2"
+                )
+            if panel_rows == self.ny and self.panel_height_cells is not None:
+                object.__setattr__(self, "panel_height_cells", None)
             if not self.interface.reference_socket_dimensions:
                 raise ValueError(
                     "vertical-tile-bracket requires 60 mm pitch, 13 mm tile height and zero fit offset"
@@ -331,6 +352,9 @@ def _panel_connector() -> Part:
 
 
 def _vertical_bracket(spec: Accessory, *, round_lip: bool = True) -> Part:
+    panel_rows = spec.panel_height_cells or spec.ny
+    if panel_rows != spec.ny:
+        return _shallow_vertical_bracket(spec, panel_rows)
     p = spec.interface.pitch
     w, d = spec.nx * p, spec.ny * p
     seat = d - BRACKET_INSET_MM
@@ -366,6 +390,61 @@ def _vertical_bracket(spec: Accessory, *, round_lip: bool = True) -> Part:
     return base.fuse(wedge, *connectors, land).clean()
 
 
+def _shallow_vertical_bracket(spec: Accessory, panel_rows: int) -> Part:
+    p = spec.interface.pitch
+    w, d = spec.nx * p, spec.ny * p
+    seat = d - BRACKET_INSET_MM
+    node = _panel_connector()
+    intercept = (
+        PANEL_BOTTOM_MM
+        + node.bounding_box().max.Y
+        + BRACKET_BACKING_MM
+        + BRACKET_INSET_MM
+        - p
+        + BRACKET_ENVELOPE_MARGIN_MM
+    )
+    panel_top = panel_rows * p - BRACKET_INSET_MM + intercept
+    upper_rear = seat - BRACKET_BACKING_MM - BRACKET_ENVELOPE_MARGIN_MM
+    body = _cross_prism(
+        [
+            (0, 0),
+            (d, 0),
+            (d, PANEL_BOTTOM_MM),
+            (seat, PANEL_BOTTOM_MM),
+            (seat, panel_top),
+            (upper_rear, panel_top),
+            (0, intercept),
+        ],
+        w,
+    )
+    operation = BRepFilletAPI_MakeFillet(body.wrapped)
+    for edge in body.edges():
+        bounds = edge.bounding_box()
+        if (
+            abs(bounds.min.Y - seat) < 1e-5
+            and abs(bounds.max.Y - seat) < 1e-5
+            and abs(bounds.min.Z - PANEL_BOTTOM_MM) < 1e-5
+            and abs(bounds.max.Z - PANEL_BOTTOM_MM) < 1e-5
+        ):
+            continue
+        operation.Add(BRACKET_LIP_RADIUS_MM, edge.wrapped)
+    operation.Build()
+    if not operation.IsDone():
+        raise ValueError("shallow tile-bracket coupled R1 body fillet failed")
+    rounded_body = Part(Solid(operation.Shape()).wrapped)
+    mounted = _mounted_base(spec, root_radius=1, round_top=False)
+    floor_connectors = []
+    for x, y, _ in _mount_centers(spec):
+        region = Solid.make_box(48, 48, 14.1).moved(Location((x - 24, y - 24, -13)))
+        floor_connectors.extend(mounted.intersect(region).solids())
+    panel_connectors = [
+        node.rotate(Axis.X, 90).moved(Location((column * p, seat, PANEL_BOTTOM_MM + row * p)))
+        for row in range(panel_rows)
+        for column in range(spec.nx)
+    ]
+    return Part(rounded_body.fuse(*floor_connectors, *panel_connectors).clean().solids())
+
+
 def _vertical_stop_slope(spec: Accessory, radius: float = VERTICAL_STOP_RADIUS_MM) -> float:
     depth = spec.ny * spec.interface.pitch
     a = depth - radius
@@ -380,6 +459,8 @@ def vertical_stop_print_rotation(spec: Accessory) -> float:
 
 
 def bambu_print_rotation(spec: Accessory) -> float | None:
+    if spec.family == "vertical-tile-bracket" and spec.panel_height_cells is not None:
+        return None
     return (
         vertical_stop_print_rotation(spec)
         if spec.family == "vertical-stop"
@@ -387,8 +468,18 @@ def bambu_print_rotation(spec: Accessory) -> float | None:
     )
 
 
+def bambu_print_rotation_y(spec: Accessory) -> float | None:
+    return (
+        -90.0
+        if spec.family == "vertical-tile-bracket" and spec.panel_height_cells is not None
+        else None
+    )
+
+
 def required_bambu_print_rotation(parameters: dict) -> float | None:
     family = parameters.get("family")
+    if family == "vertical-tile-bracket" and parameters.get("panel_height_cells") is not None:
+        return None
     if family != "vertical-stop":
         return BAMBU_PRINT_ROTATIONS.get(family)
     interface = parameters.get("interface", {})
@@ -399,6 +490,24 @@ def required_bambu_print_rotation(parameters: dict) -> float | None:
     b = parameters["height"] - radius - BASE_HEIGHT_MM
     slope = (a * b + radius * sqrt(a * a + b * b - radius * radius)) / (a * a - radius * radius)
     return 180 - degrees(atan(slope))
+
+
+def required_bambu_print_rotation_y(parameters: dict) -> float | None:
+    return (
+        -90.0
+        if parameters.get("family") == "vertical-tile-bracket"
+        and parameters.get("panel_height_cells") is not None
+        else None
+    )
+
+
+def required_bambu_object_settings(parameters: dict) -> dict[str, str]:
+    if (
+        parameters.get("family") == "vertical-tile-bracket"
+        and parameters.get("panel_height_cells") is not None
+    ):
+        return {"enable_support": "1", "support_type": "normal(auto)"}
+    return BAMBU_OBJECT_SETTINGS.get(parameters.get("family"), {})
 
 
 def _vertical_stop(spec: Accessory) -> Part:
@@ -624,17 +733,19 @@ def accessory_datums(spec: Accessory) -> dict:
         if spec.family == "vertical-tile-bracket":
             p = spec.interface.pitch
             seat = spec.ny * p - BRACKET_INSET_MM
+            panel_rows = spec.panel_height_cells or spec.ny
             return {
                 "shoulder_z": 0,
                 "plug_tip_z": -12.8,
                 "mount_centers": _mount_centers(spec),
                 "joins": [],
-                "panel_cells_x_z": (spec.nx, spec.ny),
+                "base_cells_x_y": (spec.nx, spec.ny),
+                "panel_cells_x_z": (spec.nx, panel_rows),
                 "panel_seat_y": seat,
                 "panel_plug_tip_y": seat + 12.8,
                 "panel_plug_centers": [
                     ((column + 0.5) * p, seat, PANEL_BOTTOM_MM + (row + 0.5) * p)
-                    for row in range(spec.ny)
+                    for row in range(panel_rows)
                     for column in range(spec.nx)
                 ],
                 "panel_bottom_z": PANEL_BOTTOM_MM,
@@ -746,7 +857,11 @@ def make_accessory(spec: Accessory) -> Part:
         if spec.interface.joint_style == "original":
             part = _round_free_top(part, spec)
     suffix = (
-        f"{spec.nx}x{spec.ny}"
+        (
+            f"base{spec.nx}x{spec.ny}_wall{spec.nx}x{spec.panel_height_cells}"
+            if spec.family == "vertical-tile-bracket" and spec.panel_height_cells is not None
+            else f"{spec.nx}x{spec.ny}"
+        )
         if spec.family in ("plate", "vertical-tile-bracket", "vertical-stop", "lock-45")
         else f"v{spec.variant}"
         if spec.family in ("corner-in", "corner-out", "support-end")

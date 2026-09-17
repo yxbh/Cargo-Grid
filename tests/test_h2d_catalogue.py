@@ -21,14 +21,14 @@ def test_h2d_dual_safe_plan_keeps_full_family_inventory_and_hardware_zones():
         "corner-out": 6,
         "support-end": 4,
         "support-bit": 4,
-        "vertical-tile-bracket": 3,
+        "vertical-tile-bracket": 5,
         "ramp": 5,
         "vertical-stop": 8,
         "lock-45": 2,
         "plate": 3,
     }
-    assert len(job.designs) == len(job.print_placements) == 79
-    assert max(placement.plate for placement in job.print_placements) + 1 == 23
+    assert len(job.designs) == len(job.print_placements) == 81
+    assert max(placement.plate for placement in job.print_placements) + 1 == 24
     assert job.part_gap == 10
     assert job.omitted == []
     assert job.placement_policy["common_reach_mm"] == {
@@ -38,12 +38,12 @@ def test_h2d_dual_safe_plan_keeps_full_family_inventory_and_hardware_zones():
         "max_y": 320,
         "max_z": 320,
     }
-    assert job.plate_names[22] == "5x5 TILE - SINGLE NOZZLE ONLY - LEFT"
+    assert job.plate_names[23] == "5x5 TILE - SINGLE NOZZLE ONLY - LEFT"
     assert any(
-        name.startswith("Tile brackets - wide 2x1, tall 1x2, square 2x2")
+        name.startswith("Tile brackets - deep originals and shallow tall/wide")
         for name in job.plate_names.values()
     )
-    assert job.plate_settings[22] == {
+    assert job.plate_settings[23] == {
         "filament_map_mode": "Manual",
         "filament_maps": "1",
         "filament_volume_maps": "0",
@@ -60,7 +60,7 @@ def test_h2d_dual_safe_plan_keeps_full_family_inventory_and_hardware_zones():
             width, depth = depth, width
         bounds = (placement.x, placement.x + width, placement.y, placement.y + depth, height)
         by_plate.setdefault(placement.plate, []).append(bounds)
-        if placement.plate == 22:
+        if placement.plate == 23:
             assert bounds[0] >= 5 - 1e-6 and bounds[1] <= 320 + 1e-6
             assert bounds[2] >= 5 - 1e-6 and bounds[3] <= 315 + 1e-6
         else:
@@ -77,6 +77,10 @@ def test_h2d_dual_safe_plan_keeps_full_family_inventory_and_hardware_zones():
         design.bambu_object_settings["support_type"] == "normal(auto)"
         for design in job.designs
         if design.parameters.get("family") in {"ramp", "vertical-stop"}
+        or (
+            design.parameters.get("family") == "vertical-tile-bracket"
+            and design.parameters.get("panel_height_cells") is not None
+        )
     )
 
 

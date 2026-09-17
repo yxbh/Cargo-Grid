@@ -15,7 +15,11 @@ from build123d import Axis, Compound, PrecisionMode, export_step, import_step
 from OCP.Precision import Precision
 
 from cargo_grid._version import __version__
-from cargo_grid.accessories import BAMBU_OBJECT_SETTINGS, required_bambu_print_rotation
+from cargo_grid.accessories import (
+    required_bambu_object_settings,
+    required_bambu_print_rotation,
+    required_bambu_print_rotation_y,
+)
 from cargo_grid.jobs import Job
 from cargo_grid.meshes import checked_mesh, write_stl
 from cargo_grid.packing import PrintPlacement, pack_sizes
@@ -151,21 +155,22 @@ def _validate_request(job: Job, bambu: BambuSettings | None, stack: StackSetting
     }
     for design in job.designs:
         count("design quantity", design.quantity)
-        family = design.parameters.get("family")
-        required_pose = required_bambu_print_rotation(design.parameters)
+        required_pose_x = required_bambu_print_rotation(design.parameters)
+        required_pose_y = required_bambu_print_rotation_y(design.parameters)
         if (
             bambu
-            and required_pose is not None
+            and (required_pose_x is not None or required_pose_y is not None)
             and (
                 not design.apply_orientation_to_bambu
-                or design.recommended_print_rotation_x != required_pose
+                or design.recommended_print_rotation_x != required_pose_x
+                or design.recommended_print_rotation_y != required_pose_y
             )
         ):
             raise ValueError(
                 f"{design.name}: Bambu accessory export requires its validated print orientation; "
                 "create the design with accessory_design()"
             )
-        required_object_settings = BAMBU_OBJECT_SETTINGS.get(family, {})
+        required_object_settings = required_bambu_object_settings(design.parameters)
         if bambu and design.bambu_object_settings != required_object_settings:
             raise ValueError(
                 f"{design.name}: Bambu accessory export requires its validated object settings; "
@@ -483,32 +488,46 @@ def _write_3mf(
             item["object_settings"] = dict(design.bambu_object_settings)
         record["items"].append(item)
         if bambu and design.apply_orientation_to_bambu:
-            angle = design.recommended_print_rotation_x
-            assert angle is not None
-            cx, sx = cos(radians(angle)), sin(radians(angle))
+            angle_x = design.recommended_print_rotation_x or 0
+            angle_y = design.recommended_print_rotation_y or 0
+            cx, sx = cos(radians(angle_x)), sin(radians(angle_x))
+            cy, sy = cos(radians(angle_y)), sin(radians(angle_y))
             cz, sz = cos(radians(rotation)), sin(radians(rotation))
             # 3MF stores basis columns; this translation includes the displayed plate origin.
-            record["items"][-1]["source_to_project_transform"] = {
-                "rotation_x_degrees": angle,
+            transform = {
                 "packing_rotation_z_degrees": rotation,
                 "translation_mm": translation,
                 "packed_size_mm": tuple(rotated_bounds.size),
                 "plate_local_lower_corner_mm": (px, py, 0),
                 "matrix_3mf": (
-                    cz,
-                    sz,
-                    0,
-                    -sz * cx,
-                    cz * cx,
-                    sx,
-                    sz * sx,
-                    -cz * sx,
-                    cx,
+                    cz * cy,
+                    sz * cy,
+                    -sy,
+                    cz * sy * sx - sz * cx,
+                    sz * sy * sx + cz * cx,
+                    cy * sx,
+                    cz * sy * cx + sz * sx,
+                    sz * sy * cx - cz * sx,
+                    cy * cx,
                     *translation,
                 ),
                 "applied_to_mesh": True,
             }
-            _metadata(configured, "cargo_grid_source_rotation_x", angle)
+            if design.recommended_print_rotation_x is not None:
+                transform["rotation_x_degrees"] = design.recommended_print_rotation_x
+                _metadata(
+                    configured,
+                    "cargo_grid_source_rotation_x",
+                    design.recommended_print_rotation_x,
+                )
+            if design.recommended_print_rotation_y is not None:
+                transform["rotation_y_degrees"] = design.recommended_print_rotation_y
+                _metadata(
+                    configured,
+                    "cargo_grid_source_rotation_y",
+                    design.recommended_print_rotation_y,
+                )
+            record["items"][-1]["source_to_project_transform"] = transform
         record["volumes"].extend(
             {
                 "name": v.name,
@@ -768,12 +787,19 @@ def export_job(
                 "compatibility": compatibility,
             }
         )
-        if design.recommended_print_rotation_x is not None:
-            oriented = design.shape.rotate(Axis.X, design.recommended_print_rotation_x)
+        if (
+            design.recommended_print_rotation_x is not None
+            or design.recommended_print_rotation_y is not None
+        ):
+            oriented = design.bambu_shape
             bounds = oriented.bounding_box()
-            entries[-1]["recommended_print_orientation"] = {
-                "rotation_axis": "X",
-                "rotation_degrees": design.recommended_print_rotation_x,
+            rotations = []
+            if design.recommended_print_rotation_x is not None:
+                rotations.append({"axis": "X", "degrees": design.recommended_print_rotation_x})
+            if design.recommended_print_rotation_y is not None:
+                rotations.append({"axis": "Y", "degrees": design.recommended_print_rotation_y})
+            recommendation = {
+                "rotations": rotations,
                 "translation_mm": tuple(-bounds.min),
                 "size_mm": tuple(bounds.size),
                 "applied_to_exports": {
@@ -784,6 +810,10 @@ def export_job(
                 },
                 "note": "Standalone recommended pose. Bambu-oriented designs are rotated before packing; exact source-to-project transforms are recorded per plate item. Source STEP/STL and core 3MF retain model orientation.",
             }
+            if len(rotations) == 1:
+                recommendation["rotation_axis"] = rotations[0]["axis"]
+                recommendation["rotation_degrees"] = rotations[0]["degrees"]
+            entries[-1]["recommended_print_orientation"] = recommendation
         if design.bambu_object_settings:
             entries[-1]["recommended_bambu_object_settings"] = {
                 "scope": "object",

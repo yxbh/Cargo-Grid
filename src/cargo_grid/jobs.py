@@ -23,6 +23,7 @@ class Design:
     assembly_frames: list[tuple[float, float, float]] = field(default_factory=list)
     holes: list[dict] = field(default_factory=list)
     recommended_print_rotation_x: float | None = None
+    recommended_print_rotation_y: float | None = None
     apply_orientation_to_bambu: bool = False
     bambu_object_settings: dict[str, str] = field(default_factory=dict)
 
@@ -34,9 +35,17 @@ class Design:
             self.recommended_print_rotation_x
         ):
             raise ValueError("recommended print rotation must be finite degrees")
+        if self.recommended_print_rotation_y is not None and not isfinite(
+            self.recommended_print_rotation_y
+        ):
+            raise ValueError("recommended print rotation must be finite degrees")
         if not isinstance(self.apply_orientation_to_bambu, bool):
             raise ValueError("apply_orientation_to_bambu must be a boolean")
-        if self.apply_orientation_to_bambu and self.recommended_print_rotation_x is None:
+        if (
+            self.apply_orientation_to_bambu
+            and self.recommended_print_rotation_x is None
+            and self.recommended_print_rotation_y is None
+        ):
             raise ValueError("Bambu orientation requires an explicit recommended rotation")
         if self.bambu_object_settings not in (
             {},
@@ -52,8 +61,12 @@ class Design:
     @property
     def bambu_shape(self) -> Part:
         if self.apply_orientation_to_bambu:
-            assert self.recommended_print_rotation_x is not None
-            return self.shape.rotate(Axis.X, self.recommended_print_rotation_x)
+            shape = self.shape
+            if self.recommended_print_rotation_x is not None:
+                shape = shape.rotate(Axis.X, self.recommended_print_rotation_x)
+            if self.recommended_print_rotation_y is not None:
+                shape = shape.rotate(Axis.Y, self.recommended_print_rotation_y)
+            return shape
         return self.shape
 
     @property

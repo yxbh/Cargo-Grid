@@ -13,6 +13,7 @@ from test_export import _project_facts
 from cargo_grid import BuildVolume
 from cargo_grid.accessories import (
     VERTICAL_BRACKET_CELLS,
+    VERTICAL_BRACKET_CONFIGS,
     VERTICAL_STOP_CELLS,
     VERTICAL_STOP_HEIGHTS_MM,
     Accessory,
@@ -96,6 +97,44 @@ def test_bambu_mesh_has_broad_bed_contact_and_recorded_transform(
             and abs(f.bounding_box().max.Z) < 1e-5
         )
     assert area == pytest.approx(expected_area, abs=0.002)
+
+
+@pytest.mark.parametrize("nx", [1, 2])
+def test_shallow_brackets_apply_side_down_y_rotation_and_record_it(nx, tmp_path):
+    from build123d import GeomType, Location
+
+    design = accessory_design(
+        Accessory(
+            "vertical-tile-bracket",
+            nx=nx,
+            ny=1,
+            panel_height_cells=2,
+        )
+    )
+    result = write_3mf(
+        Job([design], BuildVolume(350, 320, 325), "part"),
+        tmp_path / f"shallow-{nx}.3mf",
+        bambu=BAMBU,
+    )
+    item = result["plates"][0]["items"][0]
+    transform = item["source_to_project_transform"]
+    assert "rotation_x_degrees" not in transform
+    assert transform["rotation_y_degrees"] == -90
+    assert len(transform["matrix_3mf"]) == 12
+    assert item["object_settings"] == {
+        "enable_support": "1",
+        "support_type": "normal(auto)",
+    }
+    posed = design.bambu_shape.moved(Location(-design.bambu_shape.bounding_box().min))
+    bed_area = sum(
+        face.area
+        for face in posed.faces()
+        if face.geom_type == GeomType.PLANE
+        and face.normal_at().Z < -0.99
+        and abs(face.bounding_box().min.Z) < 1e-5
+        and abs(face.bounding_box().max.Z) < 1e-5
+    )
+    assert bed_area == pytest.approx(3448.944945179657, abs=0.002)
 
 
 def test_transformed_catalogue_packing_respects_exclusions_and_quantity(tmp_path):
@@ -268,7 +307,7 @@ def test_catalogue_fit_uses_project_pose_only_when_requested():
     )
     assert (
         len([d for d in project.designs if d.parameters.get("family") == "vertical-tile-bracket"])
-        == 3
+        == 4
     )
 
 
@@ -298,8 +337,15 @@ def test_native_roundtrip_keeps_all_changed_accessories_in_their_project_pose(tm
     binary = Path(executable).resolve(strict=True)
     designs = [
         *(
-            accessory_design(Accessory("vertical-tile-bracket", nx=x, ny=y))
-            for x, y in VERTICAL_BRACKET_CELLS
+            accessory_design(
+                Accessory(
+                    "vertical-tile-bracket",
+                    nx=x,
+                    ny=base_y,
+                    panel_height_cells=panel_z if panel_z != base_y else None,
+                )
+            )
+            for x, base_y, panel_z in VERTICAL_BRACKET_CONFIGS
         ),
         *(accessory_design(Accessory("lock-45", nx=n, ny=n)) for n in (1, 2)),
         accessory_design(Accessory("ramp")),
@@ -311,7 +357,7 @@ def test_native_roundtrip_keeps_all_changed_accessories_in_their_project_pose(tm
         ),
     ]
     source, target = tmp_path / "input.3mf", tmp_path / "native.3mf"
-    write_3mf(Job(designs, BuildVolume(350, 320, 115), "catalogue"), source, bambu=BAMBU)
+    write_3mf(Job(designs, BuildVolume(350, 320, 325), "catalogue"), source, bambu=BAMBU)
     _, before_plates, before = _project_facts(source)
     with (tmp_path / "native.log").open("w") as log:
         result = subprocess.run(
@@ -339,7 +385,7 @@ def test_native_roundtrip_keeps_all_changed_accessories_in_their_project_pose(tm
     assert result.returncode == 0, (tmp_path / "native.log").read_text()
     _, after_plates, after = _project_facts(target)
     assert before_plates == after_plates
-    assert len(before) == len(after) == 13
+    assert len(before) == len(after) == 15
     for a, b in zip(before, after):
         assert a[:-1] == b[:-1]
         assert b[-1] == pytest.approx(a[-1], abs=0.001)

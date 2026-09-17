@@ -8,11 +8,12 @@ from typing import Literal
 
 from cargo_grid.accessories import (
     BAMBU_OBJECT_SETTINGS,
-    VERTICAL_BRACKET_CELLS,
+    VERTICAL_BRACKET_CONFIGS,
     VERTICAL_STOP_CELLS,
     VERTICAL_STOP_HEIGHTS_MM,
     Accessory,
     bambu_print_rotation,
+    bambu_print_rotation_y,
     make_accessory,
 )
 from cargo_grid.jobs import Design, Job, tile_design
@@ -20,9 +21,11 @@ from cargo_grid.packing import PrintPlacement, pack_sizes
 from cargo_grid.parameters import BuildVolume, Exclusion, Interface, Tile
 
 BRACKET_DISPLAY_NAMES = {
-    (1, 2): "Tall tile bracket — 1 column, 2 rows (1x2)",
-    (2, 1): "Wide tile bracket — 2 columns, 1 row (2x1)",
-    (2, 2): "Square tile bracket — 2 columns, 2 rows (2x2)",
+    (1, 2, 2): "Deep tall tile bracket — floor 1x2, wall 1x2",
+    (2, 1, 1): "Wide low tile bracket — floor 2x1, wall 2x1",
+    (2, 2, 2): "Deep square tile bracket — floor 2x2, wall 2x2",
+    (1, 1, 2): "Shallow tall tile bracket — floor 1x1, wall 1x2",
+    (2, 1, 2): "Shallow wide tile bracket — floor 2x1, wall 2x2",
 }
 
 
@@ -54,8 +57,14 @@ def accessory_variants(build: BuildVolume, interface: Interface = Interface()) -
     )
     if interface.reference_socket_dimensions:
         result.extend(
-            Accessory("vertical-tile-bracket", nx=x, ny=y, interface=interface)
-            for x, y in VERTICAL_BRACKET_CELLS
+            Accessory(
+                "vertical-tile-bracket",
+                nx=x,
+                ny=base_y,
+                interface=interface,
+                panel_height_cells=panel_z if panel_z != base_y else None,
+            )
+            for x, base_y, panel_z in VERTICAL_BRACKET_CONFIGS
         )
     if interface.reference_defaults:
         result.extend(Accessory("ramp", nx=n, interface=interface) for n in range(1, nmax + 1))
@@ -75,26 +84,37 @@ def accessory_variants(build: BuildVolume, interface: Interface = Interface()) -
 
 def accessory_design(spec: Accessory) -> Design:
     parameters = asdict(spec)
+    if parameters["panel_height_cells"] is None:
+        del parameters["panel_height_cells"]
     token = sha256(json.dumps(parameters, sort_keys=True).encode()).hexdigest()[:10]
     dimensions = (
         f"{spec.nx}x{spec.ny}_h{spec.height:g}"
         if spec.family == "vertical-stop"
+        else f"base{spec.nx}x{spec.ny}_wall{spec.nx}x{spec.panel_height_cells}"
+        if spec.family == "vertical-tile-bracket" and spec.panel_height_cells is not None
         else f"{spec.nx}x{spec.ny}"
     )
     name = f"{spec.family}_{dimensions}_v{spec.variant}_{spec.interface.joint_style}_{token}"
     shape = make_accessory(spec)
     shape.label = name
     rotation = bambu_print_rotation(spec)
+    rotation_y = bambu_print_rotation_y(spec)
+    object_settings = dict(BAMBU_OBJECT_SETTINGS.get(spec.family, {}))
+    if spec.family == "vertical-tile-bracket" and spec.panel_height_cells is not None:
+        object_settings = {"enable_support": "1", "support_type": "normal(auto)"}
     return Design(
         name,
         shape,
         parameters,
-        display_name=BRACKET_DISPLAY_NAMES.get((spec.nx, spec.ny))
+        display_name=BRACKET_DISPLAY_NAMES.get(
+            (spec.nx, spec.ny, spec.panel_height_cells or spec.ny)
+        )
         if spec.family == "vertical-tile-bracket"
         else None,
         recommended_print_rotation_x=rotation,
-        apply_orientation_to_bambu=rotation is not None,
-        bambu_object_settings=dict(BAMBU_OBJECT_SETTINGS.get(spec.family, {})),
+        recommended_print_rotation_y=rotation_y,
+        apply_orientation_to_bambu=rotation is not None or rotation_y is not None,
+        bambu_object_settings=object_settings,
     )
 
 
@@ -161,7 +181,10 @@ def h2d_dual_safe_catalogue_job(
         ("Tiles", {"tile"}),
         ("Ramps", {"ramp"}),
         ("Normal stops", {"vertical-stop"}),
-        ("Tile brackets - wide 2x1, tall 1x2, square 2x2", {"vertical-tile-bracket"}),
+        (
+            "Tile brackets - deep originals and shallow tall/wide",
+            {"vertical-tile-bracket"},
+        ),
         ("Angled stops", {"lock-45"}),
         ("Attachment plates", {"plate"}),
         ("Edges and corners", {"edge-x", "edge-y", "corner-in", "corner-out"}),
