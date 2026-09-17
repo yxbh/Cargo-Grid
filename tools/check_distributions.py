@@ -44,6 +44,10 @@ DOCUMENTATION_IMAGES = {
         for grid in ("1x2", "2x1", "2x2")
     ),
     *(
+        f"docs/images/attachments/vertical-tile-bracket-{variant}.png"
+        for variant in ("base1x1-wall1x2", "base2x1-wall2x2")
+    ),
+    *(
         f"docs/images/attachments/vertical-stop-{grid}-h{height}.png"
         for grid in ("1x1", "1x2", "2x1", "2x2")
         for height in (60, 120)

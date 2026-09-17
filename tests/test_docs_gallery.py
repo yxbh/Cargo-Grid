@@ -58,12 +58,15 @@ def test_thumbnail_manifest_has_unique_rows_and_family_scale(gallery):
 
 def test_bracket_family_context_is_separate_from_the_part_inventory(gallery):
     assert [item.key for item in gallery.bracket_assembly_items()] == [
-        "bracket-context-1x2",
-        "bracket-context-2x1",
-        "bracket-context-2x2",
+        "bracket-context-base1x2-wall1x2",
+        "bracket-context-base2x1-wall2x1",
+        "bracket-context-base2x2-wall2x2",
+        "bracket-context-base1x1-wall1x2",
+        "bracket-context-base2x1-wall2x2",
     ]
-    assert len(gallery.documentation_shape("bracket-context-1x2").solids()) == 2
+    assert len(gallery.documentation_shape("bracket-context-base1x1-wall1x2").solids()) == 3
     assert len(gallery.documentation_shape("vertical-tile-bracket-1x2").solids()) == 1
+    assert len(gallery.documentation_shape("vertical-tile-bracket-base2x1-wall2x2").solids()) == 1
     assert len(gallery.documentation_shape("ramp-3").solids()) == 1
 
 

@@ -13,13 +13,18 @@ from html import escape
 from pathlib import Path
 
 from cargo_grid import BuildVolume, Tile, make_tile
-from cargo_grid.accessories import SUPPORT_END_NAMES, Accessory, make_accessory
+from cargo_grid.accessories import (
+    SUPPORT_END_NAMES,
+    VERTICAL_BRACKET_CONFIGS,
+    Accessory,
+    make_accessory,
+)
 from cargo_grid.catalogue import BRACKET_DISPLAY_NAMES, accessory_variants
 
 ROOT = Path(__file__).resolve().parents[1]
 BUILD = BuildVolume(350, 320, 325)
 WORKBENCH_REVISION = "c3f63ef8d8604d3ec7eeba40a229047887c03d86"
-GEOMETRY_REVISION = "d7259e73764bfc9e5331db979c7a99eb9ef9d0fa"
+GEOMETRY_REVISION = "727a9cb9bee6a0edba12d46d113c18bc4ce3f384"
 GEOMETRY_FILES = (
     "parameters.py",
     "interfaces.py",
@@ -58,7 +63,7 @@ FAMILIES = {
     ),
     "vertical-tile-bracket": (
         "Vertical tile brackets",
-        "A one-piece inset wedge carrying a separate ordinary tile vertically. Solid backing makes backed round holes blind; the internal strip has nominal zero gap. Bambu projects place it diagonal-face-down.",
+        "A one-piece filled wedge carrying a separate ordinary tile vertically. Three original variants match floor depth to wall height; two shallow variants keep one floor row under a two-row wall. Bambu projects use the validated per-design pose.",
     ),
     "vertical-stop": (
         "Normal full-solid stops",
@@ -125,6 +130,13 @@ def inventory() -> list[Item]:
         elif spec.family == "vertical-stop":
             suffix = f"{spec.nx}x{spec.ny}-h{spec.height:g}"
             detail = f"{spec.nx} x {spec.ny} / H {spec.height:g} mm"
+        elif spec.family == "vertical-tile-bracket":
+            panel_rows = spec.panel_height_cells or spec.ny
+            if spec.panel_height_cells is None:
+                suffix = f"{spec.nx}x{spec.ny}"
+            else:
+                suffix = f"base{spec.nx}x{spec.ny}-wall{spec.nx}x{panel_rows}"
+            detail = f"floor base {spec.nx} x {spec.ny} / wall {spec.nx} x {panel_rows}"
         else:
             suffix, detail = f"{spec.nx}x{spec.ny}", f"{spec.nx} x {spec.ny}"
             if spec.family.startswith("lock-"):
@@ -143,11 +155,11 @@ def hero_items() -> list[Item]:
 def bracket_assembly_items() -> list[Item]:
     return [
         Item(
-            f"bracket-context-{x}x{y}",
-            BRACKET_DISPLAY_NAMES[(x, y)],
-            f"In-use panel {60 * x} x {60 * y} mm, excluding joining tabs",
+            f"bracket-context-base{x}x{base_y}-wall{x}x{panel_z}",
+            BRACKET_DISPLAY_NAMES[(x, base_y, panel_z)].replace(" — ", " - "),
+            (f"Floor {60 * x} x {60 * base_y} mm / wall {60 * x} x {60 * panel_z} mm"),
         )
-        for x, y in ((1, 2), (2, 1), (2, 2))
+        for x, base_y, panel_z in VERTICAL_BRACKET_CONFIGS
     ]
 
 
@@ -155,13 +167,29 @@ def documentation_shape(key: str):
     from build123d import Axis, Color, Compound, Location
 
     if key.startswith("bracket-context-"):
-        nx, ny = map(int, key.removeprefix("bracket-context-").split("x"))
-        bracket = make_accessory(Accessory("vertical-tile-bracket", nx=nx, ny=ny))
-        tile = make_tile(Tile(nx, ny, hole_diameter=10, hole_scope="full"))
-        tile = tile.rotate(Axis.X, 90).moved(Location((0, ny * 60, 6.1)))
-        bracket.color, tile.color = Color("#637b70"), Color("#c2cecb")
-        shape = Compound(children=[bracket, tile], label=key)
-        if not shape.is_valid or len(shape.solids()) != 2:
+        nx, base_y, panel_z = next(
+            config
+            for config in VERTICAL_BRACKET_CONFIGS
+            if key == f"bracket-context-base{config[0]}x{config[1]}-wall{config[0]}x{config[2]}"
+        )
+        bracket = make_accessory(
+            Accessory(
+                "vertical-tile-bracket",
+                nx=nx,
+                ny=base_y,
+                panel_height_cells=panel_z if panel_z != base_y else None,
+            )
+        ).moved(Location((0, 0, 13)))
+        floor = make_tile(Tile(nx, base_y))
+        wall = make_tile(Tile(nx, panel_z, hole_diameter=10, hole_scope="full"))
+        wall = wall.rotate(Axis.X, 90).moved(Location((0, base_y * 60, 19.1)))
+        floor.color, bracket.color, wall.color = (
+            Color("#b9c6c0"),
+            Color("#637b70"),
+            Color("#c2cecb"),
+        )
+        shape = Compound(children=[floor, bracket, wall], label=key)
+        if not shape.is_valid or len(shape.solids()) != 3:
             raise ValueError(f"Invalid separate-tile illustration: {key}")
         return shape
 
@@ -632,17 +660,17 @@ def compose_all(work: Path, provenance: dict) -> None:
         "",
         "[Back to the beginner guide](../README.md) / [Thumbnail dimensions, hashes and source provenance](images/attachments/manifest.json)",
         "",
-        "Bracket sizes are named against the upright panel in use: Wide tile bracket — 2 columns, 1 row (2x1); Tall tile bracket — 1 column, 2 rows (1x2); and Square tile bracket — 2 columns, 2 rows (2x2). The first stable-ID count is panel/base X (left-right); the second is panel Z (bottom-top) and base Y (front-back), regardless of the rotated print pose. These variants require the reference 60 mm pitch, 13 mm tile height and zero fit offset; custom-interface catalogues retain the other supported families. The unreleased lock-90 family has been replaced, without an alias.",
+        "Bracket names state both in-use footprints. The original Deep tall floor 1x2 -> wall 1x2, Wide low floor 2x1 -> wall 2x1 and Deep square floor 2x2 -> wall 2x2 variants keep floor depth and wall height coupled. The additional Shallow tall floor 1x1 -> wall 1x2 and Shallow wide floor 2x1 -> wall 2x2 variants use one floor row with two wall rows. Stable IDs keep the original short 1x2/2x1/2x2 names and spell out `base..._wall...` only for independent-height variants. These five variants require the reference 60 mm pitch, 13 mm tile height and zero fit offset; the unreleased lock-90 family remains replaced without an alias.",
         "",
-        "Bracket thumbnails show the exported one-piece bracket only. The [family view](images/vertical-tile-brackets.png) adds separate ordinary tiles for assembly context; these tiles are not fused into or included with bracket exports. Their entry faces meet the brackets, so their undersides face outward. Backed interior round holes are blind, and downward wall extension is obstructed; left/right/up joins remain available at a common wall origin.",
+        "Bracket thumbnails show the exported one-piece bracket only. The [family view](images/vertical-tile-brackets.png) adds separate ordinary floor and upright wall tiles for assembly context; those tiles are not fused into or included with bracket exports. Wall-tile entry faces meet the bracket, so their undersides face outward. Backed interior round holes are blind, and downward wall extension is obstructed; left/right/up joins remain available at a common wall origin.",
         "",
         "Ramp names give width along the tile edge in 60 mm cells; every ramp keeps the approved 50 mm front-to-back run and 13 mm rise. One original roofed female pocket is repeated per cell. The ramp receives a north male tile edge and extends away in positive Y; rotating the printed part does not change joining direction. Full-height/custom-interface ramps are omitted rather than presented as compatible.",
         "",
         "Normal `vertical-stop` names use base X cells, base Y cells and an explicit H60/H120 shoulder height. These eight parts are filled CAD wedges, not hollow shells or tile brackets; ordinary slicer perimeters and 15% infill remain separate manufacturing choices. They have no wall holes, panel connectors or ledges.",
         "",
-        "Edge/corner free top rims and every normal-stop free exterior edge use R2 rounding. Rail outer top rims and the bracket's nonbearing front lip use selective R1; each filled angled-stop envelope couples R1 across all 18 free body edges before restoring its exact X connector/root cores. Tile-facing joins, support joins, bracket bed face and bearing land remain protected rather than blanket-filleted. Nominal geometry is not calibrated fit or a physical load rating.",
+        "Edge/corner free top rims and every normal-stop free exterior edge use R2 rounding. Rail outer top rims and original bracket nonbearing front lips use selective R1. Each shallow bracket couples R1 across its 20 free exterior body edges while retaining the internal panel-bearing corner and exact X geometry; each filled angled-stop envelope couples R1 across all 18 free body edges before restoring its exact X connector/root cores. Tile-facing joins, support joins, bracket bearing land and X interfaces remain protected. Nominal geometry is not calibrated fit or a physical load rating.",
         "",
-        "Bambu projects apply the bracket's diagonal-face-down, normal stop's per-design broad-rear-face-down and angled stop's back-face-down rotations before fit checks and packing. Ramps retain their flat source orientation. Source STEP/STL and core 3MF retain model orientation; manifests record recommendations and exact applied source-to-project transforms. Normal Auto support is scoped to ramp and normal-stop objects; remove ramp pocket support before assembly, and inspect the 2x1/H120 stop's mounting-region support. Edge/corner/plate/rail families retain their project orientation.",
+        "Bambu projects apply X=135 degrees to original brackets, Y=-90 degrees side-down to shallow brackets, each normal stop's broad-rear-face-down angle and X=-135 degrees to angled stops before fit checks and packing. Ramps retain their flat source orientation. Source STEP/STL and core 3MF retain model orientation; manifests record recommendations and exact applied source-to-project transforms. Normal Auto support is scoped to ramp, normal-stop and shallow-bracket objects. Remove shallow-bracket support from both floor and wall X mating regions before assembly; physical removal and fit remain unverified. Edge/corner/plate/rail families retain their project orientation.",
         "",
     ]
     for family, (heading, _) in FAMILIES.items():

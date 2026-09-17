@@ -1,5 +1,5 @@
 {
-  "geometry_commit": "d7259e73764bfc9e5331db979c7a99eb9ef9d0fa",
+  "geometry_commit": "727a9cb9bee6a0edba12d46d113c18bc4ce3f384",
   "workbench_commit": "c3f63ef8d8604d3ec7eeba40a229047887c03d86",
   "catalogue_build_mm": {
     "width_x": 350,
@@ -8,7 +8,7 @@
   },
   "camera": "45:32",
   "scale": "Common physical scale within each family; families differ.",
-  "source_render_recipe_sha256": "b4e9e118314b84d538211e910d98050405966370dc3ec2a51da9c09dd41bb381",
+  "source_render_recipe_sha256": "45dd1db13045a675b602222bf2fc813789b6c7cff65a2f557e28a61236a3d6d8",
   "overview_images": [
     {
       "file": "images/hero.png",
@@ -23,19 +23,19 @@
       "file": "images/x-attachments.png",
       "dimensions": [
         1800,
-        1600
+        1950
       ],
-      "bytes": 177750,
-      "sha256": "3946e36cd18130daf5f041bfb78a38f806222166852da098b07fadc31c708c74"
+      "bytes": 214176,
+      "sha256": "0d58aa05a62e40ea1b567846b462e4f8425c821e6dea2b0138b662e2b9bd1eb5"
     },
     {
       "file": "images/vertical-tile-brackets.png",
       "dimensions": [
         1800,
-        900
+        1250
       ],
-      "bytes": 112756,
-      "sha256": "af389d109e44bb9bdf18c28ed8cbaa61be006491103dea6fe621031f5a032451"
+      "bytes": 164225,
+      "sha256": "89801ed7ca7fc73c64896388091881efb9ff82b64748db4f2b891c209b0c6fcb"
     },
     {
       "file": "images/vertical-stops.png",
@@ -73,7 +73,8 @@
           "height": 13.0,
           "fit_offset": 0.0,
           "joint_style": "original"
-        }
+        },
+        "panel_height_cells": null
       },
       "size_mm": [
         60.0000002,
@@ -91,7 +92,7 @@
       "bytes": 6067,
       "sha256": "f63aca7f5c86ef0a253aa052babac430afb1749f2ff71b71400dfa8269ef4c96",
       "source_render_sha256": "0668fc230e3fcf29e24a9f06a3679367adeb0b3dee1c649cca3925ea7e67c81e",
-      "source_step_sha256": "61fc6d75d804544aab45d044661cc7586c9e41eee94d5c55b790da778375ab38"
+      "source_step_sha256": "3b8e71b6f332a7f41d6a1e3a32a94445cae325e8343877effb4133248135dcec"
     },
     {
       "key": "ramp-2",
@@ -109,7 +110,8 @@
           "height": 13.0,
           "fit_offset": 0.0,
           "joint_style": "original"
-        }
+        },
+        "panel_height_cells": null
       },
       "size_mm": [
         120.00000019999999,
@@ -127,7 +129,7 @@
       "bytes": 8493,
       "sha256": "18688889df6e71840d6ac0a60b3e35f36b7f3cb02f1c4109f0bf7aa2042c14d2",
       "source_render_sha256": "6f97cf1a9ac56c0bf67201673fd24822391ab5c0cffff94ae61d022430856661",
-      "source_step_sha256": "b48d0b667563e8cbd784ae1d0ff754e9b8716da63fb17b996383a1dd73fd89f0"
+      "source_step_sha256": "fc159b6bec4c8c19830c4156f7e16f3f777009c4c9893f4626cfd649733dbcb9"
     },
     {
       "key": "ramp-3",
@@ -145,7 +147,8 @@
           "height": 13.0,
           "fit_offset": 0.0,
           "joint_style": "original"
-        }
+        },
+        "panel_height_cells": null
       },
       "size_mm": [
         180.0000002,
@@ -163,7 +166,7 @@
       "bytes": 10719,
       "sha256": "6e22f5128a147ec6dc88ae6edd4f7cee6307dc718bc0ce7c45c7fada9e898385",
       "source_render_sha256": "05eb575adb21ac45f50484716615b3dabcdb6c72a5ffd138c4d4820425e78484",
-      "source_step_sha256": "6a37d5cb38401e56395082d05e9a40c0e73b898dc7370bfa735372ff62754243"
+      "source_step_sha256": "b98a11b3c8dfaa18f57509e6d93d0ef0033e3bc628528f4608a57718d97a1a9e"
     },
     {
       "key": "ramp-4",
@@ -181,7 +184,8 @@
           "height": 13.0,
           "fit_offset": 0.0,
           "joint_style": "original"
-        }
+        },
+        "panel_height_cells": null
       },
       "size_mm": [
         240.0000002,
@@ -199,7 +203,7 @@
       "bytes": 13588,
       "sha256": "39a162b66050baf421af6cd493e8a39193558484a4d4c8ade608c167a3753413",
       "source_render_sha256": "3a01a86544abf34486e83ce285f64ab7840679a23e25a6b131ffc9d981b50a90",
-      "source_step_sha256": "0a7fec4d90f61b18a2e0a78a3f8a785ac0adfb5061e4982d3acdeff97f02c774"
+      "source_step_sha256": "3cfcfc5ce833b3c60299e7bdefef42ffd4b04a7143b601e1c3049ad5e377f74b"
     },
     {
       "key": "ramp-5",
@@ -217,7 +221,8 @@
           "height": 13.0,
           "fit_offset": 0.0,
           "joint_style": "original"
-        }
+        },
+        "panel_height_cells": null
       },
       "size_mm": [
         300.00000020000004,
@@ -235,7 +240,7 @@
       "bytes": 17039,
       "sha256": "63f1d16c17bfbaa75fbd370d6c8e072acbef9df20efba0bd920a49f3d500fc68",
       "source_render_sha256": "161bf4063c6857b5100f0db5fdf3d9b65bbc5e0ad0d41124aa2a24cef202c987",
-      "source_step_sha256": "407c90807ab08415c5b405231993318d24748d9701a9acd2e8f63fb0169680ce"
+      "source_step_sha256": "1235dc2bc4e5baf4a9d8908e4fd5f946e92345f2686c33c35c23d7c823acde71"
     },
     {
       "key": "plate-1x1",
@@ -253,7 +258,8 @@
           "height": 13.0,
           "fit_offset": 0.0,
           "joint_style": "original"
-        }
+        },
+        "panel_height_cells": null
       },
       "size_mm": [
         60.0,
@@ -271,7 +277,7 @@
       "bytes": 9399,
       "sha256": "ac8bd92ed2109458059e9004187ab9a4e3cdb612245e5a164f817b5181fd31bf",
       "source_render_sha256": "5dade852f8819a4cc23c55706dd505e8f4c3eb82ecb9c03a4600fee76479c7a4",
-      "source_step_sha256": "92ad36d1021e96fcbb095b181badcec4434d14d4889a2218424c3e1484ec35ea"
+      "source_step_sha256": "c4536dd561fe5f96e8a0a618c5c906d4ed4e318bb3a6a48bf8488b89c6ad01cb"
     },
     {
       "key": "plate-1x2",
@@ -289,7 +295,8 @@
           "height": 13.0,
           "fit_offset": 0.0,
           "joint_style": "original"
-        }
+        },
+        "panel_height_cells": null
       },
       "size_mm": [
         60.0,
@@ -307,7 +314,7 @@
       "bytes": 13781,
       "sha256": "eb40baf6349d18d423bf4fa4efeb13659b7095bd13fbec906903a6be72cd5ada",
       "source_render_sha256": "dba1b84472b53f50e8513631128f70253878c6e742c059baced097159099816f",
-      "source_step_sha256": "b1becce4b4d3c76861f298d545929f56e72c7f1764f08960a26d0cd8eb9de18b"
+      "source_step_sha256": "28e00dd961f6b45bdef1d96038790230168f00cf1fcad7ceaa0cd0eb4635b693"
     },
     {
       "key": "plate-2x2",
@@ -325,7 +332,8 @@
           "height": 13.0,
           "fit_offset": 0.0,
           "joint_style": "original"
-        }
+        },
+        "panel_height_cells": null
       },
       "size_mm": [
         120.0,
@@ -343,7 +351,7 @@
       "bytes": 18265,
       "sha256": "a9f0b03a55f8d34f08d19f79b83f15cb6783b1476e126bdda54fcaa3999ffe01",
       "source_render_sha256": "ca328f52d34e5d268e46b5a42c024f0c2c87db11622ecc63e8c5776a0e67e5cd",
-      "source_step_sha256": "daf7b0a1b16507598b0fdcc239a0a01c495b23a60b3d48a83ca771d98ceb45e4"
+      "source_step_sha256": "6e995226a357032ea57e36e9309eecff8beab0f3413f8ec989988d14085e4746"
     },
     {
       "key": "vertical-tile-bracket-1x2",
@@ -361,7 +369,8 @@
           "height": 13.0,
           "fit_offset": 0.0,
           "joint_style": "original"
-        }
+        },
+        "panel_height_cells": null
       },
       "size_mm": [
         60.0,
@@ -369,8 +378,8 @@
         140.37817459305202
       ],
       "file": "images/attachments/vertical-tile-bracket-1x2.png",
-      "alt": "vertical-tile-bracket, 1 x 2, original joints: isometric STEP-derived render",
-      "description": "A one-piece inset wedge carrying a separate ordinary tile vertically. Solid backing makes backed round holes blind; the internal strip has nominal zero gap. Bambu projects place it diagonal-face-down.",
+      "alt": "vertical-tile-bracket, floor base 1 x 2 / wall 1 x 2, original joints: isometric STEP-derived render",
+      "description": "A one-piece filled wedge carrying a separate ordinary tile vertically. Three original variants match floor depth to wall height; two shallow variants keep one floor row under a two-row wall. Bambu projects use the validated per-design pose.",
       "dimensions": [
         480,
         300
@@ -379,7 +388,7 @@
       "bytes": 13941,
       "sha256": "e763a1e66afbdc1106320f26bf6c117daaad0d8f91a84697fe4836ec424719d0",
       "source_render_sha256": "0c78fc67345d81278c3c8a7a8b5d8ca4246795c91c3810244b3174010ccfeeba",
-      "source_step_sha256": "2524948c9d82cffbee874d3e0c605f267c7d38adcf93c4762a2a22a32b31abd7"
+      "source_step_sha256": "ee1a619606be33b75a6c4327dc10e793e797f7d3eb372552a292792f8087c86e"
     },
     {
       "key": "vertical-tile-bracket-2x1",
@@ -397,7 +406,8 @@
           "height": 13.0,
           "fit_offset": 0.0,
           "joint_style": "original"
-        }
+        },
+        "panel_height_cells": null
       },
       "size_mm": [
         120.0,
@@ -405,8 +415,8 @@
         80.37817459305202
       ],
       "file": "images/attachments/vertical-tile-bracket-2x1.png",
-      "alt": "vertical-tile-bracket, 2 x 1, original joints: isometric STEP-derived render",
-      "description": "A one-piece inset wedge carrying a separate ordinary tile vertically. Solid backing makes backed round holes blind; the internal strip has nominal zero gap. Bambu projects place it diagonal-face-down.",
+      "alt": "vertical-tile-bracket, floor base 2 x 1 / wall 2 x 1, original joints: isometric STEP-derived render",
+      "description": "A one-piece filled wedge carrying a separate ordinary tile vertically. Three original variants match floor depth to wall height; two shallow variants keep one floor row under a two-row wall. Bambu projects use the validated per-design pose.",
       "dimensions": [
         480,
         300
@@ -415,7 +425,7 @@
       "bytes": 13809,
       "sha256": "c6648e550e26914706b053706dc6d61fa63d987abbb8ef967479685ad55b75ee",
       "source_render_sha256": "5d98193d7073ba95ac5d35445927c9635668cc832d46c0a70f9b1ecbb462fd40",
-      "source_step_sha256": "4c7416a3bc891ce6407ac3f9e7503e0c26a910aa686c868461e211b5a05509e8"
+      "source_step_sha256": "295eb7975e4050ca5fe6d1c39ed8b77422f6bb3d54ce7317664af7a7f5108130"
     },
     {
       "key": "vertical-tile-bracket-2x2",
@@ -433,7 +443,8 @@
           "height": 13.0,
           "fit_offset": 0.0,
           "joint_style": "original"
-        }
+        },
+        "panel_height_cells": null
       },
       "size_mm": [
         120.0,
@@ -441,8 +452,8 @@
         140.37817459305202
       ],
       "file": "images/attachments/vertical-tile-bracket-2x2.png",
-      "alt": "vertical-tile-bracket, 2 x 2, original joints: isometric STEP-derived render",
-      "description": "A one-piece inset wedge carrying a separate ordinary tile vertically. Solid backing makes backed round holes blind; the internal strip has nominal zero gap. Bambu projects place it diagonal-face-down.",
+      "alt": "vertical-tile-bracket, floor base 2 x 2 / wall 2 x 2, original joints: isometric STEP-derived render",
+      "description": "A one-piece filled wedge carrying a separate ordinary tile vertically. Three original variants match floor depth to wall height; two shallow variants keep one floor row under a two-row wall. Bambu projects use the validated per-design pose.",
       "dimensions": [
         480,
         300
@@ -451,7 +462,81 @@
       "bytes": 21810,
       "sha256": "5cba7bad0819f0d284a42d8021efb1714bef5941cb9f83fd38aab2f3b177a189",
       "source_render_sha256": "63031df9c7e2564650a0ce2fc61a65f56fdb63ec10b9961c67a47fd9b302def3",
-      "source_step_sha256": "64ab7e4fb722633190b374289102a17ef8ea970f24314374f5b6866d6477991f"
+      "source_step_sha256": "516808261fdca4161ec65f2d7ca471f8a5b48e83cbe0009b5714f5bf44d2c5eb"
+    },
+    {
+      "key": "vertical-tile-bracket-base1x1-wall1x2",
+      "family": "vertical-tile-bracket",
+      "public_name": "vertical-tile-bracket_base1x1_wall1x2_original",
+      "parameters": {
+        "family": "vertical-tile-bracket",
+        "nx": 1,
+        "ny": 1,
+        "variant": 1,
+        "length": 60,
+        "height": 50,
+        "interface": {
+          "pitch": 60.0,
+          "height": 13.0,
+          "fit_offset": 0.0,
+          "joint_style": "original"
+        },
+        "panel_height_cells": 2
+      },
+      "size_mm": [
+        60.00000000000001,
+        60.00000000000003,
+        140.37817459305202
+      ],
+      "file": "images/attachments/vertical-tile-bracket-base1x1-wall1x2.png",
+      "alt": "vertical-tile-bracket, floor base 1 x 1 / wall 1 x 2, original joints: isometric STEP-derived render",
+      "description": "A one-piece filled wedge carrying a separate ordinary tile vertically. Three original variants match floor depth to wall height; two shallow variants keep one floor row under a two-row wall. Bambu projects use the validated per-design pose.",
+      "dimensions": [
+        480,
+        300
+      ],
+      "pixels_per_mm": 1.263292535376226,
+      "bytes": 12838,
+      "sha256": "4b969381ea1959386cd803d8ec2b7f85878ece34162868f39a5e196ac4be6946",
+      "source_render_sha256": "914b353d96b1e5a49be32d9335c7cf9bd61d2b99e2b288358e3efa5d2f087ab6",
+      "source_step_sha256": "f327b9139293a81199bbb7a64417ebbd9bdb6d8d589044ef6a9412256f04cb85"
+    },
+    {
+      "key": "vertical-tile-bracket-base2x1-wall2x2",
+      "family": "vertical-tile-bracket",
+      "public_name": "vertical-tile-bracket_base2x1_wall2x2_original",
+      "parameters": {
+        "family": "vertical-tile-bracket",
+        "nx": 2,
+        "ny": 1,
+        "variant": 1,
+        "length": 60,
+        "height": 50,
+        "interface": {
+          "pitch": 60.0,
+          "height": 13.0,
+          "fit_offset": 0.0,
+          "joint_style": "original"
+        },
+        "panel_height_cells": 2
+      },
+      "size_mm": [
+        120.00000000000001,
+        60.00000000000003,
+        140.37817459305202
+      ],
+      "file": "images/attachments/vertical-tile-bracket-base2x1-wall2x2.png",
+      "alt": "vertical-tile-bracket, floor base 2 x 1 / wall 2 x 2, original joints: isometric STEP-derived render",
+      "description": "A one-piece filled wedge carrying a separate ordinary tile vertically. Three original variants match floor depth to wall height; two shallow variants keep one floor row under a two-row wall. Bambu projects use the validated per-design pose.",
+      "dimensions": [
+        480,
+        300
+      ],
+      "pixels_per_mm": 1.263292535376226,
+      "bytes": 20701,
+      "sha256": "054bd7fe258107f331b972e90fbcd2727b9401b8db4e00e47907f69a6be0d9db",
+      "source_render_sha256": "8d04629fa23334482be312cec8c67d3920d46e5ea5cdc5ecea4c6250c259a4ce",
+      "source_step_sha256": "71f8bafb90192503d3246b331e37f9c4c0657df11b0532268fc65829f3db502e"
     },
     {
       "key": "vertical-stop-1x1-h60",
@@ -469,7 +554,8 @@
           "height": 13.0,
           "fit_offset": 0.0,
           "joint_style": "original"
-        }
+        },
+        "panel_height_cells": null
       },
       "size_mm": [
         60.0,
@@ -487,7 +573,7 @@
       "bytes": 4925,
       "sha256": "40fd58f80ec6795597c2fef807c6a8fbcd6b09ab31339ba43c880cb007abb0fe",
       "source_render_sha256": "66437e655dd520b7d041adb88c7bb14be94359e9418661c9e1e362296be4dd86",
-      "source_step_sha256": "441ff67c2030f3013ea1aabcbb8ad95d0582076af18f67dc41712c7dad24aa90"
+      "source_step_sha256": "ea957358c8ad9243ea9457e9a084f87e6a81a1c4ce792fc85267f1d2e465fcde"
     },
     {
       "key": "vertical-stop-1x1-h120",
@@ -505,7 +591,8 @@
           "height": 13.0,
           "fit_offset": 0.0,
           "joint_style": "original"
-        }
+        },
+        "panel_height_cells": null
       },
       "size_mm": [
         60.0,
@@ -523,7 +610,7 @@
       "bytes": 5539,
       "sha256": "49260dfae472f836db93b96c63e7f20d65b82ffb81a0d39c3149f2fb262d743d",
       "source_render_sha256": "bea2b2f9958bb5cd04975a3eb6a1b0ba855c37af1aaa7f9729ec52c9f9337969",
-      "source_step_sha256": "1914263a61998bc857fb8546252bac7670655c703f77e50fd30498860ab44440"
+      "source_step_sha256": "d7e4110fb4991b9b6094dd8900d762d697e5235450733f2dea91ae2ac763c6bf"
     },
     {
       "key": "vertical-stop-1x2-h60",
@@ -541,7 +628,8 @@
           "height": 13.0,
           "fit_offset": 0.0,
           "joint_style": "original"
-        }
+        },
+        "panel_height_cells": null
       },
       "size_mm": [
         60.0,
@@ -559,7 +647,7 @@
       "bytes": 6457,
       "sha256": "70301b973e8821dee2edda9c4811680d0bd281d57b941b4e4dd7734276cbe659",
       "source_render_sha256": "1b1be98e0d820afee0ab3ecb6fb07494f4ab6b4307f0debe872959440c4d33f6",
-      "source_step_sha256": "d637e9f0d7ff0451821a28a4706ddd743746d04af0606a919f71da94dc49eb2c"
+      "source_step_sha256": "cf8f7484083c688bf0a82072eb48801a7c26762e5c03db8c6cda5d43004278a1"
     },
     {
       "key": "vertical-stop-1x2-h120",
@@ -577,7 +665,8 @@
           "height": 13.0,
           "fit_offset": 0.0,
           "joint_style": "original"
-        }
+        },
+        "panel_height_cells": null
       },
       "size_mm": [
         60.0,
@@ -595,7 +684,7 @@
       "bytes": 6921,
       "sha256": "6adab068455bd0dccdfe7315c91524a1b930b9b84bd448cae4044ad8b8976652",
       "source_render_sha256": "433ec56217a70d05c27d2ec1171337d90bf54d2dd6297d4499c2de56048e5d42",
-      "source_step_sha256": "5809eabcfc85d989351bffc621367dd60489b1af5981db6a17f6d8ba5b326ff0"
+      "source_step_sha256": "d8ef78bbeca2149200315c592ea03632e516a26822df41162ce46950ef581b85"
     },
     {
       "key": "vertical-stop-2x1-h60",
@@ -613,7 +702,8 @@
           "height": 13.0,
           "fit_offset": 0.0,
           "joint_style": "original"
-        }
+        },
+        "panel_height_cells": null
       },
       "size_mm": [
         120.0,
@@ -631,7 +721,7 @@
       "bytes": 6686,
       "sha256": "16dc2c6cfdca0258c131d9e4cd661ae34ea40b2900baa1ad683eae3cef17bee2",
       "source_render_sha256": "1911a9a20367dc0b1dab1daa37c47a92adab6284699727c07660ade834be78cf",
-      "source_step_sha256": "28ef8c0dbb7fef1a61de07357acc0fc7fd9f7fb424004ff63de5d3d85c5a9990"
+      "source_step_sha256": "27579fbaab5a68396b50abbc98e34180acd326e39fe452252f5b57dfd4acaead"
     },
     {
       "key": "vertical-stop-2x1-h120",
@@ -649,7 +739,8 @@
           "height": 13.0,
           "fit_offset": 0.0,
           "joint_style": "original"
-        }
+        },
+        "panel_height_cells": null
       },
       "size_mm": [
         120.0,
@@ -667,7 +758,7 @@
       "bytes": 7428,
       "sha256": "3a858020457351e18c48b0d9ad613f946c25072b2c948ba81217090f55821ebf",
       "source_render_sha256": "c0e9c91a2442fbd9cb1a8038eeafc77d304a5a43a8291d84c844f61565e3dc81",
-      "source_step_sha256": "a35073b8693ec5c3c1279175a65855e0262b175bf9400f3a9f13200217cdbad9"
+      "source_step_sha256": "f916d44623adbf18320b6f15b99a4809ae7d9d14fbcdceb9fe02264fa65843ea"
     },
     {
       "key": "vertical-stop-2x2-h60",
@@ -685,7 +776,8 @@
           "height": 13.0,
           "fit_offset": 0.0,
           "joint_style": "original"
-        }
+        },
+        "panel_height_cells": null
       },
       "size_mm": [
         120.0,
@@ -703,7 +795,7 @@
       "bytes": 8547,
       "sha256": "9577d5ccbf3b72766b591542075a98d521f9c43c550e619c96e8b1edcdb9f290",
       "source_render_sha256": "f4b6664af7e0f933f49b87908c6cb4d5c7453207a29dd5479c164b214153c801",
-      "source_step_sha256": "f065e0040ad649cc63bde99f453426b89ed6da8255cfe830fffa2db1986762df"
+      "source_step_sha256": "e9e24f38d0d4bfa77d4ae1534c183075bbad35dee276d569b58aab595cc7af21"
     },
     {
       "key": "vertical-stop-2x2-h120",
@@ -721,7 +813,8 @@
           "height": 13.0,
           "fit_offset": 0.0,
           "joint_style": "original"
-        }
+        },
+        "panel_height_cells": null
       },
       "size_mm": [
         120.0,
@@ -739,7 +832,7 @@
       "bytes": 8757,
       "sha256": "8845c43eb87022d2c03ad407f7b4dc7e39a680e74c2bca228e121b841735f024",
       "source_render_sha256": "5d3fd089508eb688f2babb5b0bd30ac0b3a5915534e8cba789766db45717836d",
-      "source_step_sha256": "6bb5848b43e500882bad2ccf2e95b0a963a1a64ce9b8828d32201ea991fd3c06"
+      "source_step_sha256": "d476788523ece5455affd7489b7ad4ad5ef8305a6f845e32c2f2fb24378564da"
     },
     {
       "key": "lock-45-1x1",
@@ -757,7 +850,8 @@
           "height": 13.0,
           "fit_offset": 0.0,
           "joint_style": "original"
-        }
+        },
+        "panel_height_cells": null
       },
       "size_mm": [
         60.00000000000001,
@@ -775,7 +869,7 @@
       "bytes": 9260,
       "sha256": "14e99fab6c333f026d033df3a6539c8dc2639f473df5d35d4c3f6f42a8752b03",
       "source_render_sha256": "ba691ea18a80936242cc0c33908e35d016c5df810d2de4ad14cacc3ed5346970",
-      "source_step_sha256": "44a6f7cabd824ec9685bb3519a93ccd190f78f26baeadc34557c6dfa69da4a49"
+      "source_step_sha256": "1dfb58a3fe668672ed7ca5916377effa6bf5a4fbc3094b6eeeb766dd9b8b57c2"
     },
     {
       "key": "lock-45-2x2",
@@ -793,7 +887,8 @@
           "height": 13.0,
           "fit_offset": 0.0,
           "joint_style": "original"
-        }
+        },
+        "panel_height_cells": null
       },
       "size_mm": [
         120.0,
@@ -811,7 +906,7 @@
       "bytes": 15454,
       "sha256": "7cdf7b49e6e71011c468cc00ac78353d17b84c6c93c9e97547941ee0a4ae95fd",
       "source_render_sha256": "0e84bdd0103d987ceabd91b42293060834e3d8b66ee34d0ae56bff1c0af050ab",
-      "source_step_sha256": "20a2494300c2508e2dbb77d3fe3ccb66a76433df890d38782194200428672d67"
+      "source_step_sha256": "037f010faf938f1dcd57ead34881c4dbd592b658a65372e7252ac837147810d6"
     },
     {
       "key": "edge-x-1",
@@ -829,7 +924,8 @@
           "height": 13.0,
           "fit_offset": 0.0,
           "joint_style": "original"
-        }
+        },
+        "panel_height_cells": null
       },
       "size_mm": [
         60.0000002,
@@ -847,7 +943,7 @@
       "bytes": 4985,
       "sha256": "fe1033c3d0916da528fe24fdb860edcde34610c4594d4ac1d97f29005328720f",
       "source_render_sha256": "bcf456fbd5c9015b313366e296df14aaee7ca930ef93da6bd8fec5eb0d3539ee",
-      "source_step_sha256": "6953ce1aab9737cc7f7e60a63ee1fe87ee20320da36a083c344f132e14c4b1fb"
+      "source_step_sha256": "f245879de13ed090450cae717e77b74b1ea78f1879362c6548550ee6a2de9da1"
     },
     {
       "key": "edge-x-2",
@@ -865,7 +961,8 @@
           "height": 13.0,
           "fit_offset": 0.0,
           "joint_style": "original"
-        }
+        },
+        "panel_height_cells": null
       },
       "size_mm": [
         120.00000019999999,
@@ -883,7 +980,7 @@
       "bytes": 8717,
       "sha256": "3162d5e2054c000666dfb35407683e7358853da6911cf72644c1a171b1fe71bd",
       "source_render_sha256": "d47f2b06b08d9cb0124751574dd4156a93f1efd5264492ce48c4939c999b97de",
-      "source_step_sha256": "d084ba1c26d66593d35eceba80af20c27d3f791980dbd6eb6edcc1040879971c"
+      "source_step_sha256": "08724e7a71d082dfd4b31bc4f717b02dfbd815e20cbd33070d7755c8db1acab7"
     },
     {
       "key": "edge-x-3",
@@ -901,7 +998,8 @@
           "height": 13.0,
           "fit_offset": 0.0,
           "joint_style": "original"
-        }
+        },
+        "panel_height_cells": null
       },
       "size_mm": [
         180.0000002,
@@ -919,7 +1017,7 @@
       "bytes": 12025,
       "sha256": "93f2b2b515fe14f5b805ddb6c655ff155385306bf4aef573a8a0b3000c84721e",
       "source_render_sha256": "e8ce732f5aeb76c5cdff38d38660b6c1f9aac821c8491fc6a6539089b1562469",
-      "source_step_sha256": "16c75c2e6a83875b47f4ce8ab2e5dc23eaac384b3166900a6ca80fac53c0c7e4"
+      "source_step_sha256": "b3358a4c07b49ba059157234682525eb58d42a42ee185da381e2c2f7c461c9a7"
     },
     {
       "key": "edge-x-4",
@@ -937,7 +1035,8 @@
           "height": 13.0,
           "fit_offset": 0.0,
           "joint_style": "original"
-        }
+        },
+        "panel_height_cells": null
       },
       "size_mm": [
         240.0000002,
@@ -955,7 +1054,7 @@
       "bytes": 15792,
       "sha256": "247bb897346acd7af9b3f59c783e6197203a966efd7fbe720fb56ee489624075",
       "source_render_sha256": "dc81115ad2e6fbce4e520a15d749ed702fdbe7f3944242b24a302b38d942730f",
-      "source_step_sha256": "03f346ec518e5bcecf764c89a1c94611d62b6dce1b9fb3a209f854ae3e42012b"
+      "source_step_sha256": "0042773b40582fbd4a0c7b55fc008da177cfa6611b9e26b4b74a0e3d43b97449"
     },
     {
       "key": "edge-x-5",
@@ -973,7 +1072,8 @@
           "height": 13.0,
           "fit_offset": 0.0,
           "joint_style": "original"
-        }
+        },
+        "panel_height_cells": null
       },
       "size_mm": [
         300.00000020000004,
@@ -991,7 +1091,7 @@
       "bytes": 20187,
       "sha256": "1b49a10b4893f0ce0a864e94feb8e112002f0695786e6e2ab02c91faff1c6b51",
       "source_render_sha256": "cf0eb3a213d1fa45e53713489eb26a5183cdc8e77211f2a73aa8416e59153219",
-      "source_step_sha256": "712e0ec4ab5915429a6d16e74a11a78b2d385591b3311a76d85f7326388ec8db"
+      "source_step_sha256": "1cb7e4a439baba21379d68e10eda2eb16b92c1761c12dab506a7d6bbaef93ce7"
     },
     {
       "key": "edge-y-1",
@@ -1009,7 +1109,8 @@
           "height": 13.0,
           "fit_offset": 0.0,
           "joint_style": "original"
-        }
+        },
+        "panel_height_cells": null
       },
       "size_mm": [
         60.0000002,
@@ -1027,7 +1128,7 @@
       "bytes": 4393,
       "sha256": "596428b2cb26dec85b22f2d65f1ffac400e04137aa605b51c56b13b102c8c7cd",
       "source_render_sha256": "36ed8a474e63d025be7ea5519c4e867e2f94ca887de134b295e4d0ff99cf0522",
-      "source_step_sha256": "0487dfc01f0639a7fe9193db63832dc6d2ddaca1e026dd9082308fd7ea6f9fb8"
+      "source_step_sha256": "aed4cbe1f631cbacad194aea2cd1eed8c898044016510bb5ed8ac943df02c0d9"
     },
     {
       "key": "edge-y-2",
@@ -1045,7 +1146,8 @@
           "height": 13.0,
           "fit_offset": 0.0,
           "joint_style": "original"
-        }
+        },
+        "panel_height_cells": null
       },
       "size_mm": [
         120.00000019999999,
@@ -1063,7 +1165,7 @@
       "bytes": 6850,
       "sha256": "d99bcdb3c0c97dced852360636675cfdf027c53119833581db9fe9df78aa90ba",
       "source_render_sha256": "7382f67b4754c662e1024294666a3560c497041e2d887605a85b21409fb740b4",
-      "source_step_sha256": "47efdd2bfba2a8d0cf8ad21b4bbb9f458446e57da8cba879147c8c3b21268ea5"
+      "source_step_sha256": "f12ad5683d9f1ee40a1ba3dfc66ea3287b801bdf687f735096cb229adb7d8eb5"
     },
     {
       "key": "edge-y-3",
@@ -1081,7 +1183,8 @@
           "height": 13.0,
           "fit_offset": 0.0,
           "joint_style": "original"
-        }
+        },
+        "panel_height_cells": null
       },
       "size_mm": [
         180.0000002,
@@ -1099,7 +1202,7 @@
       "bytes": 9123,
       "sha256": "dc7c2ee75774d6f8399a190ab2d2fe2062e18e31376f69e9eada803f8dbebbf2",
       "source_render_sha256": "0e8e03528933d7689df13f91c3aad3425b0c73cb3fc142f4b9f47b42123bfd1f",
-      "source_step_sha256": "d48c9e8a26b9074dfbc7edbaa6044843bffd758a043ff15a4a7eb0a0a9b661fe"
+      "source_step_sha256": "5e3f191dde29805bb54d145edc64b433f4bac0ce5270d907d6b5ece2761c1b13"
     },
     {
       "key": "edge-y-4",
@@ -1117,7 +1220,8 @@
           "height": 13.0,
           "fit_offset": 0.0,
           "joint_style": "original"
-        }
+        },
+        "panel_height_cells": null
       },
       "size_mm": [
         240.0000002,
@@ -1135,7 +1239,7 @@
       "bytes": 12431,
       "sha256": "619342c4033d44c6c6b1286803f42e103aeb4d5998735cc0315fe0440edeff1e",
       "source_render_sha256": "bbbd83d157b240784f5aec9a336e8d8e62a34f6808aa8dfacadeda77f358c339",
-      "source_step_sha256": "2ed01d9e2498ab950c8e6b7b64ba89b0cd5115fa18ec2ad6a63dea58c5038996"
+      "source_step_sha256": "2cfa17e19dd6912defe1d9454c424fb9c21c7145337f9f35f99f75642aecf81a"
     },
     {
       "key": "edge-y-5",
@@ -1153,7 +1257,8 @@
           "height": 13.0,
           "fit_offset": 0.0,
           "joint_style": "original"
-        }
+        },
+        "panel_height_cells": null
       },
       "size_mm": [
         300.00000020000004,
@@ -1171,7 +1276,7 @@
       "bytes": 15975,
       "sha256": "7f7c113d2d189c4eb5849b92c47e10c2b7806a53c828e509177919308a3b10d4",
       "source_render_sha256": "1ae710e824b97566782eb999295224865473c2fd0709ba518cfc01613e8fd9a3",
-      "source_step_sha256": "a2bcb8a4cad37b6d0275a3af340862c96df0596d3f2ced9bb0086fbd52bd6cbf"
+      "source_step_sha256": "da1a2b39449afa1c7dfbaa36afe8d26152793a3b0cd0bb9c7df6b1b514c2522c"
     },
     {
       "key": "corner-in-v1",
@@ -1189,7 +1294,8 @@
           "height": 13.0,
           "fit_offset": 0.0,
           "joint_style": "original"
-        }
+        },
+        "panel_height_cells": null
       },
       "size_mm": [
         60.0000002,
@@ -1207,7 +1313,7 @@
       "bytes": 18363,
       "sha256": "e2618860fdff98abf83d40f6ce507541c9a797d3714405e8b3feb0ca4e3b587e",
       "source_render_sha256": "9e9714037a131586226f7c38e71ceaecf9a5745f1e017fe7e226398fb4bf3bc0",
-      "source_step_sha256": "24b493428d471a3a9bc31fef03493d1b0e0e952e422f475714549e5ccf6da82d"
+      "source_step_sha256": "dd47ff82fcc53da13211b42d27b8da81fb311a7c0a0bebb8bbf629a69afdba58"
     },
     {
       "key": "corner-in-v2",
@@ -1225,7 +1331,8 @@
           "height": 13.0,
           "fit_offset": 0.0,
           "joint_style": "original"
-        }
+        },
+        "panel_height_cells": null
       },
       "size_mm": [
         66.0000001,
@@ -1243,7 +1350,7 @@
       "bytes": 20833,
       "sha256": "ec56e3756602e926e2ef89bdaa6a6cf61036221175f2666b6e467ccbb56ed889",
       "source_render_sha256": "7bfa4929b1ca761cf6e72bc210790fe87cd70ef1a8e2fcef93269da84f0f3ace",
-      "source_step_sha256": "defda85465d8056a3a9c4028cb5e508b923e85bea6f40a004be553fa9f5a3268"
+      "source_step_sha256": "b4b4a881ae9d6dc4e4e2fccafb0066c140ba417f9f8be5876bf17543df873543"
     },
     {
       "key": "corner-in-v3",
@@ -1261,7 +1368,8 @@
           "height": 13.0,
           "fit_offset": 0.0,
           "joint_style": "original"
-        }
+        },
+        "panel_height_cells": null
       },
       "size_mm": [
         66.0000001,
@@ -1279,7 +1387,7 @@
       "bytes": 18512,
       "sha256": "3637775a11a5517223cd8039c81a70b0d8874d11b7d10ecdb368259edc7c7698",
       "source_render_sha256": "7bcb332e3242339c4d89f8a5f973e82b515bef3a589833d720616e310550a6dd",
-      "source_step_sha256": "91553a06517c4024be816dbb8865d76517ef33f65c4ef298608a76e54aa7ac5a"
+      "source_step_sha256": "9745c63c1c68dde9f4cfc5ff02e00bea80b0a64d34da2e5772ee16ed65b49c6f"
     },
     {
       "key": "corner-in-v4",
@@ -1297,7 +1405,8 @@
           "height": 13.0,
           "fit_offset": 0.0,
           "joint_style": "original"
-        }
+        },
+        "panel_height_cells": null
       },
       "size_mm": [
         60.0000002,
@@ -1315,7 +1424,7 @@
       "bytes": 16989,
       "sha256": "99404a226a5845fd788b4126d6470adeb9e564602a2ec866eb6bb6168c00273c",
       "source_render_sha256": "223f758c99f4d76ffab775e142f447422699fcae3bef296adbb24e2d98e442f8",
-      "source_step_sha256": "a144bc5dae6f3b8bca36d18f70fd56e38bb7bfe29184e6b8f550ba60b3ee1be4"
+      "source_step_sha256": "0897016acedafe77f1f1335d254b48a6ed400de626d4d3b4af46133b874bc67d"
     },
     {
       "key": "corner-out-v1",
@@ -1333,7 +1442,8 @@
           "height": 13.0,
           "fit_offset": 0.0,
           "joint_style": "original"
-        }
+        },
+        "panel_height_cells": null
       },
       "size_mm": [
         16.000000000000004,
@@ -1351,7 +1461,7 @@
       "bytes": 11227,
       "sha256": "f82e496238f35b1a6ab4f064a4263c1e44569c50dd5386b7eb092a53141333b8",
       "source_render_sha256": "77c79b5affeea2f263209a738fbeee74f0f4f16196ea8b0197589c51e1f4c5e0",
-      "source_step_sha256": "4bb0f02452686ffe0dffd0abbb15274fca5e833908eb3e21806034910be05c9f"
+      "source_step_sha256": "d282f8d4707514660c6e738f6a13db5aada4474956f6747aa70349848d4aac7e"
     },
     {
       "key": "corner-out-v2",
@@ -1369,7 +1479,8 @@
           "height": 13.0,
           "fit_offset": 0.0,
           "joint_style": "original"
-        }
+        },
+        "panel_height_cells": null
       },
       "size_mm": [
         67.07106791186548,
@@ -1387,7 +1498,7 @@
       "bytes": 8901,
       "sha256": "d26564d92330a563aef10bf8a98d3b0f0a9f2834b15c09ae47234675c832675a",
       "source_render_sha256": "1abe23e64a0e90f8be4b29825b648378f8add8dd6886714c2553f05b19263668",
-      "source_step_sha256": "459739834682ec4bc3e43e9462994912d75cc6ce0e74e2729fd8ebe4f4d593a1"
+      "source_step_sha256": "ad5d6a84630ce4b7104e112117948a9eeb4d413ab7865dbfd6b23863c0277fe4"
     },
     {
       "key": "corner-out-v3",
@@ -1405,7 +1516,8 @@
           "height": 13.0,
           "fit_offset": 0.0,
           "joint_style": "original"
-        }
+        },
+        "panel_height_cells": null
       },
       "size_mm": [
         70.0000001,
@@ -1423,7 +1535,7 @@
       "bytes": 18743,
       "sha256": "6fdcd028b45dc407d2884b4ce2125ff53b0a22c5bca1d759fcdc6ac7f64c3460",
       "source_render_sha256": "e289a4b43eeddadca0f75af1d4e16158f1b2fca1a558415dc49cd82ab4790977",
-      "source_step_sha256": "9167ae012458236f346315ab2c15acf1932200303f65118e451be8c3fa51d7d2"
+      "source_step_sha256": "2519a3ad1f7fccaa99d30f9d4c7af0cd5b1ea414c30c9f8f6492b20f33bb4e87"
     },
     {
       "key": "corner-out-v4",
@@ -1441,7 +1553,8 @@
           "height": 13.0,
           "fit_offset": 0.0,
           "joint_style": "original"
-        }
+        },
+        "panel_height_cells": null
       },
       "size_mm": [
         10.000000100000006,
@@ -1459,7 +1572,7 @@
       "bytes": 10354,
       "sha256": "30584baed58571a38efd7eafc3865a93057b7b51a11a017fdb98464990d33192",
       "source_render_sha256": "0abd2712d40f0f34fe47e4243ea0e23218eb9fb95ccb36972160900e919cfda0",
-      "source_step_sha256": "90f83a0223b75633f099c3866ae29d6402b38bb8e70598f251b64f81c3d6d739"
+      "source_step_sha256": "a36aa1a62ab93a00ac801d54ed143cfc8973420d06ebaecce11e403ebc1cd63d"
     },
     {
       "key": "corner-out-v5",
@@ -1477,7 +1590,8 @@
           "height": 13.0,
           "fit_offset": 0.0,
           "joint_style": "original"
-        }
+        },
+        "panel_height_cells": null
       },
       "size_mm": [
         67.07106791186547,
@@ -1495,7 +1609,7 @@
       "bytes": 9793,
       "sha256": "7e49308c0122f8ccb308eb0f150b49d20e4c8115d8def410061eecb926ee899c",
       "source_render_sha256": "b114ba2446bb0775fab0509ff67204aaf94e35f6530376cebe91952e5b8e80fb",
-      "source_step_sha256": "d2b9ee2ebed71b9a512696e354c0f441edd6f3aa1c1b8e027e9a28feae9ab299"
+      "source_step_sha256": "4d55362e1e7bc5f64563fc853a2238ca77fe8d4319d669ed6e1f9067da2ed9e9"
     },
     {
       "key": "corner-out-v6",
@@ -1513,7 +1627,8 @@
           "height": 13.0,
           "fit_offset": 0.0,
           "joint_style": "original"
-        }
+        },
+        "panel_height_cells": null
       },
       "size_mm": [
         70.0000001,
@@ -1531,7 +1646,7 @@
       "bytes": 21524,
       "sha256": "226239f8136f508e08c16144ebb7f4ffbbe5d5671bea2b16496797ee8252980e",
       "source_render_sha256": "933f8cc38a376d2f91c9e71aa660f4f1df6380d979a06e544d4a47fac29af35c",
-      "source_step_sha256": "90f6e829bdb6dfbcef1170c058b0d589b989205c96950a5df16b3ee9bfdcf860"
+      "source_step_sha256": "2a2805718a4c1f6a2b3f2f2ce1d074db03c53a57b8fc38a66be86da457d718ed"
     },
     {
       "key": "support-1",
@@ -1549,7 +1664,8 @@
           "height": 13.0,
           "fit_offset": 0.0,
           "joint_style": "original"
-        }
+        },
+        "panel_height_cells": null
       },
       "size_mm": [
         45.0,
@@ -1567,7 +1683,7 @@
       "bytes": 7613,
       "sha256": "92ddf5a9a599d12b8ab8395666445bd221609dbbded32798b7d78e18052f72b6",
       "source_render_sha256": "4994bc810c079afe9955ab8c7d98641ad0b430d5d4a64a9358ecb6e2f0af21f0",
-      "source_step_sha256": "5f6d9dc4f904f7c2b514c292fd7771b3e446526120726f59f1aefe649668a036"
+      "source_step_sha256": "a1b8c86d79eb9c055ebba43163381e1bb1bef49f4c039beb008551ddbad53cec"
     },
     {
       "key": "support-2",
@@ -1585,7 +1701,8 @@
           "height": 13.0,
           "fit_offset": 0.0,
           "joint_style": "original"
-        }
+        },
+        "panel_height_cells": null
       },
       "size_mm": [
         45.0,
@@ -1603,7 +1720,7 @@
       "bytes": 11653,
       "sha256": "db02d4893eebb0c57b64d008c757aa6a582e173a383fe0c70ba2ac0a1a196254",
       "source_render_sha256": "70dfb16e23c3e3b362a67833369a96f3555fd966a5205cf45fe5f67b702278c0",
-      "source_step_sha256": "c595f1979bb419a61b3fdf0b2459bec66c3279e30059924d8cebfae39eaea171"
+      "source_step_sha256": "445d35439df954f886756baa44b207b58dd2a412aee261a6a8751bcdf1ade8bf"
     },
     {
       "key": "support-3",
@@ -1621,7 +1738,8 @@
           "height": 13.0,
           "fit_offset": 0.0,
           "joint_style": "original"
-        }
+        },
+        "panel_height_cells": null
       },
       "size_mm": [
         45.0,
@@ -1639,7 +1757,7 @@
       "bytes": 15354,
       "sha256": "9d6d24479788f21c0657537fac42763c0cfcb89966b4c6d8ecc014bb4feab7ae",
       "source_render_sha256": "7e2d139c4c1c235e167d638ab0d8d4b8f4bf63fa7ecf616ec5285f782f75c2eb",
-      "source_step_sha256": "d7df6cb4d66f1fd1b5ef970efd25a99ba384257f790952760f3570f60c974299"
+      "source_step_sha256": "982e27449216f5e2121a4d53c1e3e84d162fff8f31fab605e87dc3a90cd708f6"
     },
     {
       "key": "support-4",
@@ -1657,7 +1775,8 @@
           "height": 13.0,
           "fit_offset": 0.0,
           "joint_style": "original"
-        }
+        },
+        "panel_height_cells": null
       },
       "size_mm": [
         45.0,
@@ -1675,7 +1794,7 @@
       "bytes": 19185,
       "sha256": "8ffe6365b87262b6cbc49e3b73fc505f6aeb75895a83b5842448d2256b37ff67",
       "source_render_sha256": "6c5726343e5aa3216212c253567ec321eeefc62e47c60b7fdd6098aee3e7a883",
-      "source_step_sha256": "629b801345f646517ded8adaa5d08a20907ddc962be69d603c369ddfe7c63e60"
+      "source_step_sha256": "12ad67252e2bebdce1d8cc751fa15d996643c514a3c0f3dd499b8842db33e83d"
     },
     {
       "key": "support-5",
@@ -1693,7 +1812,8 @@
           "height": 13.0,
           "fit_offset": 0.0,
           "joint_style": "original"
-        }
+        },
+        "panel_height_cells": null
       },
       "size_mm": [
         45.0,
@@ -1711,7 +1831,7 @@
       "bytes": 23943,
       "sha256": "9f998d421d1c9f638a3d70e91589b5da9d4069cdf85245b5bd4a6ce46927e38d",
       "source_render_sha256": "af1665d6272ec2b8d0851175cfd4632c7af4d19def40b8f6106071da8971ed66",
-      "source_step_sha256": "d782ab0e429194e1bc0f2dda20198e633aee7d0d1b21167e3fb2c17ca4331d39"
+      "source_step_sha256": "285db6cf1b7b93253181e892c3a14b1e92738e1ad838d7f61861301c7c1f98fd"
     },
     {
       "key": "support-end-v1",
@@ -1729,7 +1849,8 @@
           "height": 13.0,
           "fit_offset": 0.0,
           "joint_style": "original"
-        }
+        },
+        "panel_height_cells": null
       },
       "size_mm": [
         45.0,
@@ -1747,7 +1868,7 @@
       "bytes": 22132,
       "sha256": "c2042d771a56deea20c8ae7fceaa096f1b77271be6680564ff395b7d6113190b",
       "source_render_sha256": "a92625cf6bc20b122c42a6c8b31f5a67ee0c6a3fc0776047f34e1687845ebe2d",
-      "source_step_sha256": "afe8dc9cf060ad588c9dd8dfa17b3e42ccf80be240f25a33178e1d0ac1925f58"
+      "source_step_sha256": "ce5fb492726367dee56987064b01e4ec4bbf912f76cc212a41e0ae9847fded6f"
     },
     {
       "key": "support-end-v2",
@@ -1765,7 +1886,8 @@
           "height": 13.0,
           "fit_offset": 0.0,
           "joint_style": "original"
-        }
+        },
+        "panel_height_cells": null
       },
       "size_mm": [
         45.0,
@@ -1783,7 +1905,7 @@
       "bytes": 22048,
       "sha256": "f887c7b5985ce5887cd2709f4335ae193b09b975e9bf3900670488d379b54a65",
       "source_render_sha256": "62c939e6e4eec935735d3e5376e9ba331d261d2dad5f5b318870c3f31e5fd108",
-      "source_step_sha256": "8ffd715f960fc03e5c46a3a5d35a160549b574ceb0a57e3a092f27939fa26454"
+      "source_step_sha256": "3e8ec55aba0e25fd28fbedea6b61c11fa04dc36bfbb09c20b5e1913888ab3520"
     },
     {
       "key": "support-end-v3",
@@ -1801,7 +1923,8 @@
           "height": 13.0,
           "fit_offset": 0.0,
           "joint_style": "original"
-        }
+        },
+        "panel_height_cells": null
       },
       "size_mm": [
         45.0,
@@ -1819,7 +1942,7 @@
       "bytes": 21183,
       "sha256": "44dd0e2cd1df88a450cc0a0b3f7c4ca26bcbbfdd35987d0b947b7c4bd18ef32f",
       "source_render_sha256": "d03aa27669be886e6f72e3e529a07e24f86c0288a59e91438dac8f58d283a92c",
-      "source_step_sha256": "0a32ef15443b7ab87b0e5f0adf4c745457bec1539b32db7d2716b4fa01126ce3"
+      "source_step_sha256": "e680f3937998c3776eee8752dbf78ec4632245df7fef9d03e9ba2a6785550271"
     },
     {
       "key": "support-end-v4",
@@ -1837,7 +1960,8 @@
           "height": 13.0,
           "fit_offset": 0.0,
           "joint_style": "original"
-        }
+        },
+        "panel_height_cells": null
       },
       "size_mm": [
         45.0,
@@ -1855,7 +1979,7 @@
       "bytes": 21193,
       "sha256": "4093d5891aed0fbadb98a592fd1d7a695c5641b66df5dd5093df5838eb921165",
       "source_render_sha256": "4f6e44b4983e59c740936fdf50b3ccf0d8a1dd076ebb90859f2654ebd2b87e65",
-      "source_step_sha256": "8514bdda78cdc3d5bd99bf1a7a160ffb5d9eca2b6956588e7ac1c04ccae14408"
+      "source_step_sha256": "72943fdec294efb7d02f38caee3a2d12f0710016253e037e901c8cefffa3e6ba"
     },
     {
       "key": "support-bit-20mm",
@@ -1873,7 +1997,8 @@
           "height": 13.0,
           "fit_offset": 0.0,
           "joint_style": "original"
-        }
+        },
+        "panel_height_cells": null
       },
       "size_mm": [
         45.0,
@@ -1891,7 +2016,7 @@
       "bytes": 10431,
       "sha256": "3469d169d756d28f19aeca60cce4872f80c18a0a854ebcd9287d4a8dda292897",
       "source_render_sha256": "bf1412f2a2dcb251cb85196ca68f5bb924f5db1b9fbc5a14db6ebee70564b6df",
-      "source_step_sha256": "73ba49e54b5272a500a6945443fadd2514b101d2af65aae62f2c4730a854cffd"
+      "source_step_sha256": "f383cce933e92964c62b91ed0cefa9a09e607380ae2eeadba07faea41bc02321"
     },
     {
       "key": "support-bit-30mm",
@@ -1909,7 +2034,8 @@
           "height": 13.0,
           "fit_offset": 0.0,
           "joint_style": "original"
-        }
+        },
+        "panel_height_cells": null
       },
       "size_mm": [
         45.0,
@@ -1927,7 +2053,7 @@
       "bytes": 11842,
       "sha256": "c6c12acd69689f3a6d2c7c934809d69ab7027ce6126121e827832dded08423ec",
       "source_render_sha256": "757f1835b0831d384bd4594153e0bef3f509a7f75de3a23ee56b2968f3cb91e3",
-      "source_step_sha256": "a74986e9b10e3a2b724336cedfb0118f84351ab3da7d47ecff2c7db2d0fb6df2"
+      "source_step_sha256": "259fa12614d03dad6f9653f06772893ea9a085f368dfac37414a6d7c951682d8"
     },
     {
       "key": "support-bit-40mm",
@@ -1945,7 +2071,8 @@
           "height": 13.0,
           "fit_offset": 0.0,
           "joint_style": "original"
-        }
+        },
+        "panel_height_cells": null
       },
       "size_mm": [
         45.0,
@@ -1963,7 +2090,7 @@
       "bytes": 15938,
       "sha256": "9fe6293afe52c4ecdef2b72df4e01b274e71596a62fd6083fb7855ab3d5642ce",
       "source_render_sha256": "265c901acf348cf9d7987c044a7fe1fdba54c711a2a18bc3b78d7d82fe8dec11",
-      "source_step_sha256": "b9bbe860b8c064ee52411809b5f6a8f9df69491825feb3063a2152d15e1eb89e"
+      "source_step_sha256": "577a19f8d645ee4ea5f629275469a8ca2be0e50732471ff303afd8d6cae298de"
     },
     {
       "key": "support-bit-50mm",
@@ -1981,7 +2108,8 @@
           "height": 13.0,
           "fit_offset": 0.0,
           "joint_style": "original"
-        }
+        },
+        "panel_height_cells": null
       },
       "size_mm": [
         45.0,
@@ -1999,7 +2127,7 @@
       "bytes": 18428,
       "sha256": "9582d46f5f18754f4e6158e0f18bf714fd15eb7fac628c616d2736beaa0f8fb6",
       "source_render_sha256": "c9b2e09a619607e07b974e187f0cfafaf46af649a8d7a0b2065686adb948d984",
-      "source_step_sha256": "ad444938a89edf8564ee7f6d38a46845dcb293f1e76adbbabacb4cdbc8fbaa8f"
+      "source_step_sha256": "674b2c3cc38192196f19379e4b22edbbdd709ef4e2759f9629330cd3557127f5"
     }
   ]
 }
