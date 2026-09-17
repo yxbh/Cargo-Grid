@@ -2,7 +2,7 @@
 
 Cargo-Grid generates modular cargo-mat tiles and accessories from Python. The default grid uses 60 mm cells and 13 mm-tall tiles. You can export STEP, STL and editable 3MF files for one part, a fitted rectangular layout or the complete catalogue.
 
-![A 2x1 tile without optional holes beside the same tile with the full 13-hole pattern.](docs/images/hero.png)
+![A large 4x4 tile without optional holes beside the same tile with the full 65-hole pattern.](docs/images/hero.png)
 
 This is an independently authored, MIT-licensed pre-release. The geometry and export checks catch CAD and file errors, but printed fit, support removal and load capacity still need testing on your machine and material.
 
@@ -240,12 +240,12 @@ Development checks:
 uv sync --group dev
 uv run ruff check .
 uv run ruff format --check .
-uv run pytest -q -m "not native and not reference"
+uv run pytest -q -n 4 --dist loadfile -m "not native and not reference"
 uv build
 uv run python tools/check_distributions.py dist
 ```
 
-Keep `uv.lock` local and ignored. Native/reference tests use explicitly supplied `CARGO_GRID_BAMBU` and `CARGO_GRID_REFERENCE`; they skip when those resources are unavailable. See [AGENTS.md](AGENTS.md), the [release checklist](docs/release-checklist.md) and [gallery reproduction instructions](docs/attachments.md#reproduce-the-images) for maintainer details.
+Four process workers were fastest in the local benchmark; CI uses two on its smaller runner. Keep native/reference tests serial. They use explicitly supplied `CARGO_GRID_BAMBU` and `CARGO_GRID_REFERENCE` and skip when those resources are unavailable. Keep `uv.lock` local and ignored. See [AGENTS.md](AGENTS.md), the [release checklist](docs/release-checklist.md) and [gallery reproduction instructions](docs/attachments.md#reproduce-the-images) for maintainer details.
 
 ## License and reference boundary
 

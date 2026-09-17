@@ -147,8 +147,8 @@ def inventory() -> list[Item]:
 
 def hero_items() -> list[Item]:
     return [
-        Item("tile-default", "Original joining geometry", "2 x 1 / no optional holes"),
-        Item("tile-full", "An optional open pattern", "2 x 1 / 13 extra 10 mm holes"),
+        Item("tile-default", "Plain 4x4 tile", "246 x 246 x 13 mm / no optional holes"),
+        Item("tile-full", "Full-hole 4x4 tile", "65 additional 10 mm holes"),
     ]
 
 
@@ -196,8 +196,8 @@ def documentation_shape(key: str):
     if key in ("tile-default", "tile-full"):
         shape = make_tile(
             Tile(
-                2,
-                1,
+                4,
+                4,
                 hole_diameter=10 if key == "tile-full" else None,
                 hole_scope="full" if key == "tile-full" else "interior",
             )
@@ -654,23 +654,23 @@ def compose_all(work: Path, provenance: dict) -> None:
     lines = [
         "# Complete attachment inventory",
         "",
-        f"This gallery covers every attachment variant returned by `accessory_variants(BuildVolume(350, 320, 325))` with original joints and default accessory parameters. It contains {len(items)} variants, all rendered from the generator's actual STEP geometry. Other build envelopes and explicit parametric lengths/heights can produce additional variants; this is not an exhaustive list of an unbounded parameter space.",
+        f"This page lists the {len(items)} accessories that fit the documented 350 x 320 x 325 mm build space with original joints and default settings. Each thumbnail comes from the STEP generated for that part. Other build spaces can allow different rail lengths or ramp widths.",
         "",
-        "Every row has its own STEP-derived thumbnail, directly beside the exact public API name. Click any thumbnail to open its full-size image; on narrow screens, scroll the table horizontally for all columns. Images share a 45-degree azimuth / 32-degree elevation and neutral background, with a common physical scale within each family. Families use different scales for legibility; colors are illustrative, not material assignments.",
+        "Click a thumbnail to open the full-size image. The code name beside it is the name used by the generator. Parts in one family share a scale; different families use different scales so small details stay readable. Colors only separate the shapes visually.",
         "",
         "[Back to the beginner guide](../README.md) / [Thumbnail dimensions, hashes and source provenance](images/attachments/manifest.json)",
         "",
-        "Bracket names state both in-use footprints. The original Deep tall floor 1x2 -> wall 1x2, Wide low floor 2x1 -> wall 2x1 and Deep square floor 2x2 -> wall 2x2 variants keep floor depth and wall height coupled. The additional Shallow tall floor 1x1 -> wall 1x2 and Shallow wide floor 2x1 -> wall 2x2 variants use one floor row with two wall rows. Stable IDs keep the original short 1x2/2x1/2x2 names and spell out `base..._wall...` only for independent-height variants. These five variants require the reference 60 mm pitch, 13 mm tile height and zero fit offset; the unreleased lock-90 family remains replaced without an alias.",
+        "Bracket names state both footprints. Deep tall is floor 1x2 -> wall 1x2, Wide low is floor 2x1 -> wall 2x1 and Deep square is floor 2x2 -> wall 2x2. Shallow tall is floor 1x1 -> wall 1x2, and Shallow wide is floor 2x1 -> wall 2x2. The two shallow IDs spell out `base..._wall...`; the original three keep their shorter IDs. All five use the standard 60 mm pitch, 13 mm tile height and zero fit offset.",
         "",
-        "Bracket thumbnails show the exported one-piece bracket only. The [family view](images/vertical-tile-brackets.png) adds separate ordinary floor and upright wall tiles for assembly context; those tiles are not fused into or included with bracket exports. Wall-tile entry faces meet the bracket, so their undersides face outward. Backed interior round holes are blind, and downward wall extension is obstructed; left/right/up joins remain available at a common wall origin.",
+        "The individual thumbnails show the bracket alone. The [family view](images/vertical-tile-brackets.png) adds separate floor and wall tiles to show assembly; those tiles are not included in the bracket export. The wall tile's underside faces outward. Holes covered by the solid backing are blind while assembled.",
         "",
-        "Ramp names give width along the tile edge in 60 mm cells; every ramp keeps the approved 50 mm front-to-back run and 13 mm rise. One original roofed female pocket is repeated per cell. The ramp receives a north male tile edge and extends away in positive Y; rotating the printed part does not change joining direction. Full-height/custom-interface ramps are omitted rather than presented as compatible.",
+        "Ramp names give width along the tile edge in 60 mm cells. Every ramp keeps the same 50 mm run and 13 mm rise, with one original female pocket per cell. The ramp receives a tile's north male edge and extends in positive Y. Full-height and custom-interface ramps are not available.",
         "",
-        "Normal `vertical-stop` names use base X cells, base Y cells and an explicit H60/H120 shoulder height. These eight parts are filled CAD wedges, not hollow shells or tile brackets; ordinary slicer perimeters and 15% infill remain separate manufacturing choices. They have no wall holes, panel connectors or ledges.",
+        "Normal `vertical-stop` names give base X cells, base Y cells and H60/H120 shoulder height. They are filled CAD wedges with no wall holes, panel connectors or ledges. The slicer still chooses perimeters and infill.",
         "",
-        "Edge/corner free top rims and every normal-stop free exterior edge use R2 rounding. Rail outer top rims and original bracket nonbearing front lips use selective R1. Each shallow bracket couples R1 across its 20 free exterior body edges while retaining the internal panel-bearing corner and exact X geometry; each filled angled-stop envelope couples R1 across all 18 free body edges before restoring its exact X connector/root cores. Tile-facing joins, support joins, bracket bearing land and X interfaces remain protected. Nominal geometry is not calibrated fit or a physical load rating.",
+        "Edge/corner top rims and normal-stop outer edges use R2. Rails, bracket lips, shallow brackets and angled stops use the documented R1 rounds. Tile joints, rail joints, bracket bearing surfaces and X attachments keep their mating geometry.",
         "",
-        "Bambu projects apply X=135 degrees to original brackets, Y=-90 degrees side-down to shallow brackets, each normal stop's broad-rear-face-down angle and X=-135 degrees to angled stops before fit checks and packing. Ramps retain their flat source orientation. Source STEP/STL and core 3MF retain model orientation; manifests record recommendations and exact applied source-to-project transforms. Normal Auto support is scoped to ramp, normal-stop and shallow-bracket objects. Remove shallow-bracket support from both floor and wall X mating regions before assembly; physical removal and fit remain unverified. Edge/corner/plate/rail families retain their project orientation.",
+        "Bambu projects put original brackets on their diagonal rear face, shallow brackets on a broad side, normal stops on their broad rear face and angled stops on their rear face before packing. STEP, STL and core 3MF keep model orientation. Ramps, normal stops and shallow brackets request object-level normal Auto support. Remove all support from mating regions before assembly.",
         "",
     ]
     for family, (heading, _) in FAMILIES.items():

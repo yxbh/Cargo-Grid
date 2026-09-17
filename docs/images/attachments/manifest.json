@@ -8,7 +8,7 @@
   },
   "camera": "45:32",
   "scale": "Common physical scale within each family; families differ.",
-  "source_render_recipe_sha256": "45dd1db13045a675b602222bf2fc813789b6c7cff65a2f557e28a61236a3d6d8",
+  "source_render_recipe_sha256": "41de8d20d95d5aba3aca34993cad459a7740fe617752a0cd05d5e73e9f278d33",
   "overview_images": [
     {
       "file": "images/hero.png",
@@ -16,8 +16,8 @@
         1800,
         690
       ],
-      "bytes": 158504,
-      "sha256": "95b42e91309f54143fd4f65ef3bf7b246b8ad2c747ed3801ac1d6734c807ed29"
+      "bytes": 233802,
+      "sha256": "c7f6a8e6530882417278bb35b0979e09a146187441472e217f44ce5eb9e215a9"
     },
     {
       "file": "images/x-attachments.png",

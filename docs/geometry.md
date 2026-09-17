@@ -1,4 +1,6 @@
-# Geometry contract and evidence boundaries
+# Geometry and print assumptions
+
+This is the maintainer reference for dimensions, interfaces and validation limits. The README covers normal use; this file records the details that must not change accidentally.
 
 ## Datums and interfaces
 
