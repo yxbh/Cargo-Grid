@@ -133,8 +133,6 @@ def _adaptive_volume(shape) -> float:
 def _checked_step_roundtrip(
     shape,
     path: Path,
-    *,
-    require_adaptive: bool = False,
 ) -> tuple:
     attempts = (
         ("average", PrecisionMode.AVERAGE),
@@ -143,19 +141,15 @@ def _checked_step_roundtrip(
         ("session", PrecisionMode.SESSION),
     )
     volume_budget = max(1e-6, shape.area * Precision.Confusion_s())
-    source_adaptive_volume = _adaptive_volume(shape) if require_adaptive else None
+    source_adaptive_volume = _adaptive_volume(shape)
     last = None
     failures = []
     for precision_mode, mode in attempts:
         if not export_step(shape, path, precision_mode=mode):
             raise ValueError(f"STEP export failed: {path}")
         restored = import_step(path)
-        volume_delta = abs(restored.volume - shape.volume)
-        adaptive_delta = (
-            abs(_adaptive_volume(restored) - source_adaptive_volume)
-            if source_adaptive_volume is not None
-            else 0
-        )
+        default_volume_delta = abs(restored.volume - shape.volume)
+        adaptive_delta = abs(_adaptive_volume(restored) - source_adaptive_volume)
         bounds_delta = max(
             abs(a - b)
             for a, b in zip(
@@ -166,19 +160,18 @@ def _checked_step_roundtrip(
         last = (
             restored,
             precision_mode,
-            volume_delta,
+            adaptive_delta,
             volume_budget,
             bounds_delta,
         )
         failures.append(
             f"{precision_mode}:valid={restored.is_valid},"
-            f"solids={len(restored.solids())},volume={volume_delta:.9g},"
+            f"solids={len(restored.solids())},default_volume={default_volume_delta:.9g},"
             f"adaptive={adaptive_delta:.9g},bounds={bounds_delta:.9g}"
         )
         if (
             restored.is_valid
             and len(restored.solids()) == 1
-            and volume_delta <= volume_budget
             and adaptive_delta <= volume_budget
             and bounds_delta <= 1e-5
         ):
@@ -840,9 +833,10 @@ def export_job(
                 "size_mm": design.size,
                 "assembly_frames": design.assembly_frames,
                 "hole_placements": design.holes,
-                "volume_mm3": design.shape.volume,
+                "volume_mm3": _adaptive_volume(design.shape),
                 "step_roundtrip": "passed",
                 "step_precision_mode": step_precision_mode,
+                "step_volume_method": "adaptive BRepGProp at 1e-12",
                 "step_volume_delta_mm3": volume_delta,
                 "step_volume_budget_mm3": volume_budget,
                 "step_bounds_delta_mm": bounds_delta,

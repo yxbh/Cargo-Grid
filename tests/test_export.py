@@ -314,6 +314,7 @@ def test_job_exports_roundtripped_step_and_honest_manifest(box_job, tmp_path):
     assert manifest["designs"][0]["quantity"] == 3
     assert manifest["designs"][0]["step_roundtrip"] == "passed"
     assert manifest["designs"][0]["step_precision_mode"] == "average"
+    assert manifest["designs"][0]["step_volume_method"] == "adaptive BRepGProp at 1e-12"
     assert manifest["export"]["format"] == "core-geometry"
     assert not manifest["physical_fit_verified"]
     restored = import_step(directory / "diagnostic_block.step")
