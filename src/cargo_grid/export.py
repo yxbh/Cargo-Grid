@@ -145,6 +145,7 @@ def _checked_step_roundtrip(
     volume_budget = max(1e-6, shape.area * Precision.Confusion_s())
     source_adaptive_volume = _adaptive_volume(shape) if require_adaptive else None
     last = None
+    failures = []
     for precision_mode, mode in attempts:
         if not export_step(shape, path, precision_mode=mode):
             raise ValueError(f"STEP export failed: {path}")
@@ -169,6 +170,11 @@ def _checked_step_roundtrip(
             volume_budget,
             bounds_delta,
         )
+        failures.append(
+            f"{precision_mode}:valid={restored.is_valid},"
+            f"solids={len(restored.solids())},volume={volume_delta:.9g},"
+            f"adaptive={adaptive_delta:.9g},bounds={bounds_delta:.9g}"
+        )
         if (
             restored.is_valid
             and len(restored.solids()) == 1
@@ -178,7 +184,8 @@ def _checked_step_roundtrip(
         ):
             return last
     raise ValueError(
-        f"STEP roundtrip failed: {path.stem}; last precision={last[1] if last else 'none'}"
+        f"STEP roundtrip failed: {path.stem}; budget={volume_budget:.9g}; "
+        f"attempts=[{'; '.join(failures)}]"
     )
 
 
