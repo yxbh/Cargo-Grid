@@ -1,10 +1,10 @@
 # Cargo-Grid
 
-Cargo-Grid generates modular cargo-mat tiles and accessories from Python. Defaults are 60 mm units, 13 mm tile thickness and the full 10 mm round-hole pattern. You can export STEP, STL and editable 3MF files for one part, a fitted rectangular layout or the complete catalogue.
+Cargo-Grid makes modular cargo-mat tiles and accessories from Python. The standard setup uses 60 mm units, 13 mm-thick tiles, original roofed edge joints and the full 10 mm hole pattern. You can export one part, a floor fitted to an exact rectangle, or a bounded catalogue as STEP, STL and editable 3MF files.
 
-![The default full-hole 4x4 tile beside the explicit no-hole version.](docs/images/hero.png)
+![The default full-hole 4x4 tile beside the no-hole version.](docs/images/hero.png)
 
-This is an independently authored, MIT-licensed pre-release. The geometry and export checks catch CAD and file errors, but printed fit, support removal and load capacity still need testing on your machine and material.
+This is an independently authored, MIT-licensed pre-release. The checks catch many CAD and file errors, but they can't tell you how a part will fit, release from support or hold up in a hot car. Print a small pair first and check it with your own material and settings.
 
 ## Make a 2x1 tile
 
@@ -15,7 +15,7 @@ uv sync
 uv run cargo-grid part --build-width-mm 150 --build-depth-mm 150 --build-height-mm 50 --width-cells 2 --depth-cells 1 --output outputs/first-tile
 ```
 
-The result is a nominal 126x66x13 mm tile with the original roofed joints and all 13 available 10 mm holes. `outputs/first-tile` contains:
+At the standard 60/13 settings, this makes a nominal 126x66x13 mm tile with original roofed joints and all 13 available 10 mm holes. `outputs/first-tile` contains:
 
 - a named STEP file for CAD work;
 - an STL mesh;
@@ -34,19 +34,19 @@ Full 10 mm round holes are the default, including retained edge and corner sites
 uv run cargo-grid part --build-width-mm 150 --build-depth-mm 150 --build-height-mm 50 --width-cells 2 --depth-cells 1 --no-holes --output outputs/solid-pattern
 ```
 
-`--holes` remains an explicit positive alias. Use `--hole-diameter-mm` to change 10 mm or `--hole-scope interior` when you only want complete interior holes. X attachment centres and other protected interfaces are never drilled. At small unit sizes, keep-outs can reject every requested hole; the CLI then suggests a smaller diameter or `--no-holes`.
+`--holes` remains available when you want to spell the choice out. Use `--hole-diameter-mm` to change 10 mm or `--hole-scope interior` when you only want complete interior holes. X attachment centres and other protected interfaces are never drilled. At small unit sizes, keep-outs can reject every requested hole; the CLI then suggests a smaller diameter or `--no-holes`.
 
-Unit size and tile thickness are independent. This example keeps the 13 mm thickness while changing cells and matching local-plane interfaces to 30 mm:
+Unit size and tile thickness are separate controls. This example uses 30 mm units but keeps the tile 13 mm thick:
 
 ```sh
 uv run cargo-grid part --unit-size-mm 30 --tile-thickness-mm 13 --build-width-mm 100 --build-depth-mm 100 --build-height-mm 50 --no-holes --output outputs/30mm-unit
 ```
 
-The standard 60/13 setting remains compatible with the documented stock geometry. Other values match parts generated with the same two settings, but are not claimed compatible with standard parts.
+Parts made with the same custom unit size, thickness and fit offset match one another. They aren't meant to mix with standard 60/13 parts.
 
 ![Exploded matching tile and plate interfaces at 60/13 and 30/13.](docs/images/interface-sizes.png)
 
-For a floor that must fill an exact rectangle, use `layout`. Full 60 mm cells stay in the middle and the leftover width/depth becomes integrated edge material:
+For a floor that must fill an exact rectangle, use `layout`. Whole cells at the selected unit size stay in the middle, and the leftover width and depth become built-in edge material:
 
 ```sh
 uv run cargo-grid layout --build-width-mm 150 --build-depth-mm 150 --build-height-mm 50 --layout-width-mm 320 --layout-depth-mm 230 --filler-placement balanced --output outputs/exact-floor
@@ -54,7 +54,7 @@ uv run cargo-grid layout --build-width-mm 150 --build-depth-mm 150 --build-heigh
 
 ## Browse and generate accessories
 
-The 350x320x325 mm reference catalogue contains 56 accessories: ramps, attachment plates, five vertical tile brackets, eight normal stops, two angled stops, edge/corner pieces and separate support rails/connectors.
+At the standard 60/13 settings, the documented 350x320x325 mm build envelope fits 56 accessories: ramps, attachment plates, five vertical tile brackets, eight normal stops, two angled stops, edge/corner pieces and separate support rails/connectors. A different unit size or build envelope can change what fits.
 
 ![Three plates, five tile brackets, eight normal stops and two angled stops that use the X attachment interface.](docs/images/x-attachments.png)
 
@@ -68,7 +68,7 @@ uv run cargo-grid part --family plate --width-cells 1 --depth-cells 1 --build-wi
 
 For Bambu output, attachment plates are flipped X=180 degrees so the broad plate body starts on the bed and the X plugs grow upward. STEP, STL and core 3MF keep the source orientation.
 
-Generate every tile and accessory that fits a build envelope with `catalogue`:
+Generate every supported tile and accessory that fits your build envelope with `catalogue`:
 
 ```sh
 uv run cargo-grid catalogue --build-width-mm 350 --build-depth-mm 320 --build-height-mm 325 --output outputs/catalogue
@@ -78,19 +78,21 @@ The manifest lists anything omitted because it did not fit.
 
 ## Make the full H2D catalogue
 
-This command creates the documented 81-design H2D project: 25 tile sizes with the full 10 mm hole pattern and all 56 accessories.
+This standard-only command creates the documented H2D project: 25 tile sizes with the full 10 mm hole pattern and all 56 accessories on 24 plates. It requires 60 mm units, 13 mm thickness and zero fit offset.
 
 ```sh
 uv run cargo-grid catalogue --h2d-dual-safe --build-width-mm 350 --build-depth-mm 320 --build-height-mm 325 --bambu --material "Bambu PETG Basic @BBL H2D 0.8 nozzle" PETG "#637b70" --nozzle-diameter-mm 0.8 --layer-height-mm 0.32 --no-stl --output outputs/full-catalogue
 ```
 
-Open `outputs/full-catalogue/job.3mf` as a project. It has 24 family-grouped plates. Common plates keep model bounds within the H2D shared reach (X=25..325, Y=0..320, Z<=320), add a 5 mm model inset and leave at least 10 mm between model bounds. The 306x306 mm 5x5 tile needs the wider left-nozzle area, so its plate is named `5x5 TILE - SINGLE NOZZLE ONLY - LEFT` and maps slot 1 to the left nozzle. Other plates keep automatic `Auto For Match` mapping.
+Open `outputs/full-catalogue/job.3mf` as a project. Common plates keep model bounds inside the H2D shared reach (X=25..325, Y=0..320, Z<=320), add another 5 mm model inset and leave at least 10 mm between model bounds. The 306x306 mm 5x5 tile needs the wider left-nozzle area, so it gets its own `5x5 TILE - SINGLE NOZZLE ONLY - LEFT` plate and maps slot 1 to the left nozzle. Other plates use automatic `Auto For Match`. These are model bounds; check support, brim and tower paths after slicing.
 
 The project names the H2D 0.8 nozzle, 0.32 mm Balanced Strength process, Textured PEI plate and Bambu PETG Basic profile. Confirm those profiles and your loaded filament before slicing. The catalogue does not add PLA roof interfaces to tiles; the PETG/PLA roof-support job below remains a separate tile-only workflow.
 
+Seeing all 24 plates after opening the file confirms that the project metadata restored. It does not mean the plates have been sliced or approved for printing.
+
 ## Vertical tile brackets
 
-A bracket holds a separate ordinary tile upright. Its underside-outward placement remains the default and the accepted posts also support a top-outward placement; solid backing makes covered round holes blind while assembled.
+A bracket holds a separate ordinary tile upright. The usual placement has the tile underside facing out, but the accepted posts also let the top face outward. The solid backing makes covered holes blind while the tile is fitted.
 
 ![Five brackets shown with separate floor and upright wall tiles.](docs/images/vertical-tile-brackets.png)
 
@@ -112,9 +114,9 @@ uv run cargo-grid part --family vertical-tile-bracket --width-cells 1 --depth-ce
 
 This exports the bracket only. Generate its 1x1 floor tile and 1x2 wall tile separately with the same unit size, tile thickness and fit offset.
 
-The accepted wall posts remove the wide root flare, inset the straight stem profile by 0.08 mm and keep the final 2 mm rounded tip unchanged. The wall tile can face either way. The original underside-outward placement remains the default; for its top face outward, rotate the wall tile Z=180 degrees and then X=-90 degrees before placing it on the same post centers. Use the same orientation for every adjoining wall tile because top-outward placement reverses left/right joining handedness. CAD checks preserve the seated top-outward arrangement, but the unchanged tip still has a small nominal interference during a straight insertion sweep. Physical fit is pending the user's test print.
+The wall posts have no wide flare at the seating face. Their straight stem is inset by 0.08 mm, followed by a 0.1 mm transition to the unchanged 2 mm rounded tip. For the top face outward, rotate the wall tile Z=180 degrees and then X=-90 degrees before placing it on the same post centres. Give every adjoining wall tile the same orientation because left and right swap when the tile is turned this way. The CAD seats in this position, but the rounded tip still crosses the narrow opening during a straight insertion. The design is accepted; real insertion force and retention are still waiting on a print test.
 
-Bambu projects place the original three brackets on their retangented diagonal rear face (about X=133–134 degrees, depending on depth). The shallow brackets use Y=-90 degrees with a broad side down and request normal Auto support on those objects. In both checked H2D PETG profiles, shallow-bracket support touched the floor and wall X mating regions. Those regions are exposed in the side-down pose, but the support must be removed completely before checking fit.
+Bambu projects place the original three brackets on their diagonal rear face (about X=133–134 degrees, depending on depth). The shallow brackets use Y=-90 degrees with a broad side down and turn on normal Auto support for those objects. In the checked H2D PETG profiles, that support reached both the floor and wall X mating areas. Remove it fully before trying the fit.
 
 ## Normal and angled cargo stops
 
@@ -126,7 +128,7 @@ Bambu projects place the original three brackets on their retangented diagonal r
 uv run cargo-grid part --family vertical-stop --width-cells 2 --depth-cells 1 --stop-height-mm 120 --build-width-mm 350 --build-depth-mm 320 --build-height-mm 325 --bambu --material "Model PETG" PETG "#637b70" --nozzle-diameter-mm 0.4 --layer-height-mm 0.2 --output outputs/vertical-stop
 ```
 
-Every free outer edge is R2; the X plugs and roots stay unchanged. Bambu rotates each normal stop onto its broad rear face and enables normal Auto support on that object. The 1x1/H120 and 2x1/H120 variants produced support in the mounting region during the checked H2D slices, so remove it before testing fit.
+Every free outer edge is R2; the X plugs and roots keep their mating shape. Bambu rotates each normal stop onto its broad rear face and enables normal Auto support for that object. The standard 1x1/H120 and 2x1/H120 examples produced support in the mounting area in both checked H2D profiles, so remove it before trying the fit.
 
 The two `lock-45` angled stops are also filled wedges. Their free body edges are R2, their X geometry is unchanged and Bambu places them X=-135 degrees with the rear face down.
 
@@ -182,7 +184,7 @@ uv run cargo-grid layout --help
 uv run cargo-grid catalogue --help
 ```
 
-`part` makes one design, `layout` fills a requested rectangle and `catalogue` enumerates everything that fits. Normal generation does not need a downloaded reference model. `compare-reference` is an optional maintainer check described in the [release checklist](docs/release-checklist.md#optional-native-and-reference-checks).
+`part` makes one design, `layout` fills a requested rectangle and `catalogue` lists the supported designs that fit. Normal generation doesn't need a downloaded reference model. `compare-reference` is an optional maintainer check described in the [release checklist](docs/release-checklist.md#optional-local-bambu-and-reference-checks).
 
 Common options:
 
@@ -196,7 +198,7 @@ Common options:
 - `--layout-width-mm`, `--layout-depth-mm`: finished rectangular layout;
 - `--packing-gap-mm`: catalogue separation.
 
-This alpha removed earlier ambiguous names. The main replacements are:
+This alpha replaced several older option names:
 
 | Earlier option | Current option |
 | --- | --- |
@@ -215,11 +217,13 @@ See `--help` for build reservations/exclusions, stacking and advanced roof-suppo
 
 ## Compatibility notes
 
-Original roofed joints are the default. At the standard 60 mm unit and 13 mm thickness, the male ledge reaches Z=10 and the female roof is Z=10.2. Unit size scales cells, X outlines and tile-edge joint profiles in their local plane. Tile thickness independently controls body thickness, plug depth and roof/ledge heights. Fit offset, the 0.2 mm plug gap and comfort radii remain absolute millimeters.
+Original roofed joints are the default. At standard 60/13 dimensions, the male ledge reaches Z=10 and the female roof is at Z=10.2. Unit size changes cell spacing and scales the X and tile-edge profiles in their own plane. Tile thickness changes the body, plug depth and roof/ledge heights. Fit offset, the 0.2 mm seating gap, the 0.08 mm bracket-stem inset, hole diameter and comfort radii stay in millimetres.
 
-`--joint-style full-height` is an optional open-through tile-edge-joint experiment. It is unrelated to 60/120 mm cargo-stop height or printer build height. At standard 60/13 dimensions, its open female pockets leave a very thin upper web, and its male tabs do not fit original roofed female pockets. Read the [geometry contract](docs/geometry.md) before changing interfaces or validation tolerances.
+`--joint-style full-height` is an experimental open-through **tile-edge joint**. It has nothing to do with stop height or printer build height. At standard 60/13 dimensions, one upper web is only about 0.146 mm thick and opens near the top. Its male tabs also don't fit the original roofed pockets. The [geometry reference](docs/geometry.md#open-through-tile-edge-joints) has the details.
 
 The full 10 mm hole pattern is on by default. Use `--no-holes` to opt out. The manifest records holes rejected by an interface or edge keep-out.
+
+Unit size must be at least 30 mm and tile thickness at least 6 mm. The 2x2 angled stop supports unit sizes up to 60 mm; use its 1x1 version with a larger unit. H2D dual-safe packing remains a standard 60/13-only layout.
 
 ## Stacking identical tiles
 
@@ -243,6 +247,15 @@ design = tile_design(Tile(nx=2, ny=1))
 export_job(Job([design], BuildVolume(150, 150, 50), "part"), Path("outputs/python-job"))
 ```
 
+For a custom matching set, pass the same `Interface` to every tile and accessory. The API keeps the stable `pitch` and `height` field names:
+
+```python
+from cargo_grid import Interface, Tile
+
+compact = Interface(pitch=30, height=13)
+solid_tile = Tile(nx=2, ny=1, interface=compact, hole_diameter=None)
+```
+
 Accessory example:
 
 ```python
@@ -263,7 +276,7 @@ uv build
 uv run python tools/check_distributions.py dist
 ```
 
-Twelve process workers were fastest for the full portable suite on the measured maintainer workstation; use fewer on smaller machines. CI uses two on its runner. Keep native/reference tests serial. They use explicitly supplied `CARGO_GRID_BAMBU` and `CARGO_GRID_REFERENCE` and skip when those resources are unavailable. Keep `uv.lock` local and ignored. See [AGENTS.md](AGENTS.md), the [release checklist](docs/release-checklist.md) and [gallery reproduction instructions](docs/attachments.md#reproduce-the-images) for maintainer details.
+The documented workstation uses 12 process workers for the portable suite; use fewer on a smaller machine. CI uses two. Keep native and local-reference checks serial. They use `CARGO_GRID_BAMBU` and `CARGO_GRID_REFERENCE` only when those resources are supplied, and otherwise skip. Keep `uv.lock` local and ignored. See [AGENTS.md](AGENTS.md), the [release checklist](docs/release-checklist.md) and [gallery reproduction instructions](docs/attachments.md#reproduce-the-images) for maintainer details.
 
 ## License and reference boundary
 

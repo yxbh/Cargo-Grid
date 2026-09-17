@@ -1,4 +1,4 @@
-"""One shared, explicit command-line interface for parts, layouts and catalogues."""
+"""Command-line tools for making Cargo-Grid parts, layouts and catalogues."""
 
 import argparse
 import json
@@ -274,15 +274,15 @@ def _stack_settings(args, bambu, build: BuildVolume, interface: Interface):
 
 def parser() -> argparse.ArgumentParser:
     root = _ArgumentParser(
-        description="Parametric cargo mats: STEP-first geometry and unsliced print-job exports.",
+        description="Make parametric cargo-mat parts and unsliced print projects.",
         epilog="Original roofed joints and full 10 mm round-hole tiles are the defaults; roof support remains off. No slicing or printer control.",
         allow_abbrev=False,
     )
     root.add_argument("--version", action="version", version=f"cargo-grid {__version__}")
     commands = root.add_subparsers(dest="command", required=True)
     descriptions = {
-        "part": "Generate one tile or accessory design with an explicit copy count.",
-        "layout": "Fill an exact rectangular footprint with full-pitch tiles and integrated fillers.",
+        "part": "Generate one tile or accessory, with as many copies as requested.",
+        "layout": "Fill an exact rectangle with whole-unit tiles and built-in edge fillers.",
         "catalogue": "Generate every supported ordered tile size that fits, plus the finite accessory catalogue.",
     }
     for command in ("part", "layout", "catalogue"):
@@ -346,20 +346,20 @@ def parser() -> argparse.ArgumentParser:
             type=float,
             default=60,
             metavar="MM",
-            help="cell size and nominal local-plane interface scale in mm (default: 60)",
+            help="cell size and matching local-plane interface scale in mm",
         )
         p.add_argument(
             "--tile-thickness-mm",
             type=float,
             default=13,
             metavar="MM",
-            help="independent tile thickness and connector insertion depth in mm (default: 13)",
+            help="tile thickness and matching connector insertion depth in mm",
         )
         p.add_argument(
             "--joint-style",
             choices=("original", "full-height"),
             default="original",
-            help="original roofed joints (default), or experimental full-height tabs/open pockets",
+            help="original roofed joints, or experimental open-through full-height edge joints",
         )
         p.add_argument(
             "--fit-offset-mm",
@@ -373,26 +373,28 @@ def parser() -> argparse.ArgumentParser:
             "--holes",
             dest="holes",
             action="store_true",
-            help="use round holes (the default); pair with diameter/scope options to customize",
+            default=argparse.SUPPRESS,
+            help="use round holes on tiles (the tile-workflow default); pair with diameter/scope options to customize",
         )
         holes.add_argument(
             "--no-holes",
             dest="holes",
             action="store_false",
-            help="make solid tile webs without the additional round-hole pattern",
+            default=argparse.SUPPRESS,
+            help="make tile webs without the additional round-hole pattern",
         )
-        p.set_defaults(holes=None)
         p.add_argument(
             "--hole-diameter-mm",
             type=float,
+            default=argparse.SUPPRESS,
             metavar="MM",
-            help="round-hole diameter in mm; defaults to 10 when holes are enabled",
+            help="tile round-hole diameter in mm; defaults to 10 when holes are enabled",
         )
         p.add_argument(
             "--hole-scope",
             choices=("interior", "full"),
             default="full",
-            help="full half-pitch pattern including retained edge/corner sites (default), or interior-only",
+            help="tile holes at the full half-unit pattern including retained edge/corner sites, or interior-only",
         )
         p.add_argument("--output", type=Path, required=True, help="new or empty job directory")
         p.add_argument("--no-stl", action="store_true")
@@ -411,18 +413,18 @@ def parser() -> argparse.ArgumentParser:
             "--nozzle-diameter-mm",
             type=float,
             metavar="MM",
-            help="explicit diagnostic project nozzle diameter in mm",
+            help="nozzle diameter recorded in the unsliced project, in mm",
         )
         p.add_argument(
             "--layer-height-mm",
             type=float,
             metavar="MM",
-            help="explicit diagnostic project layer height in mm",
+            help="layer height recorded in the unsliced project, in mm",
         )
         p.add_argument(
             "--roof-support",
             action="store_true",
-            help="PETG/PLA roof supports with dense zero-contact interfaces by default; retained west/south female roofs only",
+            help="add PETG/PLA support under retained west/south female roofs",
         )
         p.add_argument(
             "--roof-top-gap-mm",
@@ -452,7 +454,7 @@ def parser() -> argparse.ArgumentParser:
             type=int,
             nargs=2,
             metavar=("PETG_SLOT", "PLA_SLOT"),
-            help="optional Custom physical nozzle assignment; omit for native automatic slice mode",
+            help="optional Custom nozzle assignment; omit to keep automatic matching",
         )
         p.add_argument(
             "--roof-foot-expansion-mm",
@@ -505,7 +507,7 @@ def parser() -> argparse.ArgumentParser:
                 "--panel-height-cells",
                 type=int,
                 metavar="COUNT",
-                help="vertical-tile-bracket wall height in 60 mm rows; omit to match --depth-cells",
+                help="vertical-tile-bracket wall height in unit rows; omit to match --depth-cells",
             )
             p.add_argument(
                 "--length-cells",
@@ -557,7 +559,7 @@ def parser() -> argparse.ArgumentParser:
                 "--filler-placement",
                 choices=["balanced", "positive", "negative"],
                 default="balanced",
-                help="place leftover edge material on both ends, positive-X/Y ends, or negative-X/Y ends; cells are not scaled",
+                help="put leftover edge material on both ends, the positive X/Y ends, or the negative X/Y ends; unit spacing stays unchanged",
             )
         if command == "catalogue":
             p.add_argument(
@@ -584,15 +586,17 @@ def parser() -> argparse.ArgumentParser:
 
 def _resolved_hole_diameter(args) -> float | None:
     tile_workflow = args.command != "part" or args.family == "tile"
+    holes = getattr(args, "holes", None)
+    requested_diameter = getattr(args, "hole_diameter_mm", None)
     if not tile_workflow:
-        if args.holes is True or args.hole_diameter_mm is not None:
+        if holes is True or requested_diameter is not None:
             raise ValueError("round-hole options apply to tiles, not accessory bodies")
         return None
-    if args.holes is False:
-        if args.hole_diameter_mm is not None:
+    if holes is False:
+        if requested_diameter is not None:
             raise ValueError("--no-holes cannot be combined with --hole-diameter-mm")
         return None
-    return args.hole_diameter_mm if args.hole_diameter_mm is not None else DEFAULT_HOLE_DIAMETER_MM
+    return requested_diameter if requested_diameter is not None else DEFAULT_HOLE_DIAMETER_MM
 
 
 def main(argv: list[str] | None = None) -> int:

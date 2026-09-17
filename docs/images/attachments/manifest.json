@@ -92,7 +92,7 @@
       ],
       "file": "images/attachments/ramp-1.png",
       "alt": "ramp, 1 cell width / 50 mm run, original joints: isometric STEP-derived render",
-      "description": "A floor-to-mat transition with a fixed 50 mm run. Width and its original roofed female pocket follow unit size; rise follows tile thickness. Normal Auto support is scoped to exposed pocket roofs.",
+      "description": "A floor-to-mat transition with a 50 mm run. Its width and original female pocket follow unit size; its rise follows tile thickness. Bambu projects enable Auto support for the pocket roofs.",
       "dimensions": [
         480,
         300
@@ -129,7 +129,7 @@
       ],
       "file": "images/attachments/ramp-2.png",
       "alt": "ramp, 2 cell width / 50 mm run, original joints: isometric STEP-derived render",
-      "description": "A floor-to-mat transition with a fixed 50 mm run. Width and its original roofed female pocket follow unit size; rise follows tile thickness. Normal Auto support is scoped to exposed pocket roofs.",
+      "description": "A floor-to-mat transition with a 50 mm run. Its width and original female pocket follow unit size; its rise follows tile thickness. Bambu projects enable Auto support for the pocket roofs.",
       "dimensions": [
         480,
         300
@@ -166,7 +166,7 @@
       ],
       "file": "images/attachments/ramp-3.png",
       "alt": "ramp, 3 cell width / 50 mm run, original joints: isometric STEP-derived render",
-      "description": "A floor-to-mat transition with a fixed 50 mm run. Width and its original roofed female pocket follow unit size; rise follows tile thickness. Normal Auto support is scoped to exposed pocket roofs.",
+      "description": "A floor-to-mat transition with a 50 mm run. Its width and original female pocket follow unit size; its rise follows tile thickness. Bambu projects enable Auto support for the pocket roofs.",
       "dimensions": [
         480,
         300
@@ -203,7 +203,7 @@
       ],
       "file": "images/attachments/ramp-4.png",
       "alt": "ramp, 4 cell width / 50 mm run, original joints: isometric STEP-derived render",
-      "description": "A floor-to-mat transition with a fixed 50 mm run. Width and its original roofed female pocket follow unit size; rise follows tile thickness. Normal Auto support is scoped to exposed pocket roofs.",
+      "description": "A floor-to-mat transition with a 50 mm run. Its width and original female pocket follow unit size; its rise follows tile thickness. Bambu projects enable Auto support for the pocket roofs.",
       "dimensions": [
         480,
         300
@@ -240,7 +240,7 @@
       ],
       "file": "images/attachments/ramp-5.png",
       "alt": "ramp, 5 cell width / 50 mm run, original joints: isometric STEP-derived render",
-      "description": "A floor-to-mat transition with a fixed 50 mm run. Width and its original roofed female pocket follow unit size; rise follows tile thickness. Normal Auto support is scoped to exposed pocket roofs.",
+      "description": "A floor-to-mat transition with a 50 mm run. Its width and original female pocket follow unit size; its rise follows tile thickness. Bambu projects enable Auto support for the pocket roofs.",
       "dimensions": [
         480,
         300
@@ -277,7 +277,7 @@
       ],
       "file": "images/attachments/plate-1x1.png",
       "alt": "plate, 1 x 1, original joints: isometric STEP-derived render",
-      "description": "A flat R2 body with exact X plugs underneath. Bambu projects place its broad body face down so the plugs grow upward.",
+      "description": "A flat R2 body with matching X plugs underneath. Bambu projects place the broad face on the bed so the plugs grow upward.",
       "dimensions": [
         480,
         300
@@ -314,7 +314,7 @@
       ],
       "file": "images/attachments/plate-1x2.png",
       "alt": "plate, 1 x 2, original joints: isometric STEP-derived render",
-      "description": "A flat R2 body with exact X plugs underneath. Bambu projects place its broad body face down so the plugs grow upward.",
+      "description": "A flat R2 body with matching X plugs underneath. Bambu projects place the broad face on the bed so the plugs grow upward.",
       "dimensions": [
         480,
         300
@@ -351,7 +351,7 @@
       ],
       "file": "images/attachments/plate-2x2.png",
       "alt": "plate, 2 x 2, original joints: isometric STEP-derived render",
-      "description": "A flat R2 body with exact X plugs underneath. Bambu projects place its broad body face down so the plugs grow upward.",
+      "description": "A flat R2 body with matching X plugs underneath. Bambu projects place the broad face on the bed so the plugs grow upward.",
       "dimensions": [
         480,
         300
@@ -388,7 +388,7 @@
       ],
       "file": "images/attachments/vertical-tile-bracket-1x2.png",
       "alt": "vertical-tile-bracket, floor base 1 x 2 / wall 1 x 2, original joints: isometric STEP-derived render",
-      "description": "A filled wedge carrying a separate ordinary tile vertically. All five use R3 at the exposed front-to-slope transition; two shallow variants keep one floor row under a two-row wall.",
+      "description": "A filled wedge that holds a separate tile upright. All five use R3 at the exposed front-to-slope transition; two shallow versions keep one floor row under a two-row wall.",
       "dimensions": [
         480,
         300
@@ -425,7 +425,7 @@
       ],
       "file": "images/attachments/vertical-tile-bracket-2x1.png",
       "alt": "vertical-tile-bracket, floor base 2 x 1 / wall 2 x 1, original joints: isometric STEP-derived render",
-      "description": "A filled wedge carrying a separate ordinary tile vertically. All five use R3 at the exposed front-to-slope transition; two shallow variants keep one floor row under a two-row wall.",
+      "description": "A filled wedge that holds a separate tile upright. All five use R3 at the exposed front-to-slope transition; two shallow versions keep one floor row under a two-row wall.",
       "dimensions": [
         480,
         300
@@ -462,7 +462,7 @@
       ],
       "file": "images/attachments/vertical-tile-bracket-2x2.png",
       "alt": "vertical-tile-bracket, floor base 2 x 2 / wall 2 x 2, original joints: isometric STEP-derived render",
-      "description": "A filled wedge carrying a separate ordinary tile vertically. All five use R3 at the exposed front-to-slope transition; two shallow variants keep one floor row under a two-row wall.",
+      "description": "A filled wedge that holds a separate tile upright. All five use R3 at the exposed front-to-slope transition; two shallow versions keep one floor row under a two-row wall.",
       "dimensions": [
         480,
         300
@@ -499,7 +499,7 @@
       ],
       "file": "images/attachments/vertical-tile-bracket-base1x1-wall1x2.png",
       "alt": "vertical-tile-bracket, floor base 1 x 1 / wall 1 x 2, original joints: isometric STEP-derived render",
-      "description": "A filled wedge carrying a separate ordinary tile vertically. All five use R3 at the exposed front-to-slope transition; two shallow variants keep one floor row under a two-row wall.",
+      "description": "A filled wedge that holds a separate tile upright. All five use R3 at the exposed front-to-slope transition; two shallow versions keep one floor row under a two-row wall.",
       "dimensions": [
         480,
         300
@@ -536,7 +536,7 @@
       ],
       "file": "images/attachments/vertical-tile-bracket-base2x1-wall2x2.png",
       "alt": "vertical-tile-bracket, floor base 2 x 1 / wall 2 x 2, original joints: isometric STEP-derived render",
-      "description": "A filled wedge carrying a separate ordinary tile vertically. All five use R3 at the exposed front-to-slope transition; two shallow variants keep one floor row under a two-row wall.",
+      "description": "A filled wedge that holds a separate tile upright. All five use R3 at the exposed front-to-slope transition; two shallow versions keep one floor row under a two-row wall.",
       "dimensions": [
         480,
         300
@@ -573,7 +573,7 @@
       ],
       "file": "images/attachments/vertical-stop-1x1-h60.png",
       "alt": "vertical-stop, 1 x 1 / H 60 mm, original joints: isometric STEP-derived render",
-      "description": "A full-width filled cargo wedge with no wall holes or open ribs. Every free outer edge is R2 while X plugs remain exact. Bambu projects place its broad rear face down and scope normal Auto support to this object.",
+      "description": "A full-width cargo wedge with no wall holes or open ribs. Free outer edges are R2. Bambu projects place the broad rear face on the bed and enable Auto support for this part.",
       "dimensions": [
         480,
         300
@@ -610,7 +610,7 @@
       ],
       "file": "images/attachments/vertical-stop-1x1-h120.png",
       "alt": "vertical-stop, 1 x 1 / H 120 mm, original joints: isometric STEP-derived render",
-      "description": "A full-width filled cargo wedge with no wall holes or open ribs. Every free outer edge is R2 while X plugs remain exact. Bambu projects place its broad rear face down and scope normal Auto support to this object.",
+      "description": "A full-width cargo wedge with no wall holes or open ribs. Free outer edges are R2. Bambu projects place the broad rear face on the bed and enable Auto support for this part.",
       "dimensions": [
         480,
         300
@@ -647,7 +647,7 @@
       ],
       "file": "images/attachments/vertical-stop-1x2-h60.png",
       "alt": "vertical-stop, 1 x 2 / H 60 mm, original joints: isometric STEP-derived render",
-      "description": "A full-width filled cargo wedge with no wall holes or open ribs. Every free outer edge is R2 while X plugs remain exact. Bambu projects place its broad rear face down and scope normal Auto support to this object.",
+      "description": "A full-width cargo wedge with no wall holes or open ribs. Free outer edges are R2. Bambu projects place the broad rear face on the bed and enable Auto support for this part.",
       "dimensions": [
         480,
         300
@@ -684,7 +684,7 @@
       ],
       "file": "images/attachments/vertical-stop-1x2-h120.png",
       "alt": "vertical-stop, 1 x 2 / H 120 mm, original joints: isometric STEP-derived render",
-      "description": "A full-width filled cargo wedge with no wall holes or open ribs. Every free outer edge is R2 while X plugs remain exact. Bambu projects place its broad rear face down and scope normal Auto support to this object.",
+      "description": "A full-width cargo wedge with no wall holes or open ribs. Free outer edges are R2. Bambu projects place the broad rear face on the bed and enable Auto support for this part.",
       "dimensions": [
         480,
         300
@@ -721,7 +721,7 @@
       ],
       "file": "images/attachments/vertical-stop-2x1-h60.png",
       "alt": "vertical-stop, 2 x 1 / H 60 mm, original joints: isometric STEP-derived render",
-      "description": "A full-width filled cargo wedge with no wall holes or open ribs. Every free outer edge is R2 while X plugs remain exact. Bambu projects place its broad rear face down and scope normal Auto support to this object.",
+      "description": "A full-width cargo wedge with no wall holes or open ribs. Free outer edges are R2. Bambu projects place the broad rear face on the bed and enable Auto support for this part.",
       "dimensions": [
         480,
         300
@@ -758,7 +758,7 @@
       ],
       "file": "images/attachments/vertical-stop-2x1-h120.png",
       "alt": "vertical-stop, 2 x 1 / H 120 mm, original joints: isometric STEP-derived render",
-      "description": "A full-width filled cargo wedge with no wall holes or open ribs. Every free outer edge is R2 while X plugs remain exact. Bambu projects place its broad rear face down and scope normal Auto support to this object.",
+      "description": "A full-width cargo wedge with no wall holes or open ribs. Free outer edges are R2. Bambu projects place the broad rear face on the bed and enable Auto support for this part.",
       "dimensions": [
         480,
         300
@@ -795,7 +795,7 @@
       ],
       "file": "images/attachments/vertical-stop-2x2-h60.png",
       "alt": "vertical-stop, 2 x 2 / H 60 mm, original joints: isometric STEP-derived render",
-      "description": "A full-width filled cargo wedge with no wall holes or open ribs. Every free outer edge is R2 while X plugs remain exact. Bambu projects place its broad rear face down and scope normal Auto support to this object.",
+      "description": "A full-width cargo wedge with no wall holes or open ribs. Free outer edges are R2. Bambu projects place the broad rear face on the bed and enable Auto support for this part.",
       "dimensions": [
         480,
         300
@@ -832,7 +832,7 @@
       ],
       "file": "images/attachments/vertical-stop-2x2-h120.png",
       "alt": "vertical-stop, 2 x 2 / H 120 mm, original joints: isometric STEP-derived render",
-      "description": "A full-width filled cargo wedge with no wall holes or open ribs. Every free outer edge is R2 while X plugs remain exact. Bambu projects place its broad rear face down and scope normal Auto support to this object.",
+      "description": "A full-width cargo wedge with no wall holes or open ribs. Free outer edges are R2. Bambu projects place the broad rear face on the bed and enable Auto support for this part.",
       "dimensions": [
         480,
         300
@@ -869,7 +869,7 @@
       ],
       "file": "images/attachments/lock-45-1x1.png",
       "alt": "lock-45, 1 x 1 / H 50 mm, original joints: isometric STEP-derived render",
-      "description": "A full-width filled angled cargo wedge with a 6 mm horizontal cap and R2 on every free body edge. Exact X plugs and roots remain protected. Use the recommended back-face-down print pose.",
+      "description": "A full-width angled cargo wedge with a 6 mm horizontal cap and R2 free edges. Bambu projects place its back face on the bed.",
       "dimensions": [
         480,
         300
@@ -906,7 +906,7 @@
       ],
       "file": "images/attachments/lock-45-2x2.png",
       "alt": "lock-45, 2 x 2 / H 50 mm, original joints: isometric STEP-derived render",
-      "description": "A full-width filled angled cargo wedge with a 6 mm horizontal cap and R2 on every free body edge. Exact X plugs and roots remain protected. Use the recommended back-face-down print pose.",
+      "description": "A full-width angled cargo wedge with a 6 mm horizontal cap and R2 free edges. Bambu projects place its back face on the bed.",
       "dimensions": [
         480,
         300
@@ -943,7 +943,7 @@
       ],
       "file": "images/attachments/edge-x-1.png",
       "alt": "edge-x, 1 cell, original joints: isometric STEP-derived render",
-      "description": "An R3 finishing strip with male tile-facing joins; length follows the cell count.",
+      "description": "An R3 finishing strip with male tile-edge joints. Length follows the unit count.",
       "dimensions": [
         480,
         300
@@ -980,7 +980,7 @@
       ],
       "file": "images/attachments/edge-x-2.png",
       "alt": "edge-x, 2 cells, original joints: isometric STEP-derived render",
-      "description": "An R3 finishing strip with male tile-facing joins; length follows the cell count.",
+      "description": "An R3 finishing strip with male tile-edge joints. Length follows the unit count.",
       "dimensions": [
         480,
         300
@@ -1017,7 +1017,7 @@
       ],
       "file": "images/attachments/edge-x-3.png",
       "alt": "edge-x, 3 cells, original joints: isometric STEP-derived render",
-      "description": "An R3 finishing strip with male tile-facing joins; length follows the cell count.",
+      "description": "An R3 finishing strip with male tile-edge joints. Length follows the unit count.",
       "dimensions": [
         480,
         300
@@ -1054,7 +1054,7 @@
       ],
       "file": "images/attachments/edge-x-4.png",
       "alt": "edge-x, 4 cells, original joints: isometric STEP-derived render",
-      "description": "An R3 finishing strip with male tile-facing joins; length follows the cell count.",
+      "description": "An R3 finishing strip with male tile-edge joints. Length follows the unit count.",
       "dimensions": [
         480,
         300
@@ -1091,7 +1091,7 @@
       ],
       "file": "images/attachments/edge-x-5.png",
       "alt": "edge-x, 5 cells, original joints: isometric STEP-derived render",
-      "description": "An R3 finishing strip with male tile-facing joins; length follows the cell count.",
+      "description": "An R3 finishing strip with male tile-edge joints. Length follows the unit count.",
       "dimensions": [
         480,
         300
@@ -1128,7 +1128,7 @@
       ],
       "file": "images/attachments/edge-y-1.png",
       "alt": "edge-y, 1 cell, original joints: isometric STEP-derived render",
-      "description": "An R3 finishing strip with female tile-facing joins; length follows the cell count.",
+      "description": "An R3 finishing strip with female tile-edge joints. Length follows the unit count.",
       "dimensions": [
         480,
         300
@@ -1165,7 +1165,7 @@
       ],
       "file": "images/attachments/edge-y-2.png",
       "alt": "edge-y, 2 cells, original joints: isometric STEP-derived render",
-      "description": "An R3 finishing strip with female tile-facing joins; length follows the cell count.",
+      "description": "An R3 finishing strip with female tile-edge joints. Length follows the unit count.",
       "dimensions": [
         480,
         300
@@ -1202,7 +1202,7 @@
       ],
       "file": "images/attachments/edge-y-3.png",
       "alt": "edge-y, 3 cells, original joints: isometric STEP-derived render",
-      "description": "An R3 finishing strip with female tile-facing joins; length follows the cell count.",
+      "description": "An R3 finishing strip with female tile-edge joints. Length follows the unit count.",
       "dimensions": [
         480,
         300
@@ -1239,7 +1239,7 @@
       ],
       "file": "images/attachments/edge-y-4.png",
       "alt": "edge-y, 4 cells, original joints: isometric STEP-derived render",
-      "description": "An R3 finishing strip with female tile-facing joins; length follows the cell count.",
+      "description": "An R3 finishing strip with female tile-edge joints. Length follows the unit count.",
       "dimensions": [
         480,
         300
@@ -1276,7 +1276,7 @@
       ],
       "file": "images/attachments/edge-y-5.png",
       "alt": "edge-y, 5 cells, original joints: isometric STEP-derived render",
-      "description": "An R3 finishing strip with female tile-facing joins; length follows the cell count.",
+      "description": "An R3 finishing strip with female tile-edge joints. Length follows the unit count.",
       "dimensions": [
         480,
         300
@@ -1683,7 +1683,7 @@
       ],
       "file": "images/attachments/support-1.png",
       "alt": "support, 1 cell, original joints: isometric STEP-derived render",
-      "description": "An R3 physical bearing rail with rounded windows and separate end-to-end joins.",
+      "description": "A physical bearing rail with an R3 body, rounded windows and its own end-to-end dovetails.",
       "dimensions": [
         480,
         300
@@ -1720,7 +1720,7 @@
       ],
       "file": "images/attachments/support-2.png",
       "alt": "support, 2 cells, original joints: isometric STEP-derived render",
-      "description": "An R3 physical bearing rail with rounded windows and separate end-to-end joins.",
+      "description": "A physical bearing rail with an R3 body, rounded windows and its own end-to-end dovetails.",
       "dimensions": [
         480,
         300
@@ -1757,7 +1757,7 @@
       ],
       "file": "images/attachments/support-3.png",
       "alt": "support, 3 cells, original joints: isometric STEP-derived render",
-      "description": "An R3 physical bearing rail with rounded windows and separate end-to-end joins.",
+      "description": "A physical bearing rail with an R3 body, rounded windows and its own end-to-end dovetails.",
       "dimensions": [
         480,
         300
@@ -1794,7 +1794,7 @@
       ],
       "file": "images/attachments/support-4.png",
       "alt": "support, 4 cells, original joints: isometric STEP-derived render",
-      "description": "An R3 physical bearing rail with rounded windows and separate end-to-end joins.",
+      "description": "A physical bearing rail with an R3 body, rounded windows and its own end-to-end dovetails.",
       "dimensions": [
         480,
         300
@@ -1831,7 +1831,7 @@
       ],
       "file": "images/attachments/support-5.png",
       "alt": "support, 5 cells, original joints: isometric STEP-derived render",
-      "description": "An R3 physical bearing rail with rounded windows and separate end-to-end joins.",
+      "description": "A physical bearing rail with an R3 body, rounded windows and its own end-to-end dovetails.",
       "dimensions": [
         480,
         300
@@ -1868,7 +1868,7 @@
       ],
       "file": "images/attachments/support-end-v1.png",
       "alt": "support-end, variant 1 / X, original joints: isometric STEP-derived render",
-      "description": "A rounded ramped rail end; X, Xs, Y and Ys select the supported arrangements.",
+      "description": "A rounded ramped rail end. X, Xs, Y and Ys are the four arrangements; smaller radii keep the acute shapes and STEP exports sound.",
       "dimensions": [
         480,
         300
@@ -1905,7 +1905,7 @@
       ],
       "file": "images/attachments/support-end-v2.png",
       "alt": "support-end, variant 2 / Xs, original joints: isometric STEP-derived render",
-      "description": "A rounded ramped rail end; X, Xs, Y and Ys select the supported arrangements.",
+      "description": "A rounded ramped rail end. X, Xs, Y and Ys are the four arrangements; smaller radii keep the acute shapes and STEP exports sound.",
       "dimensions": [
         480,
         300
@@ -1942,7 +1942,7 @@
       ],
       "file": "images/attachments/support-end-v3.png",
       "alt": "support-end, variant 3 / Y, original joints: isometric STEP-derived render",
-      "description": "A rounded ramped rail end; X, Xs, Y and Ys select the supported arrangements.",
+      "description": "A rounded ramped rail end. X, Xs, Y and Ys are the four arrangements; smaller radii keep the acute shapes and STEP exports sound.",
       "dimensions": [
         480,
         300
@@ -1979,7 +1979,7 @@
       ],
       "file": "images/attachments/support-end-v4.png",
       "alt": "support-end, variant 4 / Ys, original joints: isometric STEP-derived render",
-      "description": "A rounded ramped rail end; X, Xs, Y and Ys select the supported arrangements.",
+      "description": "A rounded ramped rail end. X, Xs, Y and Ys are the four arrangements; smaller radii keep the acute shapes and STEP exports sound.",
       "dimensions": [
         480,
         300

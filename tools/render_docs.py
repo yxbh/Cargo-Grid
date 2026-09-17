@@ -1,4 +1,4 @@
-"""Render the documented finite catalogue using an external approved CAD workbench."""
+"""Render the documented finite catalogue with the project's CAD workbench."""
 
 import argparse
 import hashlib
@@ -56,31 +56,31 @@ SHEETS = (
 FAMILIES = {
     "ramp": (
         "Floor ramps",
-        "A floor-to-mat transition with a fixed 50 mm run. Width and its original roofed female pocket follow unit size; rise follows tile thickness. Normal Auto support is scoped to exposed pocket roofs.",
+        "A floor-to-mat transition with a 50 mm run. Its width and original female pocket follow unit size; its rise follows tile thickness. Bambu projects enable Auto support for the pocket roofs.",
     ),
     "plate": (
         "Attachment plates",
-        "A flat R2 body with exact X plugs underneath. Bambu projects place its broad body face down so the plugs grow upward.",
+        "A flat R2 body with matching X plugs underneath. Bambu projects place the broad face on the bed so the plugs grow upward.",
     ),
     "vertical-tile-bracket": (
         "Vertical tile brackets",
-        "A filled wedge carrying a separate ordinary tile vertically. All five use R3 at the exposed front-to-slope transition; two shallow variants keep one floor row under a two-row wall.",
+        "A filled wedge that holds a separate tile upright. All five use R3 at the exposed front-to-slope transition; two shallow versions keep one floor row under a two-row wall.",
     ),
     "vertical-stop": (
         "Normal full-solid stops",
-        "A full-width filled cargo wedge with no wall holes or open ribs. Every free outer edge is R2 while X plugs remain exact. Bambu projects place its broad rear face down and scope normal Auto support to this object.",
+        "A full-width cargo wedge with no wall holes or open ribs. Free outer edges are R2. Bambu projects place the broad rear face on the bed and enable Auto support for this part.",
     ),
     "lock-45": (
         "Angled stops",
-        "A full-width filled angled cargo wedge with a 6 mm horizontal cap and R2 on every free body edge. Exact X plugs and roots remain protected. Use the recommended back-face-down print pose.",
+        "A full-width angled cargo wedge with a 6 mm horizontal cap and R2 free edges. Bambu projects place its back face on the bed.",
     ),
     "edge-x": (
         "Male edge strips",
-        "An R3 finishing strip with male tile-facing joins; length follows the cell count.",
+        "An R3 finishing strip with male tile-edge joints. Length follows the unit count.",
     ),
     "edge-y": (
         "Female edge strips",
-        "An R3 finishing strip with female tile-facing joins; length follows the cell count.",
+        "An R3 finishing strip with female tile-edge joints. Length follows the unit count.",
     ),
     "corner-in": (
         "Inner corners",
@@ -92,11 +92,11 @@ FAMILIES = {
     ),
     "support": (
         "Support rails",
-        "An R3 physical bearing rail with rounded windows and separate end-to-end joins.",
+        "A physical bearing rail with an R3 body, rounded windows and its own end-to-end dovetails.",
     ),
     "support-end": (
         "Rail ends",
-        "A rounded ramped rail end; X, Xs, Y and Ys select the supported arrangements.",
+        "A rounded ramped rail end. X, Xs, Y and Ys are the four arrangements; smaller radii keep the acute shapes and STEP exports sound.",
     ),
     "support-bit": (
         "Rail connectors",
@@ -699,11 +699,11 @@ def compose_all(work: Path, provenance: dict) -> None:
     )
     thumbnails = thumbnail_entries(work, provenance)
     lines = [
-        "# Complete attachment inventory",
+        "# Standard accessory gallery",
         "",
-        f"This page lists the {len(items)} accessories that fit the documented 350 x 320 x 325 mm build space with original joints and default settings. Each thumbnail comes from the STEP generated for that part. Other build spaces can allow different rail lengths or ramp widths.",
+        f"This page shows the {len(items)} accessories in the standard 60 mm unit / 13 mm thickness catalogue for the documented 350 x 320 x 325 mm build space. Each thumbnail comes from that part's STEP file. Custom interface settings or another build space can change dimensions and what fits.",
         "",
-        "Click a thumbnail to open the full-size image. The code name beside it is the name used by the generator. Parts in one family share a scale; different families use different scales so small details stay readable. Colors only separate the shapes visually.",
+        "Click a thumbnail for the full-size image. The code name is the generator name. Parts in one family share a scale; different families use different scales so small details stay readable. Colour is only for the pictures.",
         "",
         "[Back to the beginner guide](../README.md) / [Thumbnail dimensions, hashes and source provenance](images/attachments/manifest.json)",
         "",
@@ -713,11 +713,11 @@ def compose_all(work: Path, provenance: dict) -> None:
         "",
         "Ramp names give width along the tile edge in unit cells. Every ramp keeps the same physical 50 mm run; width, rise and one original female pocket per cell follow its unit/thickness interface. The gallery shows standard 60/13 examples. The ramp receives a tile's north male edge and extends in positive Y. Full-height ramp joints are not available.",
         "",
-        "Normal `vertical-stop` names give base X cells, base Y cells and H60/H120 shoulder height. They are filled CAD wedges with no wall holes, panel connectors or ledges. The slicer still chooses perimeters and infill.",
+        "Normal `vertical-stop` names give base X units, base Y units and the physical H60/H120 shoulder height. They are filled CAD wedges with no wall holes, panel connectors or ledges. The slicer still chooses perimeters and infill.",
         "",
-        "Original-style edge/corner bodies and straight rail bodies use R3. The acute rail ends use smaller complete rounds where required by fit and portable STEP checks. Plates and angled stops use R2. Brackets use R3 at the thick front-to-slope transition, R2 on other thick free edges and R1 around the thin bearing lip; normal stops and ramps keep R2. Tile joints, rail joints, bracket bearing surfaces and X attachments keep their mating geometry.",
+        "Original edge/corner bodies and straight rail bodies use R3. Rail ends use smaller rounds where the shape or STEP export needs them. Plates, ramps and stops use R2. Brackets use R3 at the thick front-to-slope transition, R2 on other thick edges and R1 around the thin bearing lip. Mating surfaces keep their own geometry.",
         "",
-        "Bambu projects put original brackets on their diagonal rear face, shallow brackets on a broad side, normal stops on their broad rear face and angled stops on their rear face before packing. STEP, STL and core 3MF keep model orientation. Ramps, normal stops and shallow brackets request object-level normal Auto support. Remove all support from mating regions before assembly.",
+        "Before packing, Bambu projects put plates broad-face-down at X=180, original brackets on their diagonal rear face, shallow brackets side-down at Y=-90, normal stops on their broad rear face and angled stops back-down at X=-135. STEP, STL and core 3MF keep source orientation. Ramps, normal stops and shallow brackets turn on Auto support for that object. Remove support from mating areas before assembly.",
         "",
     ]
     for family, (heading, _) in FAMILIES.items():
@@ -739,7 +739,7 @@ def compose_all(work: Path, provenance: dict) -> None:
         "",
         "## Reproduce the images",
         "",
-        "Use an external CAD-Pilot checkout at the documented workbench revision with its existing render dependencies installed. No documentation dependency is added to Cargo-Grid's runtime. From this repository root, run:",
+        "Use a CAD-Pilot checkout at the recorded workbench revision with its render dependencies installed. Cargo-Grid doesn't add them as runtime dependencies. From this repository root, run:",
         "",
         "```sh",
         "PYTHONPATH=src <workbench-python> tools/render_docs.py --workbench <workbench-checkout>",
@@ -749,7 +749,7 @@ def compose_all(work: Path, provenance: dict) -> None:
         "",
         f"Generator source revision: {revision_tag(provenance['generator_commit'])}. Generator tree: {revision_tag(provenance['generator_tree'])}. Workbench revision: {revision_tag(provenance['workbench_commit'])}.",
         "",
-        "A successful render is not evidence of printability, physical fit, support release or third-party design rights.",
+        "A clean render checks the picture and source inventory; it doesn't prove print quality or fit.",
         "",
     ]
     (ROOT / "docs/attachments.md").write_text("\n".join(lines))
@@ -780,7 +780,7 @@ def main() -> None:
     parser.add_argument(
         "--only",
         nargs="+",
-        help="render a bounded subset without composing a purported complete gallery",
+        help="render only the named items without composing the complete gallery",
     )
     parser.add_argument("--compose-only", action="store_true")
     parser.add_argument("--check", action="store_true")
