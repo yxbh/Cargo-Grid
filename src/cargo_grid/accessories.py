@@ -71,11 +71,11 @@ EDGE_MITER_RETANGENT_MM = 4.82962
 SUPPORT_TOP_RADIUS_MM = 1.0
 SUPPORT_BODY_RADIUS_MM = 3.0
 SUPPORT_WINDOW_RADIUS_MM = 2.0
-SUPPORT_END_PROFILE_RADII_MM = {1: 0.75, 2: 0.25}
+SUPPORT_END_PROFILE_RADII_MM = {2: 0.25}
+SUPPORT_END_BODY_RADII_MM = {1: 1.0, 3: 3.0, 4: 3.0}
 SUPPORT_END_CAP_RADIUS_MM = 3.0
-SUPPORT_END_WINDOW_RADII_MM = {1: 2.5, 2: 2.0, 3: 3.0, 4: 3.0}
-SUPPORT_END_1_WINDOW_RIM_RADIUS_MM = 1.0
-SUPPORT_END_SLOPED_WINDOW_RIM_RADII_MM = {1: 0.5, 2: 1.5, 3: 1.0, 4: 0.75}
+SUPPORT_END_WINDOW_RADII_MM = {1: 1.5, 2: 2.0, 3: 3.0, 4: 3.0}
+SUPPORT_END_SLOPED_WINDOW_RIM_RADII_MM = {2: 1.5, 3: 1.0, 4: 0.75}
 BRACKET_LIP_RADIUS_MM = 1.0
 BRACKET_FREE_EDGE_RADIUS_MM = 2.0
 BRACKET_FRONT_SLOPE_RADIUS_MM = 3.0
@@ -1096,7 +1096,7 @@ def _support(spec: Accessory, *, round_top: bool = True) -> Part:
             points = [(0, -12), (ramp, -25), (length, -25), (length, 0), (0, 0)]
         else:
             points = [(0, -25), (length - ramp, -25), (length, -12), (length, 0), (0, 0)]
-        if round_top and spec.variant in (1, 2):
+        if round_top and spec.variant == 2:
             profile = Face(Wire.make_polygon([(-22.5, y, z) for y, z in points], close=True))
             profile_radius = SUPPORT_END_PROFILE_RADII_MM[spec.variant]
             profile = profile.fillet_2d(profile_radius, profile.vertices())
@@ -1119,10 +1119,10 @@ def _support(spec: Accessory, *, round_top: bool = True) -> Part:
         for start, span in _support_window_spans(spec, length):
             part = part.cut(_box(-10, start, 20, span, 27, -26))
         return _apply_joins(part, joins)
-    if spec.family == "support-end" and spec.variant in (3, 4):
+    if spec.family == "support-end" and spec.variant in (1, 3, 4):
         operation = BRepFilletAPI_MakeFillet(part.wrapped)
         for edge in part.edges():
-            operation.Add(SUPPORT_BODY_RADIUS_MM, edge.wrapped)
+            operation.Add(SUPPORT_END_BODY_RADII_MM[spec.variant], edge.wrapped)
         operation.Build()
         if not operation.IsDone():
             raise ValueError(f"support-end variant {spec.variant} body fillet failed")
@@ -1149,17 +1149,30 @@ def _support(spec: Accessory, *, round_top: bool = True) -> Part:
         and edge.center().Y <= length - rim_margin
         and (abs(edge.bounding_box().min.Z) < 1e-5 or abs(edge.bounding_box().max.Z + 25) < 1e-5)
     ]
-    if window_rims:
+    if spec.family == "support-end" and spec.variant == 1:
+        all_window_rims = [
+            edge
+            for edge in part.edges()
+            if edge.bounding_box().min.X >= -10.01
+            and edge.bounding_box().max.X <= 10.01
+            and edge.center().Y >= rim_margin
+            and edge.center().Y <= length - rim_margin
+            and not (edge.bounding_box().size.X < 1e-5 and edge.bounding_box().size.Y < 1e-5)
+        ]
+        part = part.fillet(
+            SUPPORT_WINDOW_RADIUS_MM * min(1.0, spec.interface.unit_scale),
+            all_window_rims,
+        )
+    elif window_rims:
         if spec.family == "support-end":
-            rim_radius = (
-                SUPPORT_END_1_WINDOW_RIM_RADIUS_MM
-                if spec.variant == 1
-                else SUPPORT_WINDOW_RADIUS_MM
-            ) * min(1.0, spec.interface.unit_scale)
+            rim_radius = SUPPORT_WINDOW_RADIUS_MM * min(
+                1.0,
+                spec.interface.unit_scale,
+            )
         else:
             rim_radius = SUPPORT_WINDOW_RADIUS_MM
         part = part.fillet(rim_radius, window_rims)
-    if spec.family == "support-end":
+    if spec.family == "support-end" and spec.variant != 1:
         sloped_window_rims = [
             edge
             for edge in part.edges()
