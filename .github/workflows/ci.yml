@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  portable:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: astral-sh/setup-uv@d0d8abe699bfb85fec6de9f7adb5ae17292296ff # v6
+        with:
+          python-version: "3.12"
+      - name: Install CAD runtime libraries
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install --no-install-recommends -y libgl1 libglu1-mesa
+      - name: Install dependencies
+        run: uv sync --group dev
+      - name: Lint and format
+        run: |
+          uv run --no-sync ruff check .
+          uv run --no-sync ruff format --check .
+      - name: Portable geometry and export tests
+        run: uv run --no-sync pytest -q -n 2 --dist loadfile -m "not native and not reference"
+      - name: Build and inspect distributions
+        run: |
+          uv build
+          uv run --no-sync python tools/check_distributions.py dist
+      - name: Installed wheel smoke test
+        run: |
+          uv venv --python 3.12 .local/wheel-smoke
+          uv pip install --python .local/wheel-smoke/bin/python dist/*.whl
+          cd .local
+          env -u PYTHONPATH wheel-smoke/bin/python -m cargo_grid --version
+          env -u PYTHONPATH wheel-smoke/bin/cargo-grid --help
+          env -u PYTHONPATH wheel-smoke/bin/cargo-grid part --build-width-mm 150 --build-depth-mm 150 --build-height-mm 50 --no-stl --output wheel-job
+          env -u PYTHONPATH wheel-smoke/bin/python -c 'import json; d=json.load(open("wheel-job/manifest.json"))["designs"][0]; assert (d["parameters"]["hole_diameter"],d["parameters"]["hole_scope"]) == (10.0,"full"), "wheel default hole pattern changed"'
+          env -u PYTHONPATH wheel-smoke/bin/cargo-grid part --unit-size-mm 30 --tile-thickness-mm 8 --build-width-mm 100 --build-depth-mm 100 --build-height-mm 50 --no-holes --no-stl --output wheel-scaled
+          env -u PYTHONPATH wheel-smoke/bin/python -c 'import json; d=json.load(open("wheel-scaled/manifest.json"))["designs"][0]; assert d["parameters"]["interface"]["pitch"] == 30 and d["parameters"]["interface"]["height"] == 8, "wheel scaled interface changed"; assert all(abs(a-b) < 1e-5 for a,b in zip(d["size_mm"],[33.0,33.0,8.0])), "wheel scaled bounds changed"'
+          env -u PYTHONPATH wheel-smoke/bin/cargo-grid part --family vertical-tile-bracket --width-cells 1 --depth-cells 2 --build-width-mm 350 --build-depth-mm 320 --build-height-mm 325 --bambu --material PETG PETG "#637b70" --nozzle-diameter-mm 0.4 --layer-height-mm 0.2 --no-stl --output wheel-bracket
+          env -u PYTHONPATH wheel-smoke/bin/python -c 'import json; p=json.load(open("wheel-bracket/manifest.json")); d=p["designs"][0]; assert (d["parameters"]["nx"],d["parameters"]["ny"]) == (1,2), "wheel bracket dimensions changed"; assert d["recommended_print_orientation"]["applied_to_exports"]["bambu_3mf"], "wheel bracket Bambu pose was not applied"; assert abs(p["export"]["plates"][0]["items"][0]["source_to_project_transform"]["rotation_x_degrees"] - 134.22827708427317) < 1e-12, "wheel bracket X rotation changed"'
+          env -u PYTHONPATH wheel-smoke/bin/cargo-grid part --family vertical-stop --width-cells 2 --depth-cells 1 --stop-height-mm 120 --build-width-mm 350 --build-depth-mm 320 --build-height-mm 325 --bambu --material PETG PETG "#637b70" --nozzle-diameter-mm 0.4 --layer-height-mm 0.2 --no-stl --output wheel-stop
+          env -u PYTHONPATH wheel-smoke/bin/python -c 'import json; p=json.load(open("wheel-stop/manifest.json")); d=p["designs"][0]; i=p["export"]["plates"][0]["items"][0]; assert (d["parameters"]["nx"],d["parameters"]["ny"],d["parameters"]["height"]) == (2,1,120), "wheel stop dimensions changed"; assert i["object_settings"] == {"enable_support":"1","support_type":"normal(auto)"}, "wheel stop Auto support metadata changed"; assert abs(i["source_to_project_transform"]["rotation_x_degrees"] - 116.08947705488677) < 1e-12, "wheel stop X rotation changed"'
+          env -u PYTHONPATH wheel-smoke/bin/cargo-grid part --family ramp --width-cells 3 --build-width-mm 350 --build-depth-mm 320 --build-height-mm 325 --bambu --material PETG PETG "#637b70" --nozzle-diameter-mm 0.4 --layer-height-mm 0.2 --no-stl --output wheel-ramp
+          env -u PYTHONPATH wheel-smoke/bin/python -c 'import json; p=json.load(open("wheel-ramp/manifest.json")); d=p["designs"][0]; i=p["export"]["plates"][0]["items"][0]; assert (d["parameters"]["nx"],d["parameters"]["ny"]) == (3,1), "wheel ramp cells changed"; assert all(abs(a-b) < 1e-5 for a,b in zip(d["size_mm"],[180.0,50.0,13.0])), "wheel ramp bounds changed: %r" % d["size_mm"]; assert i["object_settings"] == {"enable_support":"1","support_type":"normal(auto)"}, "wheel ramp Auto support metadata changed"'
