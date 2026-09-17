@@ -50,6 +50,8 @@ def accessory_variants(build: BuildVolume, interface: Interface = Interface()) -
             Accessory("vertical-tile-bracket", nx=x, ny=y, interface=interface)
             for x, y in VERTICAL_BRACKET_CELLS
         )
+    if interface.reference_defaults:
+        result.extend(Accessory("ramp", nx=n, interface=interface) for n in range(1, nmax + 1))
     result.extend(
         Accessory("vertical-stop", nx=x, ny=y, height=height, interface=interface)
         for x, y in VERTICAL_STOP_CELLS

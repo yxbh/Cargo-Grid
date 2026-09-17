@@ -173,6 +173,9 @@ def test_source_exports_and_non_bracket_project_orientation_are_unchanged(tmp_pa
     assert angled.apply_orientation_to_bambu
     plate = accessory_design(Accessory("plate"))
     assert not plate.apply_orientation_to_bambu and plate.bambu_size == plate.size
+    ramp = accessory_design(Accessory("ramp", nx=3))
+    assert not ramp.apply_orientation_to_bambu and ramp.bambu_size == ramp.size
+    assert ramp.bambu_object_settings["support_type"] == "normal(auto)"
 
 
 @pytest.mark.parametrize("n", [1, 2])
@@ -299,6 +302,8 @@ def test_native_roundtrip_keeps_all_changed_accessories_in_their_project_pose(tm
             for x, y in VERTICAL_BRACKET_CELLS
         ),
         *(accessory_design(Accessory("lock-45", nx=n, ny=n)) for n in (1, 2)),
+        accessory_design(Accessory("ramp")),
+        accessory_design(Accessory("ramp", nx=5)),
         *(
             accessory_design(Accessory("vertical-stop", nx=x, ny=y, height=height))
             for x, y in VERTICAL_STOP_CELLS
@@ -334,7 +339,7 @@ def test_native_roundtrip_keeps_all_changed_accessories_in_their_project_pose(tm
     assert result.returncode == 0, (tmp_path / "native.log").read_text()
     _, after_plates, after = _project_facts(target)
     assert before_plates == after_plates
-    assert len(before) == len(after) == 11
+    assert len(before) == len(after) == 13
     for a, b in zip(before, after):
         assert a[:-1] == b[:-1]
         assert b[-1] == pytest.approx(a[-1], abs=0.001)

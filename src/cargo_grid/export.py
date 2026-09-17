@@ -620,7 +620,14 @@ def export_job(
         compatibility = Interface(**interface_data).compatibility() if interface_data else None
         if compatibility is not None:
             family = design.parameters.get("family", "tile")
-            edge_present = family in ("tile", "edge-x", "edge-y", "corner-in", "corner-out")
+            edge_present = family in (
+                "tile",
+                "edge-x",
+                "edge-y",
+                "corner-in",
+                "corner-out",
+                "ramp",
+            )
             compatibility["tile_edge_interface_present"] = edge_present
             if not edge_present:
                 compatibility["original_tile_edge_dimensions"] = None

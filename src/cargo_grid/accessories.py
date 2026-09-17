@@ -36,6 +36,7 @@ FAMILIES = (
     "edge-y",
     "corner-in",
     "corner-out",
+    "ramp",
     "vertical-tile-bracket",
     "vertical-stop",
     "lock-45",
@@ -48,6 +49,10 @@ SUPPORT_END_NAMES = ("X", "Xs", "Y", "Ys")
 VERTICAL_BRACKET_CELLS = ((1, 2), (2, 1), (2, 2))
 VERTICAL_STOP_CELLS = ((1, 2), (2, 1), (2, 2))
 VERTICAL_STOP_HEIGHTS_MM = (60.0, 120.0)
+RAMP_RUN_MM = 50.0
+RAMP_CARRIER_RUN_MM = 10.0
+RAMP_PROFILE_TIP_Y_MM = 65.224331674
+RAMP_FREE_EDGE_RADIUS_MM = 2.0
 BASE_HEIGHT_MM = 4.1
 PANEL_BOTTOM_MM = 6.1
 BRACKET_INSET_MM = 13.0
@@ -61,7 +66,10 @@ SUPPORT_TOP_RADIUS_MM = 1.0
 BRACKET_LIP_RADIUS_MM = 1.0
 VERTICAL_STOP_RADIUS_MM = 2.0
 BAMBU_PRINT_ROTATIONS = {"vertical-tile-bracket": 135.0, "lock-45": -135.0}
-BAMBU_OBJECT_SETTINGS = {"vertical-stop": {"enable_support": "1", "support_type": "normal(auto)"}}
+BAMBU_OBJECT_SETTINGS = {
+    "ramp": {"enable_support": "1", "support_type": "normal(auto)"},
+    "vertical-stop": {"enable_support": "1", "support_type": "normal(auto)"},
+}
 
 
 @dataclass(frozen=True)
@@ -75,6 +83,8 @@ class Accessory:
     Their height follows the tile grid, not ``height``.
     Vertical stops use explicit 1x2, 2x1 or 2x2 mounting cells and an explicit
     60 or 120 mm height. They are filled cargo wedges without wall holes.
+    Ramps use ``nx`` cells along a tile edge. Their approved finished run is
+    fixed at 50 mm and ``ny`` remains one.
     ``variant`` selects corner and support-end types. Pitch and tile height can
     follow a custom Interface, but only reference defaults imply nominal
     reference dimensions; fixed attachment and support joins are not scaled.
@@ -133,6 +143,10 @@ class Accessory:
                 )
         if self.family == "vertical-stop" and self.height not in VERTICAL_STOP_HEIGHTS_MM:
             raise ValueError("vertical-stop requires explicit accessory height 60 or 120 mm")
+        if self.family == "ramp" and not self.interface.reference_defaults:
+            raise ValueError(
+                "ramp requires original roofed joints at 60 mm pitch, 13 mm height and zero fit offset"
+            )
 
 
 def _box(x: float, y: float, w: float, d: float, h: float, z: float = 0) -> Part:
@@ -484,6 +498,52 @@ def _vertical_stop(spec: Accessory) -> Part:
     return Part(Solid(operation.Shape()).wrapped)
 
 
+def _ramp(spec: Accessory, *, cut_joins: bool = True) -> Part:
+    width = spec.nx * spec.interface.pitch
+    profile = Face(
+        Wire.make_polygon(
+            [
+                (0, 0, 0),
+                (0, RAMP_PROFILE_TIP_Y_MM, 0),
+                (0, RAMP_CARRIER_RUN_MM, spec.interface.height),
+                (0, 0, spec.interface.height),
+            ],
+            close=True,
+        )
+    )
+    blank = Part(Solid.extrude(profile, (width, 0, 0)).wrapped)
+    operation = BRepFilletAPI_MakeFillet(blank.wrapped)
+    free_edges = 0
+    protected_rounds = 0
+    for edge in blank.edges():
+        bounds = edge.bounding_box()
+        back = abs(bounds.min.Y) < 1e-6 and abs(bounds.max.Y) < 1e-6
+        if back and abs(bounds.min.Z) < 1e-6 and abs(bounds.max.Z) < 1e-6 and bounds.size.X > 10:
+            operation.Add(1.0, edge.wrapped)
+            protected_rounds += 1
+        elif not back:
+            operation.Add(RAMP_FREE_EDGE_RADIUS_MM, edge.wrapped)
+            free_edges += 1
+    operation.Build()
+    if not operation.IsDone() or free_edges != 8 or protected_rounds != 1:
+        raise ValueError(
+            f"ramp edge rounding changed: {free_edges} free / {protected_rounds} protected"
+        )
+    part = Part(Solid(operation.Shape()).wrapped)
+    if not cut_joins:
+        return part
+    cutters = [
+        tile_join_tool(spec.interface, depth=6.1, male=False).moved(
+            Location(((cell + 0.5) * spec.interface.pitch, 0, 0))
+        )
+        for cell in range(spec.nx)
+    ]
+    result = part.cut(*cutters).clean()
+    if abs(result.bounding_box().max.Y - RAMP_RUN_MM) > 1e-5:
+        raise ValueError("ramp finished run changed")
+    return result
+
+
 def _free_top_rims(spec: Accessory) -> list[tuple[str, float]]:
     p = spec.interface.pitch
     if spec.family == "edge-x":
@@ -605,6 +665,25 @@ def accessory_datums(spec: Accessory) -> dict:
                 free_edge_radius=VERTICAL_STOP_RADIUS_MM,
             )
         return result
+    if spec.family == "ramp":
+        return {
+            "underside_z": 0,
+            "top_z": spec.interface.height,
+            "finished_run": RAMP_RUN_MM,
+            "width_cells": spec.nx,
+            "ramp_direction": "positive Y away from the tile",
+            "mating_tile_edge": "north male edge at Y=0",
+            "mount_centers": [],
+            "joins": [
+                {
+                    **_join((cell + 0.5) * spec.interface.pitch, 0, 0, False),
+                    "joint_style": spec.interface.joint_style,
+                    "height": spec.interface.female_opening_height,
+                    "open_through_top": spec.interface.joint_style == "full-height",
+                }
+                for cell in range(spec.nx)
+            ],
+        }
     if spec.family.startswith("support"):
         length, joins = _support_plan(spec)
         result = {
@@ -643,6 +722,8 @@ def make_accessory(spec: Accessory) -> Part:
         part = _vertical_bracket(spec)
     elif spec.family == "vertical-stop":
         part = _vertical_stop(spec)
+    elif spec.family == "ramp":
+        part = _ramp(spec)
     elif spec.family in ("plate", "lock-45"):
         part = _mounted(spec)
     elif spec.family.startswith("support"):

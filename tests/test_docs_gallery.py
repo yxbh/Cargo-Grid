@@ -25,7 +25,7 @@ def gallery():
 def test_gallery_covers_every_bounded_catalogue_variant_once(gallery):
     items = gallery.inventory()
     assert [item.spec for item in items] == accessory_variants(gallery.BUILD)
-    assert len(items) == len({item.key for item in items}) == 47
+    assert len(items) == len({item.key for item in items}) == 52
     rendered = [
         item.key for family in gallery.FAMILIES for item in items if item.spec.family == family
     ]
@@ -48,7 +48,7 @@ def test_thumbnail_manifest_has_unique_rows_and_family_scale(gallery):
     assert manifest["workbench_commit"] == gallery.WORKBENCH_REVISION
     entries = manifest["items"]
     for field in ("file", "key", "public_name", "alt", "sha256"):
-        assert len({entry[field] for entry in entries}) == 47
+        assert len({entry[field] for entry in entries}) == 52
     for family in gallery.FAMILIES:
         rows = [entry for entry in entries if entry["family"] == family]
         assert len({entry["pixels_per_mm"] for entry in rows}) == 1

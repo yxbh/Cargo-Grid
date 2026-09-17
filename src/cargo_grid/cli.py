@@ -218,7 +218,7 @@ def parser() -> argparse.ArgumentParser:
                 "--family",
                 default="tile",
                 choices=["tile", *FAMILIES],
-                help="vertical-tile-bracket carries a separate tile; vertical-stop is a filled cargo wedge; lock-45 is angled",
+                help="ramp joins a tile edge; vertical-tile-bracket carries a separate tile; vertical-stop is a filled cargo wedge",
             )
             p.add_argument(
                 "--cells",
@@ -226,7 +226,7 @@ def parser() -> argparse.ArgumentParser:
                 nargs=2,
                 default=argparse.SUPPRESS,
                 metavar=("X_CELLS", "Y_CELLS"),
-                help="whole cells X then Y (not mm); default 2 1 for vertical-tile-bracket/vertical-stop, 1 1 otherwise; X is width and Y is depth",
+                help="whole cells X then Y (not mm); default 2 1 for vertical-tile-bracket/vertical-stop, 1 1 otherwise; ramp uses X as width along the tile edge and requires Y=1",
             )
             p.add_argument(
                 "--variant",
