@@ -385,7 +385,7 @@ def test_native_roundtrip_keeps_all_changed_accessories_in_their_project_pose(tm
     assert result.returncode == 0, (tmp_path / "native.log").read_text()
     _, after_plates, after = _project_facts(target)
     assert before_plates == after_plates
-    assert len(before) == len(after) == 15
+    assert len(before) == len(after) == 17
     for a, b in zip(before, after):
         assert a[:-1] == b[:-1]
         assert b[-1] == pytest.approx(a[-1], abs=0.001)
