@@ -14,12 +14,12 @@ from pathlib import Path
 
 from cargo_grid import BuildVolume, Tile, make_tile
 from cargo_grid.accessories import SUPPORT_END_NAMES, Accessory, make_accessory
-from cargo_grid.catalogue import accessory_variants
+from cargo_grid.catalogue import BRACKET_DISPLAY_NAMES, accessory_variants
 
 ROOT = Path(__file__).resolve().parents[1]
 BUILD = BuildVolume(350, 320, 325)
 WORKBENCH_REVISION = "c3f63ef8d8604d3ec7eeba40a229047887c03d86"
-GEOMETRY_REVISION = "b5b0538bc34dec2e284a7406e182dc4206df712c"
+GEOMETRY_REVISION = "d7259e73764bfc9e5331db979c7a99eb9ef9d0fa"
 GEOMETRY_FILES = (
     "parameters.py",
     "interfaces.py",
@@ -37,6 +37,7 @@ IMAGE_NAMES = (
     "x-attachments.png",
     "vertical-tile-brackets.png",
     "vertical-stops.png",
+    "ramps.png",
 )
 SHEETS = (
     (
@@ -47,6 +48,10 @@ SHEETS = (
     ),
 )
 FAMILIES = {
+    "ramp": (
+        "Floor ramps",
+        "A 13 mm floor-to-mat transition with a fixed 50 mm run and one original roofed female tile-edge pocket per 60 mm width cell. Normal Auto support is scoped to its exposed pocket roofs.",
+    ),
     "plate": (
         "Attachment plates",
         "A flat surface with X plugs underneath for positioning an attachment on the mat.",
@@ -61,7 +66,7 @@ FAMILIES = {
     ),
     "lock-45": (
         "Angled stops",
-        "An angled cargo stop with full-length 6 mm side webs and rounded cap, on an X-plug base. Use the recommended back-face-down print pose.",
+        "A full-width filled angled cargo wedge with a 6 mm horizontal cap and R1 on every free body edge. Exact X plugs and roots remain protected. Use the recommended back-face-down print pose.",
     ),
     "edge-x": (
         "Male edge strips",
@@ -108,6 +113,9 @@ def inventory() -> list[Item]:
     for spec in accessory_variants(BUILD):
         if spec.family in ("edge-x", "edge-y", "support"):
             suffix, detail = str(spec.nx), f"{spec.nx} cell" + ("s" if spec.nx != 1 else "")
+        elif spec.family == "ramp":
+            suffix = str(spec.nx)
+            detail = f"{spec.nx} cell width / 50 mm run"
         elif spec.family == "support-bit":
             suffix, detail = f"{spec.length:g}mm", f"{spec.length:g} mm length"
         elif spec.family in ("corner-in", "corner-out", "support-end"):
@@ -136,8 +144,8 @@ def bracket_assembly_items() -> list[Item]:
     return [
         Item(
             f"bracket-context-{x}x{y}",
-            f"Vertical panel: {x} x {y}",
-            f"Base {60 * x} x {60 * y} mm / panel {60 * x} x {60 * y} mm",
+            BRACKET_DISPLAY_NAMES[(x, y)],
+            f"In-use panel {60 * x} x {60 * y} mm, excluding joining tabs",
         )
         for x, y in ((1, 2), (2, 1), (2, 2))
     ]
@@ -173,7 +181,8 @@ def documentation_shape(key: str):
         shape = make_accessory(item.spec)
         color = (
             "#637b70"
-            if item.spec.family in ("plate", "vertical-tile-bracket", "vertical-stop", "lock-45")
+            if item.spec.family
+            in ("ramp", "plate", "vertical-tile-bracket", "vertical-stop", "lock-45")
             else "#626b68"
         )
     if not shape.is_valid or len(shape.solids()) != 1 or shape.volume <= 0:
@@ -592,6 +601,15 @@ def compose_all(work: Path, provenance: dict) -> None:
             bracket_assembly_items(),
             "vertical-tile-brackets.png",
             "Brackets with separate ordinary tiles",
+            2,
+        )
+    )
+    sheets.append(
+        composite(
+            work,
+            [item for item in items if item.spec.family == "ramp"],
+            "ramps.png",
+            "Floor-to-mat ramps",
             3,
         )
     )
@@ -614,15 +632,17 @@ def compose_all(work: Path, provenance: dict) -> None:
         "",
         "[Back to the beginner guide](../README.md) / [Thumbnail dimensions, hashes and source provenance](images/attachments/manifest.json)",
         "",
-        "For vertical-tile-bracket names, the first cell count is panel/base X (left-right); the second is panel Z (bottom-top) and base Y (front-back). The 1x2 and 2x1 parts are distinct. These three variants require the reference 60 mm pitch, 13 mm tile height and zero fit offset; custom-interface catalogues retain the other supported families. The unreleased lock-90 family has been replaced, without an alias.",
+        "Bracket sizes are named against the upright panel in use: Wide tile bracket — 2 columns, 1 row (2x1); Tall tile bracket — 1 column, 2 rows (1x2); and Square tile bracket — 2 columns, 2 rows (2x2). The first stable-ID count is panel/base X (left-right); the second is panel Z (bottom-top) and base Y (front-back), regardless of the rotated print pose. These variants require the reference 60 mm pitch, 13 mm tile height and zero fit offset; custom-interface catalogues retain the other supported families. The unreleased lock-90 family has been replaced, without an alias.",
         "",
         "Bracket thumbnails show the exported one-piece bracket only. The [family view](images/vertical-tile-brackets.png) adds separate ordinary tiles for assembly context; these tiles are not fused into or included with bracket exports. Their entry faces meet the brackets, so their undersides face outward. Backed interior round holes are blind, and downward wall extension is obstructed; left/right/up joins remain available at a common wall origin.",
         "",
-        "Normal `vertical-stop` names use base X cells, base Y cells and an explicit H60/H120 shoulder height. These six parts are filled CAD wedges, not hollow shells or tile brackets; ordinary slicer perimeters and 15% infill remain separate manufacturing choices. They have no wall holes, panel connectors or ledges.",
+        "Ramp names give width along the tile edge in 60 mm cells; every ramp keeps the approved 50 mm front-to-back run and 13 mm rise. One original roofed female pocket is repeated per cell. The ramp receives a north male tile edge and extends away in positive Y; rotating the printed part does not change joining direction. Full-height/custom-interface ramps are omitted rather than presented as compatible.",
         "",
-        "Edge/corner free top rims and every normal-stop free exterior edge use R2 rounding. Rail outer top rims, angled-stop cap profiles and the bracket's nonbearing front lip use R1. Exact X plugs, tile-facing joins, support joins, bracket bed face and bearing land remain protected rather than blanket-filleted. Nominal geometry is not calibrated fit or a physical load rating.",
+        "Normal `vertical-stop` names use base X cells, base Y cells and an explicit H60/H120 shoulder height. These eight parts are filled CAD wedges, not hollow shells or tile brackets; ordinary slicer perimeters and 15% infill remain separate manufacturing choices. They have no wall holes, panel connectors or ledges.",
         "",
-        "Bambu projects apply the bracket's diagonal-face-down, normal stop's per-design broad-rear-face-down and angled stop's back-face-down rotations before fit checks and packing. Source STEP/STL and core 3MF retain model orientation; manifests record recommendations and exact applied source-to-project transforms. Normal Auto support is scoped only to normal-stop objects; the 2x1/H120 variant generated mounting-region support in both documented native profiles, so inspect removal and fit. Edge/corner/plate/rail families retain their project orientation.",
+        "Edge/corner free top rims and every normal-stop free exterior edge use R2 rounding. Rail outer top rims and the bracket's nonbearing front lip use selective R1; each filled angled-stop envelope couples R1 across all 18 free body edges before restoring its exact X connector/root cores. Tile-facing joins, support joins, bracket bed face and bearing land remain protected rather than blanket-filleted. Nominal geometry is not calibrated fit or a physical load rating.",
+        "",
+        "Bambu projects apply the bracket's diagonal-face-down, normal stop's per-design broad-rear-face-down and angled stop's back-face-down rotations before fit checks and packing. Ramps retain their flat source orientation. Source STEP/STL and core 3MF retain model orientation; manifests record recommendations and exact applied source-to-project transforms. Normal Auto support is scoped to ramp and normal-stop objects; remove ramp pocket support before assembly, and inspect the 2x1/H120 stop's mounting-region support. Edge/corner/plate/rail families retain their project orientation.",
         "",
     ]
     for family, (heading, _) in FAMILIES.items():

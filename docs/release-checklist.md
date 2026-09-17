@@ -27,13 +27,13 @@ CI performs the portable tests, distribution checks and an installed-wheel CLI g
 
 ## Optional native and reference checks
 
-Set `CARGO_GRID_BAMBU` to an explicitly chosen local Bambu Studio executable and `CARGO_GRID_REFERENCE` to a lawful local reference file, then run:
+Normal generation and packaging need no external model or reference archive. For optional maintainer checks, set `CARGO_GRID_BAMBU` to an explicitly chosen local Bambu Studio executable and `CARGO_GRID_REFERENCE` to an optional local 3MF reference file, then run:
 
 ```sh
 uv run pytest -q
 ```
 
-The tests still skip unavailable external checks. Native CLI import/export is not GUI slicing or printing. If changing Bambu settings or modifier behavior, inspect an actual GUI-generated slice under the intended profile: logical material roles, automatic versus explicitly Custom nozzle grouping, every requested support contact, X-socket clearance, actual model/support extrusion separation and prime-tower reach. Preserve the selected profile and evidence with ignored project outputs, not in package contents.
+The tests still skip unavailable external checks. `cargo-grid compare-reference --reference-file path/to/reference.3mf --output outputs/reference-report.json` runs the same optional local original-interface diagnostic; the file is read locally and is not uploaded or required by ordinary users. Native CLI import/export is not GUI slicing or printing. If changing Bambu settings or modifier behavior, inspect an actual GUI-generated slice under the intended profile: logical material roles, automatic versus explicitly Custom nozzle grouping, every requested support contact, X-socket clearance, actual model/support extrusion separation and prime-tower reach. Preserve the selected profile and evidence with ignored project outputs, not in package contents.
 
 If using a separate CAD workbench, use its current documented interpreter and launchers from this design root. Generate `examples/tile.py` to a fresh project-relative STEP, inspect that same STEP, and open it in an available viewer. Prefer a maintained CAD canvas only when it is actually registered; otherwise use that workbench's documented fallback. Record the toolchain revision and resolved dependency versions with the local evidence when reproduction requires them. Do not copy the workbench into this repository.
 
@@ -49,4 +49,4 @@ If using a separate CAD workbench, use its current documented interpreter and la
 
 Local builds made during development are verification artifacts, not published releases. After the maintainer has separately reviewed and committed the source, prepare release input from tracked files at the reviewed revision, for example with `git archive`, rather than zipping the working directory. Check the tracked file inventory before archiving, then build and inspect distributions from the extracted reviewed source.
 
-Do not include local locks, reference meshes, system profile JSON, `.venv`, `.local`, study outputs, G-code, unreviewed screenshots or runtime diagnostics. The four overview images, 47 explicitly allowlisted per-variant thumbnails and their provenance manifest under `docs/images/` are the intentional exception: exactly 51 PNGs in the source distribution and zero in the runtime wheel. Verify one-to-one inventory/name/file/alt-text mapping, source/tool provenance, links, dimensions and size with `tools/render_docs.py --check`. Publication, tags and pushes remain separate explicit maintainer decisions; this checklist does not perform them.
+Do not include local locks, reference meshes, system profile JSON, `.venv`, `.local`, study outputs, G-code, unreviewed screenshots or runtime diagnostics. The five overview images, 54 explicitly allowlisted per-variant thumbnails and their provenance manifest under `docs/images/` are the intentional exception: exactly 59 PNGs in the source distribution and zero in the runtime wheel. Verify one-to-one inventory/name/file/alt-text mapping, source/tool provenance, links, dimensions and size with `tools/render_docs.py --check`. Publication, tags and pushes remain separate explicit maintainer decisions; this checklist does not perform them.
