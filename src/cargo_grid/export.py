@@ -314,7 +314,14 @@ def _write_3mf(
                 )
                 volumes = stack_volumes(design, settings, job.build)
             else:
-                volumes = [Volume(design.name, project_shapes[id(design)], "model", 1)]
+                volumes = [
+                    Volume(
+                        design.display_name or design.name,
+                        project_shapes[id(design)],
+                        "model",
+                        1,
+                    )
+                ]
                 if bambu and bambu.roof_support:
                     volumes.extend(
                         roof_enforcers(design, bambu.layer_height, bambu.roof_support.coverage)
@@ -395,7 +402,7 @@ def _write_3mf(
             children.append((ident, volume))
         object_id = next_id
         next_id += 1
-        label = f"{design.name}_batch_{batch_index + 1}"
+        label = f"{design.display_name or design.name}_batch_{batch_index + 1}"
         obj = _xml(resources, "object", id=object_id, type="model", name=label)
         components = _xml(obj, "components")
         for ident, _ in children:
@@ -470,6 +477,8 @@ def _write_3mf(
             "rotation": rotation,
             "size_mm": size,
         }
+        if design.display_name is not None:
+            item["display_name"] = design.display_name
         if bambu and design.bambu_object_settings:
             item["object_settings"] = dict(design.bambu_object_settings)
         record["items"].append(item)
@@ -742,6 +751,7 @@ def export_job(
         entries.append(
             {
                 "name": design.name,
+                "display_name": design.display_name or design.name,
                 "parameters": design.parameters,
                 "quantity": design.quantity,
                 "size_mm": design.size,

@@ -207,6 +207,8 @@ def test_bracket_variants_and_reference_only_interface_policy():
     a = accessory_design(Accessory("vertical-tile-bracket", nx=1, ny=2))
     b = accessory_design(Accessory("vertical-tile-bracket", nx=2, ny=1))
     assert a.name != b.name
+    assert a.display_name == "Tall tile bracket — 1 column, 2 rows (1x2)"
+    assert b.display_name == "Wide tile bracket — 2 columns, 1 row (2x1)"
     assert a.apply_orientation_to_bambu and a.recommended_print_rotation_x == 135
     assert make_accessory(
         replace(

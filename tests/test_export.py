@@ -12,6 +12,8 @@ from zipfile import ZipFile
 import pytest
 from build123d import Box, import_step
 
+from cargo_grid.accessories import Accessory
+from cargo_grid.catalogue import accessory_design
 from cargo_grid.export import BambuSettings, Material, export_job, write_3mf
 from cargo_grid.jobs import Design, Job, tile_design
 from cargo_grid.packing import PrintPlacement
@@ -127,6 +129,23 @@ def _project_facts(path):
                 )
                 volumes.append((names[ident], *part_metadata[ident, leaf_id], bounds))
         return settings, sorted(plates), sorted(volumes)
+
+
+def test_bracket_display_name_is_bambu_metadata_not_design_identity(materials, tmp_path):
+    design = accessory_design(Accessory("vertical-tile-bracket", nx=2, ny=1))
+    project = write_3mf(
+        Job([design], BuildVolume(350, 320, 325), "part"),
+        tmp_path / "bracket.3mf",
+        bambu=materials,
+    )
+    _, plates, _ = _project_facts(tmp_path / "bracket.3mf")
+    assert any(
+        name.startswith("Wide tile bracket — 2 columns, 1 row (2x1)")
+        for _, _, members in plates
+        for name, _ in members
+    )
+    assert project["plates"][0]["items"][0]["design"] == design.name
+    assert project["plates"][0]["items"][0]["display_name"] == design.display_name
 
 
 def test_core_archive_has_valid_relationships_and_quantities(box_job, tmp_path):

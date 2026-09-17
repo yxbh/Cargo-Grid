@@ -18,6 +18,7 @@ class Design:
     name: str
     shape: Part
     parameters: dict
+    display_name: str | None = None
     quantity: int = 1
     assembly_frames: list[tuple[float, float, float]] = field(default_factory=list)
     holes: list[dict] = field(default_factory=list)
@@ -27,6 +28,8 @@ class Design:
 
     def __post_init__(self):
         count("design quantity", self.quantity)
+        if self.display_name is not None and not self.display_name.strip():
+            raise ValueError("design display name must not be blank")
         if self.recommended_print_rotation_x is not None and not isfinite(
             self.recommended_print_rotation_x
         ):

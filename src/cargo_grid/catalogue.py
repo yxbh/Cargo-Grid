@@ -19,6 +19,12 @@ from cargo_grid.jobs import Design, Job, tile_design
 from cargo_grid.packing import PrintPlacement, pack_sizes
 from cargo_grid.parameters import BuildVolume, Exclusion, Interface, Tile
 
+BRACKET_DISPLAY_NAMES = {
+    (1, 2): "Tall tile bracket — 1 column, 2 rows (1x2)",
+    (2, 1): "Wide tile bracket — 2 columns, 1 row (2x1)",
+    (2, 2): "Square tile bracket — 2 columns, 2 rows (2x2)",
+}
+
 
 def tile_sizes(build: BuildVolume, interface: Interface = Interface()) -> list[tuple[int, int]]:
     longest = max(build.usable[:2])
@@ -83,6 +89,9 @@ def accessory_design(spec: Accessory) -> Design:
         name,
         shape,
         parameters,
+        display_name=BRACKET_DISPLAY_NAMES.get((spec.nx, spec.ny))
+        if spec.family == "vertical-tile-bracket"
+        else None,
         recommended_print_rotation_x=rotation,
         apply_orientation_to_bambu=rotation is not None,
         bambu_object_settings=dict(BAMBU_OBJECT_SETTINGS.get(spec.family, {})),
@@ -152,7 +161,7 @@ def h2d_dual_safe_catalogue_job(
         ("Tiles", {"tile"}),
         ("Ramps", {"ramp"}),
         ("Normal stops", {"vertical-stop"}),
-        ("Tile brackets", {"vertical-tile-bracket"}),
+        ("Tile brackets - wide 2x1, tall 1x2, square 2x2", {"vertical-tile-bracket"}),
         ("Angled stops", {"lock-45"}),
         ("Attachment plates", {"plate"}),
         ("Edges and corners", {"edge-x", "edge-y", "corner-in", "corner-out"}),
