@@ -242,12 +242,12 @@ Development checks:
 uv sync --group dev
 uv run ruff check .
 uv run ruff format --check .
-uv run pytest -q -n 4 --dist loadfile -m "not native and not reference"
+uv run pytest -q -n 12 --dist loadfile -m "not native and not reference"
 uv build
 uv run python tools/check_distributions.py dist
 ```
 
-Four process workers were fastest in the local benchmark; CI uses two on its smaller runner. Keep native/reference tests serial. They use explicitly supplied `CARGO_GRID_BAMBU` and `CARGO_GRID_REFERENCE` and skip when those resources are unavailable. Keep `uv.lock` local and ignored. See [AGENTS.md](AGENTS.md), the [release checklist](docs/release-checklist.md) and [gallery reproduction instructions](docs/attachments.md#reproduce-the-images) for maintainer details.
+Twelve process workers were fastest for the full portable suite on the measured maintainer workstation; use fewer on smaller machines. CI uses two on its runner. Keep native/reference tests serial. They use explicitly supplied `CARGO_GRID_BAMBU` and `CARGO_GRID_REFERENCE` and skip when those resources are unavailable. Keep `uv.lock` local and ignored. See [AGENTS.md](AGENTS.md), the [release checklist](docs/release-checklist.md) and [gallery reproduction instructions](docs/attachments.md#reproduce-the-images) for maintainer details.
 
 ## License and reference boundary
 

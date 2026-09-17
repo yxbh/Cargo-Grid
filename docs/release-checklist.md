@@ -16,7 +16,7 @@ On the documented local workstation, four process workers were slightly faster t
 ```sh
 uv run ruff check .
 uv run ruff format --check .
-uv run pytest -q -n 4 --dist loadfile -m "not native and not reference"
+uv run pytest -q -n 12 --dist loadfile -m "not native and not reference"
 git diff --check
 uv build
 uv run python tools/check_distributions.py dist
