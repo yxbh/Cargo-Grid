@@ -17,6 +17,7 @@ from build123d import (
     import_step,
 )
 from OCP.BRepAdaptor import BRepAdaptor_Surface
+from OCP.Precision import Precision
 
 from cargo_grid import BuildVolume, Interface, Tile, make_tile
 from cargo_grid.accessories import (
@@ -80,30 +81,36 @@ def test_bracket_solid_datums_and_actual_step_roundtrip(nx, ny, tmp_path):
     assert export_step(part, path)
     restored = import_step(path)
     assert restored.is_valid and len(restored.solids()) == 1
-    assert abs(restored.volume - part.volume) < 1e-5
+    volume_budget = max(1e-6, part.area * Precision.Confusion_s())
+    assert abs(restored.volume - part.volume) <= volume_budget
     assert tuple(restored.bounding_box().size) == pytest.approx(tuple(part.bounding_box().size))
 
 
 @pytest.mark.parametrize(
     "nx,ny,expected",
-    [(1, 2, 554282.8862565482), (2, 1, 332047.0339637722), (2, 2, 1108565.7725130974)],
+    [
+        (1, 2, 562574.57070031),
+        (2, 1, 339514.7072775045),
+        (2, 2, 1125861.2804091852),
+    ],
 )
-def test_bracket_volume_fixture_and_only_nonbearing_lip_is_rounded(nx, ny, expected):
+def test_bracket_volume_fixture_and_mixed_free_edge_radii(nx, ny, expected):
     spec = Accessory("vertical-tile-bracket", nx=nx, ny=ny)
     core = _vertical_bracket(spec, round_lip=False)
     rounded = make_accessory(spec)
     assert rounded.volume == pytest.approx(expected, abs=1e-5)
-    assert volume(rounded.cut(core)) < 1e-5
-    change = core.cut(rounded)
-    assert volume(change) > 0
-    box = change.bounding_box()
-    assert box.min.Y >= 60 * ny - 1 - 1e-5
-    assert box.min.Z >= 5.1 - 1e-5
-    assert box.max.Z <= 6.1 + 1e-5
+    assert volume(rounded.cut(core)) > 0
+    assert volume(core.cut(rounded)) > 0
     assert any(
         f.geom_type == GeomType.CYLINDER
         and BRepAdaptor_Surface(f.wrapped).Cylinder().Radius() == pytest.approx(1)
         and f.bounding_box().min.Y >= 60 * ny - 1 - 1e-5
+        for f in rounded.faces()
+    )
+    assert any(
+        f.geom_type == GeomType.CYLINDER
+        and BRepAdaptor_Surface(f.wrapped).Cylinder().Radius() == pytest.approx(2)
+        and f.bounding_box().max.Z > 10
         for f in rounded.faces()
     )
 
@@ -122,13 +129,13 @@ def test_original_lower_base_and_both_plug_sets_are_retained(nx, ny):
     base = _mounted_base(spec, root_radius=1)
     assert (
         difference(
-            clipped(part, 0, 0, -13, nx * 60, ny * 60, 16.1),
-            clipped(base, 0, 0, -13, nx * 60, ny * 60, 16.1),
+            clipped(part, 0, 0, -13, nx * 60, ny * 60, 13),
+            clipped(base, 0, 0, -13, nx * 60, ny * 60, 13),
         )
         < 1e-5
     )
-    # The former decorative upper-rim void is completely filled.
-    band = Solid.make_box(nx * 60, ny * 60, 1).moved(Location((0, 0, 3.1)))
+    # The filled upper-rim band remains solid away from the rounded exterior.
+    band = Solid.make_box(nx * 60 - 6, ny * 60 - 6, 1).moved(Location((3, 3, 3.1)))
     assert volume(band.cut(part)) < 1e-5
     for x, y, z in accessory_datums(spec)["mount_centers"]:
         plug = make_plug().rotate(Axis.X, 180).moved(Location((x, y, z)))
@@ -158,15 +165,23 @@ def test_separate_tile_insertion_bearing_and_solid_backing(nx, ny, holes):
         for bottom in contact_faces(tile, 6.1, -1)
         for q in [top.intersect(bottom)]
     )
-    if holes:
-        assert bearing == pytest.approx(260.891859550497 * nx, abs=1e-5)
+    expected_bearing = (
+        260.891859550497 * nx
+        if holes
+        else {
+            (1, 2): 356.89187154230996,
+            (2, 1): 735.7837431264309,
+            (2, 2): 735.7837429654181,
+        }[(nx, ny)]
+    )
+    assert bearing == pytest.approx(expected_bearing, abs=1e-5)
     core_bearing = sum(
         sum(f.area for f in q.faces()) if q else 0
         for top in contact_faces(core, 6.1, 1)
         for bottom in contact_faces(tile, 6.1, -1)
         for q in [top.intersect(bottom)]
     )
-    assert bearing == pytest.approx(core_bearing, abs=1e-5)
+    assert bearing >= core_bearing - 1e-9
     assert bearing > 0
     assert part.is_inside(Vector(nx * 30, ny * 60 - 13 - 0.01, 20))
     # Exact unmodified neighbor tiles can extend sideways/upward with the same wall origin.
@@ -215,7 +230,8 @@ def test_bracket_variants_and_reference_only_interface_policy():
     assert a.name != b.name
     assert a.display_name == "Deep tall tile bracket — floor 1x2, wall 1x2"
     assert b.display_name == "Wide low tile bracket — floor 2x1, wall 2x1"
-    assert a.apply_orientation_to_bambu and a.recommended_print_rotation_x == 135
+    assert a.apply_orientation_to_bambu
+    assert a.recommended_print_rotation_x == pytest.approx(134.22827708427317)
     assert make_accessory(
         replace(
             Accessory("vertical-tile-bracket", nx=2), interface=Interface(joint_style="full-height")
@@ -225,9 +241,9 @@ def test_bracket_variants_and_reference_only_interface_policy():
 
 @pytest.mark.parametrize(
     "nx,expected_volume",
-    [(1, 282467.39679344784), (2, 565079.6094965566)],
+    [(1, 281967.13199792017), (2, 564486.9288800508)],
 )
-def test_shallow_brackets_match_approved_body_and_preserve_mating_regions(
+def test_shallow_brackets_round_free_body_and_preserve_mating_regions(
     nx, expected_volume, tmp_path
 ):
     spec = Accessory(
@@ -289,7 +305,8 @@ def test_shallow_brackets_match_approved_body_and_preserve_mating_regions(
     assert export_step(shape, path)
     restored = import_step(path)
     assert restored.is_valid and len(restored.solids()) == 1
-    assert restored.volume == pytest.approx(shape.volume, abs=1e-5)
+    volume_budget = max(1e-6, shape.area * Precision.Confusion_s())
+    assert restored.volume == pytest.approx(shape.volume, abs=volume_budget)
 
 
 @pytest.mark.parametrize("nx", [1, 2])

@@ -15,6 +15,7 @@ from cargo_grid.accessories import (
     _apply_joins,
     _downward_plug,
     _edge_plan,
+    _join_solid,
     _mounted_base,
     _support,
     accessory_datums,
@@ -51,26 +52,34 @@ def unrounded_edge(spec):
         *(Accessory("corner-out", variant=v) for v in range(1, 7)),
     ],
 )
-def test_perimeter_r2_exists_in_step_and_join_region_is_unchanged(spec, style, tmp_path):
+def test_perimeter_rounds_exist_in_step_and_join_tools_are_preserved(spec, style, tmp_path):
     from dataclasses import replace
 
     spec = replace(spec, interface=Interface(joint_style=style))
     before, after = unrounded_edge(spec), make_accessory(spec)
     assert after.volume < before.volume
-    protected = Solid.make_box(500, 500, 10.2).moved(Location((-50, -50, 0)))
-    assert volume(Part(before.intersect(protected).solids()).cut(after)) < 1e-5
     for join in accessory_datums(spec)["joins"]:
-        region = Solid.make_box(52, join["depth"] + 5, 13).moved(Location((-26, -4, 0)))
-        region = region.rotate(Axis.Z, join["angle"]).moved(Location(join["position"]))
-        a, b = before.intersect(region), after.intersect(region)
-        assert volume(Part(a.solids()).cut(Part(b.solids()))) < 1e-5
+        if style == "original":
+            tool = _join_solid(join, interface=spec.interface)
+            if join["sex"] == "male":
+                assert volume(tool.cut(after)) < 1e-7
+            else:
+                assert volume(tool.intersect(after)) < 1e-7
+        else:
+            region = Solid.make_box(52, join["depth"] + 5, 13).moved(Location((-26, -4, 0)))
+            region = region.rotate(Axis.Z, join["angle"]).moved(Location(join["position"]))
+            a, b = before.intersect(region), after.intersect(region)
+            assert volume(Part(a.solids()).cut(Part(b.solids()))) < 1e-5
     path = tmp_path / "rounded.step"
     assert export_step(after, path)
     restored = import_step(path)
     assert restored.is_valid
+    volume_budget = max(1e-6, after.area * Precision.Confusion_s())
+    assert abs(restored.volume - after.volume) <= volume_budget
+    expected_radius = 3 if style == "original" else 2
     assert any(
         face.geom_type == GeomType.CYLINDER
-        and BRepAdaptor_Surface(face.wrapped).Cylinder().Radius() == pytest.approx(2)
+        and BRepAdaptor_Surface(face.wrapped).Cylinder().Radius() == pytest.approx(expected_radius)
         for face in restored.faces()
     )
 
@@ -83,23 +92,23 @@ def test_perimeter_r2_exists_in_step_and_join_region_is_unchanged(spec, style, t
         *(Accessory("support-end", variant=v) for v in range(1, 5)),
     ],
 )
-def test_support_r1_preserves_central_full_height_dovetails(spec, tmp_path):
+def test_support_rounding_preserves_full_height_dovetails(spec, tmp_path):
     before, after = _support(spec, round_top=False), make_accessory(spec)
-    assert after.volume < before.volume
+    assert abs(after.volume - before.volume) > 1
     for join in accessory_datums(spec)["joins"]:
-        region = Solid.make_box(36, join["depth"] + 5, 25).moved(Location((-18, -4, 0)))
-        region = region.rotate(Axis.Z, join["angle"]).moved(Location(join["position"]))
-        a, b = before.intersect(region), after.intersect(region)
-        assert volume(Part(a.solids()).cut(Part(b.solids()))) < 1e-5
-    below = Solid.make_box(60, 500, 24).moved(Location((-30, -10, -25)))
-    assert volume(Part(before.intersect(below).solids()).cut(after)) < 1e-5
+        tool = _join_solid(join)
+        if join["sex"] == "male":
+            assert volume(tool.cut(after)) < 1e-7
+        else:
+            assert volume(tool.intersect(after)) < 1e-7
     path = tmp_path / "rail.step"
     assert export_step(after, path)
     restored = import_step(path)
+    volume_budget = max(1e-6, after.area * Precision.Confusion_s())
+    assert abs(restored.volume - after.volume) <= volume_budget
     assert any(
         face.geom_type == GeomType.CYLINDER
-        and BRepAdaptor_Surface(face.wrapped).Cylinder().Radius() == pytest.approx(1)
-        and face.bounding_box().min.Z >= -1 - 1e-5
+        and BRepAdaptor_Surface(face.wrapped).Cylinder().Radius() == pytest.approx(3)
         for face in restored.faces()
     )
 

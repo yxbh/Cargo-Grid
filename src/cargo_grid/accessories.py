@@ -67,8 +67,15 @@ BRACKET_BACKING_MM = 4.1
 BRACKET_ENVELOPE_MARGIN_MM = 0.1
 STOP_WALL_MM = 6.0
 EDGE_TOP_RADIUS_MM = 2.0
+EDGE_BODY_RADIUS_MM = 3.0
+EDGE_MITER_RETANGENT_MM = 4.82962
 SUPPORT_TOP_RADIUS_MM = 1.0
+SUPPORT_BODY_RADIUS_MM = 3.0
+SUPPORT_WINDOW_RADIUS_MM = 2.0
+SUPPORT_END_1_WINDOW_RIM_RADIUS_MM = 1.25
 BRACKET_LIP_RADIUS_MM = 1.0
+BRACKET_FREE_EDGE_RADIUS_MM = 2.0
+BRACKET_TOP_EXTENSION_MM = {1: 3.0515422, 2: 2.921921}
 VERTICAL_STOP_RADIUS_MM = 2.0
 BAMBU_PRINT_ROTATIONS = {"vertical-tile-bracket": 135.0, "lock-45": -135.0}
 BAMBU_OBJECT_SETTINGS = {
@@ -199,7 +206,11 @@ def _join(
     }
 
 
-def _edge_plan(spec: Accessory) -> tuple[Face, list[dict]]:
+def _edge_plan(
+    spec: Accessory,
+    *,
+    free_miter_extension: float = 0,
+) -> tuple[Face, list[dict]]:
     p = spec.interface.pitch
     if spec.family in ("edge-x", "edge-y"):
         male = spec.family == "edge-x"
@@ -245,18 +256,43 @@ def _edge_plan(spec: Accessory) -> tuple[Face, list[dict]]:
             joins = [_join(0, p / 2, -90, True), _join(p / 2, 0, 0, True)]
         return face, joins
     extension = 5 * sqrt(2)
+    rounded_extension = extension + free_miter_extension
     male = v in (1, 5)
     # Preserve the diagonal butt datum, using a straight bevel outside it.
     if v in (2, 5):
         if v == 5:
-            points = [(0, -10), (p, -10), (p + extension, -extension), (p, 0), (0, 0)]
+            points = [
+                (0, -10),
+                (p, -10),
+                (p + rounded_extension, -extension),
+                (p, 0),
+                (0, 0),
+            ]
         else:
-            points = [(-extension, extension), (0, 0), (p, 0), (p, 10), (0, 10)]
+            points = [
+                (-rounded_extension, extension),
+                (0, 0),
+                (p, 0),
+                (p, 10),
+                (0, 10),
+            ]
         return _polygon(points), [_join(p / 2, 0, 0, male)]
     if v == 1:
-        points = [(-10, 0), (0, 0), (0, p), (-extension, p + extension), (-10, p)]
+        points = [
+            (-10, 0),
+            (0, 0),
+            (0, p),
+            (-extension, p + rounded_extension),
+            (-10, p),
+        ]
     else:
-        points = [(0, 0), (extension, -extension), (10, 0), (10, p), (0, p)]
+        points = [
+            (0, 0),
+            (extension, -rounded_extension),
+            (10, 0),
+            (10, p),
+            (0, p),
+        ]
     return _polygon(points), [_join(0, p / 2, -90, male)]
 
 
@@ -378,6 +414,8 @@ def _vertical_bracket(spec: Accessory, *, round_lip: bool = True) -> Part:
     panel_rows = spec.panel_height_cells or spec.ny
     if panel_rows != spec.ny:
         return _shallow_vertical_bracket(spec, panel_rows)
+    if round_lip:
+        return _rounded_original_bracket(spec)
     p = spec.interface.pitch
     w, d = spec.nx * p, spec.ny * p
     seat = d - BRACKET_INSET_MM
@@ -411,6 +449,71 @@ def _vertical_bracket(spec: Accessory, *, round_lip: bool = True) -> Part:
         ]
         land = land.fillet(BRACKET_LIP_RADIUS_MM, edges)
     return base.fuse(wedge, *connectors, land).clean()
+
+
+def _rounded_original_bracket(spec: Accessory) -> Part:
+    p = spec.interface.pitch
+    width, depth = spec.nx * p, spec.ny * p
+    seat = depth - BRACKET_INSET_MM
+    node = _panel_connector()
+    intercept = (
+        PANEL_BOTTOM_MM
+        + node.bounding_box().max.Y
+        + BRACKET_BACKING_MM
+        + BRACKET_INSET_MM
+        - p
+        + BRACKET_ENVELOPE_MARGIN_MM
+    )
+    panel_top = seat + intercept + BRACKET_TOP_EXTENSION_MM[spec.ny]
+    body = _cross_prism(
+        [
+            (0, 0),
+            (depth, 0),
+            (depth, PANEL_BOTTOM_MM),
+            (seat, PANEL_BOTTOM_MM),
+            (seat, panel_top),
+            (0, intercept),
+        ],
+        width,
+    )
+    operation = BRepFilletAPI_MakeFillet(body.wrapped)
+    for edge in body.edges():
+        bounds = edge.bounding_box()
+        if (
+            abs(bounds.min.Y - seat) < 1e-5
+            and abs(bounds.max.Y - seat) < 1e-5
+            and abs(bounds.min.Z - PANEL_BOTTOM_MM) < 1e-5
+            and abs(bounds.max.Z - PANEL_BOTTOM_MM) < 1e-5
+        ):
+            continue
+        bearing_lip = (
+            abs(bounds.min.Z - PANEL_BOTTOM_MM) < 1e-5
+            and abs(bounds.max.Z - PANEL_BOTTOM_MM) < 1e-5
+            and bounds.max.Y >= seat - 1e-5
+        ) or (
+            abs(bounds.min.Y - depth) < 1e-5
+            and abs(bounds.max.Y - depth) < 1e-5
+            and bounds.max.Z <= PANEL_BOTTOM_MM + 1e-5
+        )
+        operation.Add(
+            BRACKET_LIP_RADIUS_MM if bearing_lip else BRACKET_FREE_EDGE_RADIUS_MM,
+            edge.wrapped,
+        )
+    operation.Build()
+    if not operation.IsDone():
+        raise ValueError("original tile-bracket coupled R2 body fillet failed")
+    rounded_body = Part(Solid(operation.Shape()).wrapped)
+    mounted = _mounted_base(spec, root_radius=1, round_top=False)
+    floor_connectors = []
+    for x, y, _ in _mount_centers(spec):
+        region = Solid.make_box(48, 48, 14.1).moved(Location((x - 24, y - 24, -13)))
+        floor_connectors.extend(mounted.intersect(region).solids())
+    panel_connectors = [
+        node.rotate(Axis.X, 90).moved(Location((column * p, seat, PANEL_BOTTOM_MM + row * p)))
+        for row in range(spec.ny)
+        for column in range(spec.nx)
+    ]
+    return Part(rounded_body.fuse(*floor_connectors, *panel_connectors).clean().solids())
 
 
 def _shallow_vertical_bracket(spec: Accessory, panel_rows: int) -> Part:
@@ -450,7 +553,19 @@ def _shallow_vertical_bracket(spec: Accessory, panel_rows: int) -> Part:
             and abs(bounds.max.Z - PANEL_BOTTOM_MM) < 1e-5
         ):
             continue
-        operation.Add(BRACKET_LIP_RADIUS_MM, edge.wrapped)
+        bearing_lip = (
+            abs(bounds.min.Z - PANEL_BOTTOM_MM) < 1e-5
+            and abs(bounds.max.Z - PANEL_BOTTOM_MM) < 1e-5
+            and bounds.max.Y >= seat - 1e-5
+        ) or (
+            abs(bounds.min.Y - d) < 1e-5
+            and abs(bounds.max.Y - d) < 1e-5
+            and bounds.max.Z <= PANEL_BOTTOM_MM + 1e-5
+        )
+        operation.Add(
+            BRACKET_LIP_RADIUS_MM if bearing_lip else BRACKET_FREE_EDGE_RADIUS_MM,
+            edge.wrapped,
+        )
     operation.Build()
     if not operation.IsDone():
         raise ValueError("shallow tile-bracket coupled R1 body fillet failed")
@@ -484,6 +599,10 @@ def vertical_stop_print_rotation(spec: Accessory) -> float:
 def bambu_print_rotation(spec: Accessory) -> float | None:
     if spec.family == "vertical-tile-bracket" and spec.panel_height_cells is not None:
         return None
+    if spec.family == "vertical-tile-bracket":
+        seat = spec.ny * spec.interface.pitch - BRACKET_INSET_MM
+        slope = (seat + BRACKET_TOP_EXTENSION_MM[spec.ny]) / seat
+        return 180 - degrees(atan(slope))
     return (
         vertical_stop_print_rotation(spec)
         if spec.family == "vertical-stop"
@@ -503,6 +622,13 @@ def required_bambu_print_rotation(parameters: dict) -> float | None:
     family = parameters.get("family")
     if family == "vertical-tile-bracket" and parameters.get("panel_height_cells") is not None:
         return None
+    if family == "vertical-tile-bracket":
+        interface = parameters.get("interface", {})
+        pitch = interface.get("pitch", 60)
+        rows = parameters["ny"]
+        seat = rows * pitch - BRACKET_INSET_MM
+        slope = (seat + BRACKET_TOP_EXTENSION_MM[rows]) / seat
+        return 180 - degrees(atan(slope))
     if family != "vertical-stop":
         return BAMBU_PRINT_ROTATIONS.get(family)
     interface = parameters.get("interface", {})
@@ -741,13 +867,47 @@ def _support(spec: Accessory, *, round_top: bool = True) -> Part:
         part = _cross_prism(points, 45, -22.5)
     else:
         part = _box(-22.5, 0, 45, length, 25, -25)
-    # Original rectangular windows leave a 12.5 mm bearing rail on either side.
+    if not round_top:
+        for start in range(0, int(length) - 35, 60):
+            span = min(32, length - start - 24)
+            if span >= 12:
+                part = part.cut(_box(-10, start + 12, 20, span, 27, -26))
+        return _apply_joins(part, joins)
+    radius = SUPPORT_BODY_RADIUS_MM
+    if spec.family == "support-end":
+        operation = BRepFilletAPI_MakeFillet(part.wrapped)
+        for edge in part.edges():
+            operation.Add(radius, edge.wrapped)
+        operation.Build()
+        if not operation.IsDone():
+            raise ValueError(f"support-end variant {spec.variant} body fillet failed")
+        part = Part(Solid(operation.Shape()).wrapped)
+    else:
+        outer_edges = [edge for edge in part.edges() if edge.bounding_box().size.Y > length - 1]
+        part = part.fillet(radius, outer_edges)
     for start in range(0, int(length) - 35, 60):
         span = min(32, length - start - 24)
         if span >= 12:
-            part = part.cut(_box(-10, start + 12, 20, span, 27, -26))
-    part = _apply_joins(part, joins)
-    return _round_free_top(part, spec) if round_top else part
+            window = rectangle(-10, start + 12, 20, span)
+            window = window.fillet_2d(3, window.vertices())
+            part = part.cut(prism(window, 27).moved(Location((0, 0, -26))))
+    window_rims = [
+        edge
+        for edge in part.edges()
+        if edge.bounding_box().min.X >= -10.01
+        and edge.bounding_box().max.X <= 10.01
+        and edge.center().Y >= 10
+        and edge.center().Y <= length - 10
+        and (abs(edge.bounding_box().min.Z) < 1e-5 or abs(edge.bounding_box().max.Z + 25) < 1e-5)
+    ]
+    if window_rims:
+        rim_radius = (
+            SUPPORT_END_1_WINDOW_RIM_RADIUS_MM
+            if spec.family == "support-end" and spec.variant == 1
+            else SUPPORT_WINDOW_RADIUS_MM
+        )
+        part = part.fillet(rim_radius, window_rims)
+    return _apply_joins(part, joins)
 
 
 def accessory_datums(spec: Accessory) -> dict:
@@ -858,7 +1018,16 @@ def make_accessory(spec: Accessory) -> Part:
     elif spec.family.startswith("support"):
         part = _support(spec)
     else:
-        face, joins = _edge_plan(spec)
+        face, joins = _edge_plan(
+            spec,
+            free_miter_extension=(
+                EDGE_MITER_RETANGENT_MM
+                if spec.interface.joint_style == "original"
+                and spec.family == "corner-out"
+                and spec.variant in (1, 2, 4, 5)
+                else 0
+            ),
+        )
         if spec.interface.joint_style == "full-height":
             males, females = [], []
             for join in joins:
@@ -875,10 +1044,20 @@ def make_accessory(spec: Accessory) -> Part:
                 free_top_radius=EDGE_TOP_RADIUS_MM,
             )
         else:
-            part = _apply_joins(prism(face, spec.interface.height), joins, interface=spec.interface)
-        part = part.fillet(1, horizontal_edges(part, 0))
-        if spec.interface.joint_style == "original":
-            part = _round_free_top(part, spec)
+            body = prism(face, spec.interface.height)
+            operation = BRepFilletAPI_MakeFillet(body.wrapped)
+            for edge in body.edges():
+                operation.Add(EDGE_BODY_RADIUS_MM, edge.wrapped)
+            operation.Build()
+            if not operation.IsDone():
+                raise ValueError(f"{spec.family}: coupled R3 body fillet failed")
+            part = _apply_joins(
+                Part(Solid(operation.Shape()).wrapped),
+                joins,
+                interface=spec.interface,
+            )
+        if spec.interface.joint_style == "full-height":
+            part = part.fillet(1, horizontal_edges(part, 0))
     suffix = (
         (
             f"base{spec.nx}x{spec.ny}_wall{spec.nx}x{spec.panel_height_cells}"

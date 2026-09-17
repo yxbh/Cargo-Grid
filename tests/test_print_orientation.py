@@ -17,6 +17,7 @@ from cargo_grid.accessories import (
     VERTICAL_STOP_CELLS,
     VERTICAL_STOP_HEIGHTS_MM,
     Accessory,
+    bambu_print_rotation,
     vertical_stop_print_rotation,
 )
 from cargo_grid.catalogue import accessory_design, catalogue_job
@@ -32,7 +33,16 @@ BAMBU = BambuSettings((Material("Diagnostic PETG", "PETG", "#789784"),), 0.4, 0.
 @pytest.mark.parametrize(
     "family,nx,ny,height,angle",
     [
-        *(("vertical-tile-bracket", x, y, 50, 135) for x, y in VERTICAL_BRACKET_CELLS),
+        *(
+            (
+                "vertical-tile-bracket",
+                x,
+                y,
+                50,
+                bambu_print_rotation(Accessory("vertical-tile-bracket", nx=x, ny=y)),
+            )
+            for x, y in VERTICAL_BRACKET_CELLS
+        ),
         *(
             (
                 "vertical-stop",
@@ -83,19 +93,16 @@ def test_bambu_mesh_has_broad_bed_contact_and_recorded_transform(
     bed = vertices[triangles]
     bed = bed[np.max(np.abs(bed[:, :, 2]), axis=1) < 1e-5]
     area = np.linalg.norm(np.cross(bed[:, 1] - bed[:, 0], bed[:, 2] - bed[:, 0]), axis=1).sum() / 2
-    if family == "vertical-tile-bracket":
-        expected_area = nx * 60 * (ny * 60 - 13) * sqrt(2)
-    else:
-        posed = design.bambu_shape
-        posed = posed.moved(Location(-posed.bounding_box().min))
-        expected_area = sum(
-            f.area
-            for f in posed.faces()
-            if f.geom_type == GeomType.PLANE
-            and f.normal_at().Z < -0.99
-            and abs(f.bounding_box().min.Z) < 1e-5
-            and abs(f.bounding_box().max.Z) < 1e-5
-        )
+    posed = design.bambu_shape
+    posed = posed.moved(Location(-posed.bounding_box().min))
+    expected_area = sum(
+        f.area
+        for f in posed.faces()
+        if f.geom_type == GeomType.PLANE
+        and f.normal_at().Z < -0.99
+        and abs(f.bounding_box().min.Z) < 1e-5
+        and abs(f.bounding_box().max.Z) < 1e-5
+    )
     assert area == pytest.approx(expected_area, abs=0.002)
 
 
@@ -134,7 +141,7 @@ def test_shallow_brackets_apply_side_down_y_rotation_and_record_it(nx, tmp_path)
         and abs(face.bounding_box().min.Z) < 1e-5
         and abs(face.bounding_box().max.Z) < 1e-5
     )
-    assert bed_area == pytest.approx(3448.944945179657, abs=0.002)
+    assert bed_area == pytest.approx(3136.0549152158574, abs=0.002)
 
 
 def test_transformed_catalogue_packing_respects_exclusions_and_quantity(tmp_path):
