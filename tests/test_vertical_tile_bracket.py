@@ -190,7 +190,7 @@ def test_separate_tile_insertion_bearing_and_solid_backing(nx, ny, holes):
 
 def test_bracket_variants_and_reference_only_interface_policy():
     variants = accessory_variants(BuildVolume(350, 320, 325))
-    assert len(variants) == 52
+    assert len(variants) == 54
     assert {(a.nx, a.ny) for a in variants if a.family == "vertical-tile-bracket"} == set(
         VERTICAL_BRACKET_CELLS
     )

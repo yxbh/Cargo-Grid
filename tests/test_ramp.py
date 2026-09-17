@@ -105,7 +105,7 @@ def test_one_cell_production_shape_retains_approved_volume_fixture():
 def test_catalogue_includes_every_ramp_width_that_fits_selected_envelope():
     variants = accessory_variants(BuildVolume(350, 320, 325))
     ramps = [spec for spec in variants if spec.family == "ramp"]
-    assert len(variants) == 52
+    assert len(variants) == 54
     assert [spec.nx for spec in ramps] == [1, 2, 3, 4, 5]
     assert all(spec.ny == 1 for spec in ramps)
     compact = [

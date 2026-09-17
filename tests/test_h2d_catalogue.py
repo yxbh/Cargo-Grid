@@ -23,11 +23,11 @@ def test_h2d_dual_safe_plan_keeps_full_family_inventory_and_hardware_zones():
         "support-bit": 4,
         "vertical-tile-bracket": 3,
         "ramp": 5,
-        "vertical-stop": 6,
+        "vertical-stop": 8,
         "lock-45": 2,
         "plate": 3,
     }
-    assert len(job.designs) == len(job.print_placements) == 77
+    assert len(job.designs) == len(job.print_placements) == 79
     assert max(placement.plate for placement in job.print_placements) + 1 == 23
     assert job.part_gap == 10
     assert job.omitted == []

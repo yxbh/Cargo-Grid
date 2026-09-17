@@ -33,6 +33,8 @@ from cargo_grid.jobs import Job
 from cargo_grid.meshes import checked_mesh
 
 CASES = [
+    (1, 1, 60, 138018.07378332317, 135.65095768561332, 4385.433372204407),
+    (1, 1, 120, 252394.55403519978, 116.08947705488677, 7130.9316949135355),
     (1, 2, 60, 271020.20151973784, 154.56668309343257, 7193.115631075868),
     (1, 2, 120, 492565.0782894738, 135.31415520897613, 9136.771585413158),
     (2, 1, 60, 276381.79212997947, 135.65095768561332, 9084.111985280555),
@@ -133,11 +135,11 @@ def test_x_plugs_and_roots_are_exactly_protected(nx, ny, height):
 def test_variants_are_finite_distinct_and_use_scoped_normal_auto():
     variants = accessory_variants(BuildVolume(350, 320, 325))
     stops = [spec for spec in variants if spec.family == "vertical-stop"]
-    assert len(variants) == 52
+    assert len(variants) == 54
     assert {(spec.nx, spec.ny, spec.height) for spec in stops} == {
         (nx, ny, height) for nx, ny in VERTICAL_STOP_CELLS for height in VERTICAL_STOP_HEIGHTS_MM
     }
-    assert len({accessory_design(spec).name for spec in stops}) == 6
+    assert len({accessory_design(spec).name for spec in stops}) == 8
     for spec in stops:
         design = accessory_design(spec)
         assert design.apply_orientation_to_bambu
@@ -285,7 +287,6 @@ def test_cli_defaults_to_2x1_h60_and_preserves_explicit_height(tmp_path):
     "kwargs",
     [
         {"family": "vertical-stop"},
-        {"family": "vertical-stop", "nx": 1, "ny": 1, "height": 60},
         {"family": "vertical-stop", "nx": 2, "ny": 1, "height": 50},
         {"family": "vertical-stop", "nx": 2, "ny": 1, "height": 100},
     ],
