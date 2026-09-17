@@ -115,32 +115,43 @@ def _filament_mode(settings: BambuSettings) -> str:
 
 
 def _checked_step_roundtrip(shape, path: Path) -> tuple:
-    if not export_step(shape, path):
-        raise ValueError(f"STEP export failed: {path}")
-    restored = import_step(path)
-    precision_mode = "average"
-    if not restored.is_valid:
-        if not export_step(shape, path, precision_mode=PrecisionMode.LEAST):
-            raise ValueError(f"STEP fallback export failed: {path}")
-        restored = import_step(path)
-        precision_mode = "least"
-    volume_delta = abs(restored.volume - shape.volume)
-    volume_budget = max(1e-6, shape.area * Precision.Confusion_s())
-    bounds_delta = max(
-        abs(a - b)
-        for a, b in zip(
-            (*shape.bounding_box().min, *shape.bounding_box().max),
-            (*restored.bounding_box().min, *restored.bounding_box().max),
-        )
+    attempts = (
+        ("average", PrecisionMode.AVERAGE),
+        ("least", PrecisionMode.LEAST),
+        ("greatest", PrecisionMode.GREATEST),
+        ("session", PrecisionMode.SESSION),
     )
-    if (
-        not restored.is_valid
-        or len(restored.solids()) != 1
-        or volume_delta > volume_budget
-        or bounds_delta > 1e-5
-    ):
-        raise ValueError(f"STEP roundtrip failed: {path.stem}")
-    return restored, precision_mode, volume_delta, volume_budget, bounds_delta
+    volume_budget = max(1e-6, shape.area * Precision.Confusion_s())
+    last = None
+    for precision_mode, mode in attempts:
+        if not export_step(shape, path, precision_mode=mode):
+            raise ValueError(f"STEP export failed: {path}")
+        restored = import_step(path)
+        volume_delta = abs(restored.volume - shape.volume)
+        bounds_delta = max(
+            abs(a - b)
+            for a, b in zip(
+                (*shape.bounding_box().min, *shape.bounding_box().max),
+                (*restored.bounding_box().min, *restored.bounding_box().max),
+            )
+        )
+        last = (
+            restored,
+            precision_mode,
+            volume_delta,
+            volume_budget,
+            bounds_delta,
+        )
+        if (
+            restored.is_valid
+            and len(restored.solids()) == 1
+            and volume_delta <= volume_budget
+            and bounds_delta <= 1e-5
+        ):
+            return last
+    raise ValueError(
+        f"STEP roundtrip failed: {path.stem}; last precision={last[1] if last else 'none'}"
+    )
 
 
 def _validate_request(job: Job, bambu: BambuSettings | None, stack: StackSettings | None) -> None:

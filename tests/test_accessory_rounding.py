@@ -21,6 +21,7 @@ from cargo_grid.accessories import (
     accessory_datums,
     make_accessory,
 )
+from cargo_grid.export import _checked_step_roundtrip
 from cargo_grid.interfaces import dovetail_face, full_height_part, horizontal_edges, prism
 
 
@@ -71,8 +72,7 @@ def test_perimeter_rounds_exist_in_step_and_join_tools_are_preserved(spec, style
             a, b = before.intersect(region), after.intersect(region)
             assert volume(Part(a.solids()).cut(Part(b.solids()))) < 1e-5
     path = tmp_path / "rounded.step"
-    assert export_step(after, path)
-    restored = import_step(path)
+    restored, _, _, _, _ = _checked_step_roundtrip(after, path)
     assert restored.is_valid
     volume_budget = max(1e-6, after.area * Precision.Confusion_s())
     assert abs(restored.volume - after.volume) <= volume_budget
