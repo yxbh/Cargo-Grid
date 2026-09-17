@@ -206,6 +206,49 @@ def test_bambu_explicit_materials_and_plate_membership(box_job, materials, tmp_p
             assert "filament_maps" not in values and "filament_volume_maps" not in values
 
 
+def test_multi_nozzle_project_has_gui_restore_config(box_job, tmp_path):
+    settings = BambuSettings(
+        (Material("Bambu PETG Basic @BBL H2D 0.8 nozzle", "PETG", "#637b70"),),
+        0.8,
+        0.32,
+        printer_settings_id="Bambu Lab H2D 0.8 nozzle",
+        print_settings_id="0.32mm Balanced Strength @BBL H2D 0.8 nozzle",
+        bed_type="Textured PEI Plate",
+        machine_nozzle_count=2,
+        printer_model="Bambu Lab H2D",
+    )
+    path = tmp_path / "h2d.3mf"
+    write_3mf(box_job, path, bambu=settings)
+    with ZipFile(path) as archive:
+        project = json.loads(archive.read("Metadata/project_settings.config"))
+    assert project["printer_model"] == "Bambu Lab H2D"
+    assert project["nozzle_diameter"] == ["0.8", "0.8"]
+    assert project["extruder_type"] == ["Direct Drive", "Direct Drive"]
+    assert project["default_nozzle_volume_type"] == ["Standard", "Standard"]
+    assert project["nozzle_volume_type"] == ["Standard", "Standard"]
+
+
+@pytest.mark.parametrize(
+    "job",
+    [
+        Job(
+            [Design("safe", Box(20, 20, 2), {}, display_name="bad/name")],
+            BuildVolume(100, 100, 20),
+            "part",
+        ),
+        Job(
+            [Design("safe", Box(20, 20, 2), {})],
+            BuildVolume(100, 100, 20),
+            "part",
+            plate_names={0: "bad/name"},
+        ),
+    ],
+)
+def test_bambu_rejects_invalid_visible_names(job, materials, tmp_path):
+    with pytest.raises(ValueError, match="forbidden character"):
+        write_3mf(job, tmp_path / "invalid-label.3mf", bambu=materials)
+
+
 def test_actual_rotated_bounds_respect_margin_and_exclusion(materials, tmp_path):
     build = BuildVolume(100, 60, 20, margin=5, exclusions=(Exclusion(0, 0, 2, 2),))
     job = Job([Design("rotated_block", Box(40, 80, 2), {})], build, "diagnostic")

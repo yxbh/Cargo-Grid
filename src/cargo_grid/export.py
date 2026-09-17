@@ -66,6 +66,7 @@ class BambuSettings:
     print_settings_id: str | None = None
     bed_type: str | None = None
     machine_nozzle_count: int = 1
+    printer_model: str | None = None
 
     def __post_init__(self) -> None:
         from cargo_grid.parameters import positive
@@ -81,6 +82,8 @@ class BambuSettings:
             not self.printer_settings_id.strip() or not self.print_settings_id.strip()
         ):
             raise ValueError("printer and process profile IDs must not be empty")
+        if self.printer_model is not None and not self.printer_model.strip():
+            raise ValueError("printer model must not be empty")
         if self.roof_support is not None:
             if not isinstance(self.roof_support, RoofSupportSettings):
                 raise ValueError("roof_support must be RoofSupportSettings")
@@ -193,6 +196,14 @@ def _validate_request(job: Job, bambu: BambuSettings | None, stack: StackSetting
         if name.casefold() in names:
             raise ValueError(f"duplicate design filename: {name}")
         names.add(name.casefold())
+        if bambu:
+            display_name = design.display_name or name
+            if any(character in '<>:/\\|?*"' for character in display_name):
+                raise ValueError(f"{name}: Bambu object label contains a forbidden character")
+    if bambu:
+        for plate, plate_name in job.plate_names.items():
+            if any(character in '<>:/\\|?*"' for character in plate_name):
+                raise ValueError(f"Bambu plate {plate + 1} label contains a forbidden character")
     if stack and not bambu:
         raise ValueError(
             "support-aware stacks require the Bambu backend and explicit material roles"
@@ -580,6 +591,10 @@ def _write_3mf(
             output.write(b"</model>")
         if bambu:
             archive.writestr("Metadata/model_settings.config", _bytes(config))
+            nozzle_count = max(
+                bambu.machine_nozzle_count,
+                2 if bambu.roof_support else 1,
+            )
             settings = {
                 "version": "2.8.2.61",
                 "printer_settings_id": bambu.printer_settings_id
@@ -593,8 +608,7 @@ def _write_3mf(
                     f"0x{job.build.y:g}",
                 ],
                 "printable_height": f"{job.build.z:g}",
-                "nozzle_diameter": [f"{bambu.nozzle:g}"]
-                * max(bambu.machine_nozzle_count, 2 if bambu.roof_support else 1),
+                "nozzle_diameter": [f"{bambu.nozzle:g}"] * nozzle_count,
                 "layer_height": f"{bambu.layer_height:g}",
                 "filament_diameter": ["1.75"] * len(bambu.materials),
                 "filament_type": [m.kind for m in bambu.materials],
@@ -603,12 +617,16 @@ def _write_3mf(
                 "filament_is_support": ["0"] * len(bambu.materials),
                 "filament_map_mode": _filament_mode(bambu),
             }
+            if bambu.printer_model is not None:
+                settings["printer_model"] = bambu.printer_model
+            if nozzle_count > 1:
+                settings["extruder_type"] = ["Direct Drive"] * nozzle_count
+                settings["default_nozzle_volume_type"] = ["Standard"] * nozzle_count
+                settings["nozzle_volume_type"] = ["Standard"] * nozzle_count
             if bambu.bed_type is not None:
                 settings["curr_bed_type"] = bambu.bed_type
             if bambu.roof_support:
                 settings.update(bambu.roof_support.native_settings())
-                settings["nozzle_volume_type"] = ["Standard", "Standard"]
-                settings["extruder_type"] = ["Direct Drive", "Direct Drive"]
                 overrides = bambu.roof_support.process_override_keys
                 settings["different_settings_to_system"] = [
                     ";".join(sorted(overrides)),

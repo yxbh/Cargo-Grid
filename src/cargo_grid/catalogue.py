@@ -182,7 +182,7 @@ def h2d_dual_safe_catalogue_job(
         ("Ramps", {"ramp"}),
         ("Normal stops", {"vertical-stop"}),
         (
-            "Tile brackets - deep originals and shallow tall/wide",
+            "Tile brackets - deep and shallow",
             {"vertical-tile-bracket"},
         ),
         ("Angled stops", {"lock-45"}),

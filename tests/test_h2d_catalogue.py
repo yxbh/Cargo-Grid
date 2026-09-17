@@ -40,8 +40,7 @@ def test_h2d_dual_safe_plan_keeps_full_family_inventory_and_hardware_zones():
     }
     assert job.plate_names[23] == "5x5 TILE - SINGLE NOZZLE ONLY - LEFT"
     assert any(
-        name.startswith("Tile brackets - deep originals and shallow tall/wide")
-        for name in job.plate_names.values()
+        name.startswith("Tile brackets - deep and shallow") for name in job.plate_names.values()
     )
     assert job.plate_settings[23] == {
         "filament_map_mode": "Manual",

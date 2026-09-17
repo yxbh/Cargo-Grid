@@ -217,6 +217,7 @@ def _bambu_settings(args, roof_support: RoofSupportSettings | None) -> BambuSett
                 print_settings_id="0.32mm Balanced Strength @BBL H2D 0.8 nozzle",
                 bed_type="Textured PEI Plate",
                 machine_nozzle_count=2,
+                printer_model="Bambu Lab H2D",
             )
         return BambuSettings(
             materials,
