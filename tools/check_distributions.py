@@ -28,6 +28,7 @@ DOCUMENTATION_IMAGES = {
     "docs/images/vertical-tile-brackets.png",
     "docs/images/vertical-stops.png",
     "docs/images/ramps.png",
+    "docs/images/interface-sizes.png",
     *(
         f"docs/images/attachments/{family}-{number}.png"
         for family in ("edge-x", "edge-y", "support")
