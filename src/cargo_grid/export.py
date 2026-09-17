@@ -12,6 +12,8 @@ from xml.sax.saxutils import quoteattr
 from zipfile import ZIP_DEFLATED, ZipFile
 
 from build123d import Axis, Compound, PrecisionMode, export_step, import_step
+from OCP.BRepGProp import BRepGProp
+from OCP.GProp import GProp_GProps
 from OCP.Precision import Precision
 
 from cargo_grid._version import __version__
@@ -114,7 +116,26 @@ def _filament_mode(settings: BambuSettings) -> str:
     return "Auto For Match"
 
 
-def _checked_step_roundtrip(shape, path: Path) -> tuple:
+def _adaptive_volume(shape) -> float:
+    properties = GProp_GProps()
+    error = BRepGProp.VolumeProperties_s(
+        shape.wrapped,
+        properties,
+        1e-12,
+        True,
+        False,
+    )
+    if error >= 1e-10:
+        raise ValueError("adaptive volume integration did not converge")
+    return properties.Mass()
+
+
+def _checked_step_roundtrip(
+    shape,
+    path: Path,
+    *,
+    require_adaptive: bool = False,
+) -> tuple:
     attempts = (
         ("average", PrecisionMode.AVERAGE),
         ("least", PrecisionMode.LEAST),
@@ -122,12 +143,18 @@ def _checked_step_roundtrip(shape, path: Path) -> tuple:
         ("session", PrecisionMode.SESSION),
     )
     volume_budget = max(1e-6, shape.area * Precision.Confusion_s())
+    source_adaptive_volume = _adaptive_volume(shape) if require_adaptive else None
     last = None
     for precision_mode, mode in attempts:
         if not export_step(shape, path, precision_mode=mode):
             raise ValueError(f"STEP export failed: {path}")
         restored = import_step(path)
         volume_delta = abs(restored.volume - shape.volume)
+        adaptive_delta = (
+            abs(_adaptive_volume(restored) - source_adaptive_volume)
+            if source_adaptive_volume is not None
+            else 0
+        )
         bounds_delta = max(
             abs(a - b)
             for a, b in zip(
@@ -146,6 +173,7 @@ def _checked_step_roundtrip(shape, path: Path) -> tuple:
             restored.is_valid
             and len(restored.solids()) == 1
             and volume_delta <= volume_budget
+            and adaptive_delta <= volume_budget
             and bounds_delta <= 1e-5
         ):
             return last
