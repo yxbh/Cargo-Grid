@@ -12,7 +12,7 @@ from dataclasses import asdict, dataclass
 from html import escape
 from pathlib import Path
 
-from cargo_grid import BuildVolume, Tile, make_tile
+from cargo_grid import BuildVolume, Interface, Tile, make_tile
 from cargo_grid.accessories import (
     SUPPORT_END_NAMES,
     VERTICAL_BRACKET_CONFIGS,
@@ -24,7 +24,7 @@ from cargo_grid.catalogue import BRACKET_DISPLAY_NAMES, accessory_variants
 ROOT = Path(__file__).resolve().parents[1]
 BUILD = BuildVolume(350, 320, 325)
 WORKBENCH_REVISION = "c3f63ef8d8604d3ec7eeba40a229047887c03d86"
-GEOMETRY_REVISION = "5d5ec922fab9b519d6f037d0e444619f3ca59460"
+GEOMETRY_REVISION = "feb0fd366a12b9badf04561a2d213b203fd6c077"
 GEOMETRY_FILES = (
     "parameters.py",
     "interfaces.py",
@@ -43,6 +43,7 @@ IMAGE_NAMES = (
     "vertical-tile-brackets.png",
     "vertical-stops.png",
     "ramps.png",
+    "interface-sizes.png",
 )
 SHEETS = (
     (
@@ -55,7 +56,7 @@ SHEETS = (
 FAMILIES = {
     "ramp": (
         "Floor ramps",
-        "A 13 mm floor-to-mat transition with a fixed 50 mm run and one original roofed female tile-edge pocket per 60 mm width cell. Normal Auto support is scoped to its exposed pocket roofs.",
+        "A floor-to-mat transition with a fixed 50 mm run. Width and its original roofed female pocket follow unit size; rise follows tile thickness. Normal Auto support is scoped to exposed pocket roofs.",
     ),
     "plate": (
         "Attachment plates",
@@ -63,7 +64,7 @@ FAMILIES = {
     ),
     "vertical-tile-bracket": (
         "Vertical tile brackets",
-        "A filled wedge carrying a separate ordinary tile vertically. Three original variants match floor depth to wall height; two shallow variants keep one floor row under a two-row wall and add R3 at the exposed front-to-slope transition.",
+        "A filled wedge carrying a separate ordinary tile vertically. All five use R3 at the exposed front-to-slope transition; two shallow variants keep one floor row under a two-row wall.",
     ),
     "vertical-stop": (
         "Normal full-solid stops",
@@ -147,8 +148,23 @@ def inventory() -> list[Item]:
 
 def hero_items() -> list[Item]:
     return [
-        Item("tile-default", "Plain 4x4 tile", "246 x 246 x 13 mm / no optional holes"),
-        Item("tile-full", "Full-hole 4x4 tile", "65 additional 10 mm holes"),
+        Item("tile-default", "Default full-hole 4x4 tile", "65 additional 10 mm holes"),
+        Item("tile-no-holes", "No-hole 4x4 tile", "Explicit solid-web opt-out"),
+    ]
+
+
+def interface_scale_items() -> list[Item]:
+    return [
+        Item(
+            "interface-standard",
+            "Standard interface",
+            "60 mm unit / 13 mm thickness",
+        ),
+        Item(
+            "interface-compact",
+            "Compact matching interface",
+            "30 mm unit / 13 mm thickness",
+        ),
     ]
 
 
@@ -157,7 +173,10 @@ def bracket_assembly_items() -> list[Item]:
         Item(
             f"bracket-context-base{x}x{base_y}-wall{x}x{panel_z}",
             BRACKET_DISPLAY_NAMES[(x, base_y, panel_z)].replace(" — ", " - "),
-            (f"Floor {60 * x} x {60 * base_y} mm / wall {60 * x} x {60 * panel_z} mm"),
+            (
+                f"Floor {60 * x} x {60 * base_y} mm / wall {60 * x} x {60 * panel_z} mm"
+                f" / {'top' if panel_z != base_y else 'underside'} face outward"
+            ),
         )
         for x, base_y, panel_z in VERTICAL_BRACKET_CONFIGS
     ]
@@ -165,6 +184,18 @@ def bracket_assembly_items() -> list[Item]:
 
 def documentation_shape(key: str):
     from build123d import Axis, Color, Compound, Location
+
+    if key.startswith("interface-"):
+        interface = Interface(60 if key == "interface-standard" else 30, 13)
+        tile = make_tile(Tile(1, 1, interface, hole_diameter=None))
+        plate = make_accessory(Accessory("plate", interface=interface)).moved(
+            Location((0, 0, interface.height + interface.plug_depth + 4))
+        )
+        tile.color, plate.color = Color("#b9c6c0"), Color("#637b70")
+        shape = Compound(children=[tile, plate], label=key)
+        if not shape.is_valid or len(shape.solids()) != 2:
+            raise ValueError(f"Invalid exploded interface comparison: {key}")
+        return shape
 
     if key.startswith("bracket-context-"):
         nx, base_y, panel_z = next(
@@ -182,7 +213,14 @@ def documentation_shape(key: str):
         ).moved(Location((0, 0, 13)))
         floor = make_tile(Tile(nx, base_y))
         wall = make_tile(Tile(nx, panel_z, hole_diameter=10, hole_scope="full"))
-        wall = wall.rotate(Axis.X, 90).moved(Location((0, base_y * 60, 19.1)))
+        if panel_z != base_y:
+            wall = (
+                wall.rotate(Axis.Z, 180)
+                .rotate(Axis.X, -90)
+                .moved(Location((nx * 60, base_y * 60 - 13, 19.1)))
+            )
+        else:
+            wall = wall.rotate(Axis.X, 90).moved(Location((0, base_y * 60, 19.1)))
         floor.color, bracket.color, wall.color = (
             Color("#b9c6c0"),
             Color("#637b70"),
@@ -193,17 +231,17 @@ def documentation_shape(key: str):
             raise ValueError(f"Invalid separate-tile illustration: {key}")
         return shape
 
-    if key in ("tile-default", "tile-full"):
+    if key in ("tile-default", "tile-no-holes"):
         shape = make_tile(
             Tile(
                 4,
                 4,
-                hole_diameter=10 if key == "tile-full" else None,
-                hole_scope="full" if key == "tile-full" else "interior",
+                hole_diameter=None if key == "tile-no-holes" else 10,
+                hole_scope="full",
             )
         )
         shape.label = key
-        color = "#637b70" if key == "tile-full" else "#4b5752"
+        color = "#637b70" if key == "tile-default" else "#4b5752"
     else:
         item = next(item for item in inventory() if item.key == key)
         shape = make_accessory(item.spec)
@@ -343,7 +381,12 @@ def render_items(workbench: Path, work: Path, only: set[str] | None) -> dict:
     environment["PYTHONPATH"] = os.pathsep.join((str(ROOT), str(ROOT / "src")))
     for subdir in ("source", "steps", "renders", "facts", "logs"):
         (work / subdir).mkdir(parents=True, exist_ok=True)
-    items = hero_items() + inventory() + bracket_assembly_items()
+    items = (
+        hero_items()
+        + interface_scale_items()
+        + inventory()
+        + bracket_assembly_items()
+    )
     if only and not only <= {item.key for item in items}:
         raise ValueError("Unknown --only item")
     for item in items:
@@ -620,6 +663,15 @@ def compose_all(work: Path, provenance: dict) -> None:
     verify_geometry_source()
     items = inventory()
     sheets = [composite(work, hero_items(), "hero.png", "", 2, hero=True)]
+    sheets.append(
+        composite(
+            work,
+            interface_scale_items(),
+            "interface-sizes.png",
+            "Unit size changes the matching local-plane interface",
+            2,
+        )
+    )
     for filename, title, families, columns in SHEETS:
         selected = [item for family in families for item in items if item.spec.family == family]
         sheets.append(composite(work, selected, filename, title, columns))
@@ -660,15 +712,15 @@ def compose_all(work: Path, provenance: dict) -> None:
         "",
         "[Back to the beginner guide](../README.md) / [Thumbnail dimensions, hashes and source provenance](images/attachments/manifest.json)",
         "",
-        "Bracket names state both footprints. Deep tall is floor 1x2 -> wall 1x2, Wide low is floor 2x1 -> wall 2x1 and Deep square is floor 2x2 -> wall 2x2. Shallow tall is floor 1x1 -> wall 1x2, and Shallow wide is floor 2x1 -> wall 2x2. The two shallow IDs spell out `base..._wall...`; the original three keep their shorter IDs. All five use the standard 60 mm pitch, 13 mm tile height and zero fit offset.",
+        "Bracket names state both footprints. Deep tall is floor 1x2 -> wall 1x2, Wide low is floor 2x1 -> wall 2x1 and Deep square is floor 2x2 -> wall 2x2. Shallow tall is floor 1x1 -> wall 1x2, and Shallow wide is floor 2x1 -> wall 2x2. The two shallow IDs spell out `base..._wall...`; the original three keep their shorter IDs. Gallery examples use the standard 60 mm unit, 13 mm thickness and zero fit offset; custom matching parts use the same effective interface parameters.",
         "",
-        "The individual thumbnails show the bracket alone. The [family view](images/vertical-tile-brackets.png) adds separate floor and wall tiles to show assembly; those tiles are not included in the bracket export. The wall tile's underside faces outward. Holes covered by the solid backing are blind while assembled.",
+        "The individual thumbnails show the bracket alone. The [family view](images/vertical-tile-brackets.png) adds separate floor and wall tiles to show assembly; those tiles are not included in the bracket export. Deep examples show the default underside-outward wall orientation, while shallow examples show the accepted top-outward orientation. Use one orientation consistently across adjoining wall tiles because top-outward placement reverses left/right joining handedness. Holes covered by the solid backing are blind while assembled.",
         "",
-        "Ramp names give width along the tile edge in 60 mm cells. Every ramp keeps the same 50 mm run and 13 mm rise, with one original female pocket per cell. The ramp receives a tile's north male edge and extends in positive Y. Full-height and custom-interface ramps are not available.",
+        "Ramp names give width along the tile edge in unit cells. Every ramp keeps the same physical 50 mm run; width, rise and one original female pocket per cell follow its unit/thickness interface. The gallery shows standard 60/13 examples. The ramp receives a tile's north male edge and extends in positive Y. Full-height ramp joints are not available.",
         "",
         "Normal `vertical-stop` names give base X cells, base Y cells and H60/H120 shoulder height. They are filled CAD wedges with no wall holes, panel connectors or ledges. The slicer still chooses perimeters and infill.",
         "",
-        "Original-style edge/corner bodies and straight rail bodies use R3. The acute rail ends use smaller complete rounds where required by fit and portable STEP checks. Plates and angled stops use R2. Brackets use R2 on thick free edges and R1 around the thin bearing lip, with a targeted R3 shallow front-to-slope transition; normal stops and ramps keep R2. Tile joints, rail joints, bracket bearing surfaces and X attachments keep their mating geometry.",
+        "Original-style edge/corner bodies and straight rail bodies use R3. The acute rail ends use smaller complete rounds where required by fit and portable STEP checks. Plates and angled stops use R2. Brackets use R3 at the thick front-to-slope transition, R2 on other thick free edges and R1 around the thin bearing lip; normal stops and ramps keep R2. Tile joints, rail joints, bracket bearing surfaces and X attachments keep their mating geometry.",
         "",
         "Bambu projects put original brackets on their diagonal rear face, shallow brackets on a broad side, normal stops on their broad rear face and angled stops on their rear face before packing. STEP, STL and core 3MF keep model orientation. Ramps, normal stops and shallow brackets request object-level normal Auto support. Remove all support from mating regions before assembly.",
         "",

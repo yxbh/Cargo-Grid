@@ -44,6 +44,8 @@ uv run cargo-grid part --unit-size-mm 30 --tile-thickness-mm 13 --build-width-mm
 
 The standard 60/13 setting remains compatible with the documented stock geometry. Other values match parts generated with the same two settings, but are not claimed compatible with standard parts.
 
+![Exploded matching tile and plate interfaces at 60/13 and 30/13.](docs/images/interface-sizes.png)
+
 For a floor that must fill an exact rectangle, use `layout`. Full 60 mm cells stay in the middle and the leftover width/depth becomes integrated edge material:
 
 ```sh
