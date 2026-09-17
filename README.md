@@ -4,8 +4,6 @@ Cargo-Grid makes modular cargo-mat tiles and accessories from Python. The standa
 
 ![The default full-hole 4x4 tile beside the no-hole version.](docs/images/hero.png)
 
-This is an independently authored, MIT-licensed pre-release. The checks catch many CAD and file errors, but they can't tell you how a part will fit, release from support or hold up in a hot car. Print a small pair first and check it with your own material and settings.
-
 ## Make a 2x1 tile
 
 Install `uv`, clone or download this repository, then run these commands from the repository folder:
@@ -88,11 +86,11 @@ Open `outputs/full-catalogue/job.3mf` as a project. Common plates keep model bou
 
 The project names the H2D 0.8 nozzle, 0.32 mm Balanced Strength process, Textured PEI plate and Bambu PETG Basic profile. Confirm those profiles and your loaded filament before slicing. The catalogue does not add PLA roof interfaces to tiles; the PETG/PLA roof-support job below remains a separate tile-only workflow.
 
-Seeing all 24 plates after opening the file confirms that the project metadata restored. It does not mean the plates have been sliced or approved for printing.
+The 3MF is an unsliced project. Open it as a project, then slice and inspect every plate you plan to print.
 
 ## Vertical tile brackets
 
-A bracket holds a separate ordinary tile upright. The usual placement has the tile underside facing out, but the accepted posts also let the top face outward. The solid backing makes covered holes blind while the tile is fitted.
+A bracket holds a separate ordinary tile upright. The usual placement has the tile underside facing out, but the wall posts also let the top face outward. The solid backing makes covered holes blind while the tile is fitted.
 
 ![Five brackets shown with separate floor and upright wall tiles.](docs/images/vertical-tile-brackets.png)
 
@@ -114,9 +112,9 @@ uv run cargo-grid part --family vertical-tile-bracket --width-cells 1 --depth-ce
 
 This exports the bracket only. Generate its 1x1 floor tile and 1x2 wall tile separately with the same unit size, tile thickness and fit offset.
 
-The wall posts have no wide flare at the seating face. Their straight stem is inset by 0.08 mm, followed by a 0.1 mm transition to the unchanged 2 mm rounded tip. For the top face outward, rotate the wall tile Z=180 degrees and then X=-90 degrees before placing it on the same post centres. Give every adjoining wall tile the same orientation because left and right swap when the tile is turned this way. The CAD seats in this position, but the rounded tip still crosses the narrow opening during a straight insertion. The design is accepted; real insertion force and retention are still waiting on a print test.
+The wall posts have no wide flare at the seating face. Their straight stem is inset by 0.08 mm, followed by a 0.1 mm transition to the unchanged 2 mm rounded tip. For the top face outward, rotate the wall tile Z=180 degrees and then X=-90 degrees before placing it on the same post centres. Give every adjoining wall tile the same orientation because left and right swap when the tile is turned this way. The rounded tip crosses the narrow opening during straight insertion, so insertion force and retention depend on the printed material and tolerances.
 
-Bambu projects place the original three brackets on their diagonal rear face (about X=133–134 degrees, depending on depth). The shallow brackets use Y=-90 degrees with a broad side down and turn on normal Auto support for those objects. In the checked H2D PETG profiles, that support reached both the floor and wall X mating areas. Remove it fully before trying the fit.
+Bambu projects place the original three brackets on their diagonal rear face (about X=133–134 degrees, depending on depth). The shallow brackets use Y=-90 degrees with a broad side down and turn on normal Auto support for those objects. That support can reach both the floor and wall X mating areas, so remove it fully before trying the fit.
 
 ## Normal and angled cargo stops
 
@@ -128,7 +126,7 @@ Bambu projects place the original three brackets on their diagonal rear face (ab
 uv run cargo-grid part --family vertical-stop --width-cells 2 --depth-cells 1 --stop-height-mm 120 --build-width-mm 350 --build-depth-mm 320 --build-height-mm 325 --bambu --material "Model PETG" PETG "#637b70" --nozzle-diameter-mm 0.4 --layer-height-mm 0.2 --output outputs/vertical-stop
 ```
 
-Every free outer edge is R2; the X plugs and roots keep their mating shape. Bambu rotates each normal stop onto its broad rear face and enables normal Auto support for that object. The standard 1x1/H120 and 2x1/H120 examples produced support in the mounting area in both checked H2D profiles, so remove it before trying the fit.
+Every free outer edge is R2; the X plugs and roots keep their mating shape. Bambu rotates each normal stop onto its broad rear face and enables normal Auto support for that object. Support can reach the mounting area on the standard 1x1/H120 and 2x1/H120 stops, so remove it before trying the fit.
 
 The two `lock-45` angled stops are also filled wedges. Their free body edges are R2, their X geometry is unchanged and Bambu places them X=-135 degrees with the rear face down.
 
@@ -184,7 +182,7 @@ uv run cargo-grid layout --help
 uv run cargo-grid catalogue --help
 ```
 
-`part` makes one design, `layout` fills a requested rectangle and `catalogue` lists the supported designs that fit. Normal generation doesn't need a downloaded reference model. `compare-reference` is an optional maintainer check described in the [release checklist](docs/release-checklist.md#optional-local-bambu-and-reference-checks).
+`part` makes one design, `layout` fills a requested rectangle and `catalogue` lists the supported designs that fit. Normal generation doesn't need a downloaded reference model.
 
 Common options:
 
@@ -235,7 +233,7 @@ uv run cargo-grid part --build-width-mm 150 --build-depth-mm 150 --build-height-
 
 `--stack-count auto` uses the available height. Roof support and stacking cannot be combined, and mixed catalogue stacking is not supported.
 
-## Python API and development
+## Python API
 
 ```python
 from pathlib import Path
@@ -265,18 +263,7 @@ from cargo_grid.catalogue import accessory_design
 bracket = accessory_design(Accessory("vertical-tile-bracket", nx=1, ny=1, panel_height_cells=2))
 ```
 
-Development checks:
-
-```sh
-uv sync --group dev
-uv run ruff check .
-uv run ruff format --check .
-uv run pytest -q -n 12 --dist loadfile -m "not native and not reference"
-uv build
-uv run python tools/check_distributions.py dist
-```
-
-The documented workstation uses 12 process workers for the portable suite; use fewer on a smaller machine. CI uses two. Keep native and local-reference checks serial. They use `CARGO_GRID_BAMBU` and `CARGO_GRID_REFERENCE` only when those resources are supplied, and otherwise skip. Keep `uv.lock` local and ignored. See [AGENTS.md](AGENTS.md), the [release checklist](docs/release-checklist.md) and [gallery reproduction instructions](docs/attachments.md#reproduce-the-images) for maintainer details.
+Contributor checks and release steps are in the [release checklist](docs/release-checklist.md). The accessory page has separate [gallery reproduction instructions](docs/attachments.md#reproduce-the-images).
 
 ## License and reference boundary
 
