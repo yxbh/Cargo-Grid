@@ -1,5 +1,5 @@
 {
-  "geometry_commit": "727a9cb9bee6a0edba12d46d113c18bc4ce3f384",
+  "geometry_commit": "0cc079ee252b459930d032757fd16a28833005e7",
   "workbench_commit": "c3f63ef8d8604d3ec7eeba40a229047887c03d86",
   "catalogue_build_mm": {
     "width_x": 350,
@@ -8,7 +8,7 @@
   },
   "camera": "45:32",
   "scale": "Common physical scale within each family; families differ.",
-  "source_render_recipe_sha256": "41de8d20d95d5aba3aca34993cad459a7740fe617752a0cd05d5e73e9f278d33",
+  "source_render_recipe_sha256": "4573f5821553a0083169cb998862b496ab1eaaba40cc758d3a0bda2e6135392c",
   "overview_images": [
     {
       "file": "images/hero.png",
@@ -25,8 +25,8 @@
         1800,
         1950
       ],
-      "bytes": 214176,
-      "sha256": "0d58aa05a62e40ea1b567846b462e4f8425c821e6dea2b0138b662e2b9bd1eb5"
+      "bytes": 213833,
+      "sha256": "687765b2ad0301417f314f10602e6daf396f5ed79cceb55c666f2436d93feb91"
     },
     {
       "file": "images/vertical-tile-brackets.png",
@@ -34,8 +34,8 @@
         1800,
         1250
       ],
-      "bytes": 164225,
-      "sha256": "89801ed7ca7fc73c64896388091881efb9ff82b64748db4f2b891c209b0c6fcb"
+      "bytes": 166960,
+      "sha256": "d76b1f7c27d254c176b5c915c08ee76af230dccd079ad15646d627fb36d19657"
     },
     {
       "file": "images/vertical-stops.png",
@@ -92,7 +92,7 @@
       "bytes": 6067,
       "sha256": "f63aca7f5c86ef0a253aa052babac430afb1749f2ff71b71400dfa8269ef4c96",
       "source_render_sha256": "0668fc230e3fcf29e24a9f06a3679367adeb0b3dee1c649cca3925ea7e67c81e",
-      "source_step_sha256": "3b8e71b6f332a7f41d6a1e3a32a94445cae325e8343877effb4133248135dcec"
+      "source_step_sha256": "6bea008a86c0ec278e15ea9cacc8b8298b64bb9fc2380ad94f687f5039293ef0"
     },
     {
       "key": "ramp-2",
@@ -129,7 +129,7 @@
       "bytes": 8493,
       "sha256": "18688889df6e71840d6ac0a60b3e35f36b7f3cb02f1c4109f0bf7aa2042c14d2",
       "source_render_sha256": "6f97cf1a9ac56c0bf67201673fd24822391ab5c0cffff94ae61d022430856661",
-      "source_step_sha256": "fc159b6bec4c8c19830c4156f7e16f3f777009c4c9893f4626cfd649733dbcb9"
+      "source_step_sha256": "7df6bf9ef470369c3d3378ac2c69bc553ac310e9d65e184ed27b107de4f3d3b9"
     },
     {
       "key": "ramp-3",
@@ -166,7 +166,7 @@
       "bytes": 10719,
       "sha256": "6e22f5128a147ec6dc88ae6edd4f7cee6307dc718bc0ce7c45c7fada9e898385",
       "source_render_sha256": "05eb575adb21ac45f50484716615b3dabcdb6c72a5ffd138c4d4820425e78484",
-      "source_step_sha256": "b98a11b3c8dfaa18f57509e6d93d0ef0033e3bc628528f4608a57718d97a1a9e"
+      "source_step_sha256": "482baa13a2bedcdfd2b3138319d936f04732503c74e10db138a82465a5fdea07"
     },
     {
       "key": "ramp-4",
@@ -203,7 +203,7 @@
       "bytes": 13588,
       "sha256": "39a162b66050baf421af6cd493e8a39193558484a4d4c8ade608c167a3753413",
       "source_render_sha256": "3a01a86544abf34486e83ce285f64ab7840679a23e25a6b131ffc9d981b50a90",
-      "source_step_sha256": "3cfcfc5ce833b3c60299e7bdefef42ffd4b04a7143b601e1c3049ad5e377f74b"
+      "source_step_sha256": "7f6393be1496da065e4748522a93a971218ad8caf6ca73ff3fab3363aa63c9b6"
     },
     {
       "key": "ramp-5",
@@ -240,7 +240,7 @@
       "bytes": 17039,
       "sha256": "63f1d16c17bfbaa75fbd370d6c8e072acbef9df20efba0bd920a49f3d500fc68",
       "source_render_sha256": "161bf4063c6857b5100f0db5fdf3d9b65bbc5e0ad0d41124aa2a24cef202c987",
-      "source_step_sha256": "1235dc2bc4e5baf4a9d8908e4fd5f946e92345f2686c33c35c23d7c823acde71"
+      "source_step_sha256": "90f2961474c1f4aa174b02cb5fdacab348d2620487af8c52292ddca9dc5b4abc"
     },
     {
       "key": "plate-1x1",
@@ -268,16 +268,16 @@
       ],
       "file": "images/attachments/plate-1x1.png",
       "alt": "plate, 1 x 1, original joints: isometric STEP-derived render",
-      "description": "A flat surface with X plugs underneath for positioning an attachment on the mat.",
+      "description": "A flat R2 body with exact X plugs underneath. Bambu projects place its broad body face down so the plugs grow upward.",
       "dimensions": [
         480,
         300
       ],
       "pixels_per_mm": 2.489015869776647,
-      "bytes": 9399,
-      "sha256": "ac8bd92ed2109458059e9004187ab9a4e3cdb612245e5a164f817b5181fd31bf",
-      "source_render_sha256": "5dade852f8819a4cc23c55706dd505e8f4c3eb82ecb9c03a4600fee76479c7a4",
-      "source_step_sha256": "c4536dd561fe5f96e8a0a618c5c906d4ed4e318bb3a6a48bf8488b89c6ad01cb"
+      "bytes": 9466,
+      "sha256": "1d3cac34bad5c0eeb1fc811be1d9b3cc62044db9151fe2d2fb56f0ef53f7b954",
+      "source_render_sha256": "be3b855760e26c6df84941db92a0774b6f454bd739418cf87dc2aa60bdadb522",
+      "source_step_sha256": "25b52db508332a7361f27bdae9f0061cabc9e85c17e3801d2f19e190e601eed5"
     },
     {
       "key": "plate-1x2",
@@ -305,16 +305,16 @@
       ],
       "file": "images/attachments/plate-1x2.png",
       "alt": "plate, 1 x 2, original joints: isometric STEP-derived render",
-      "description": "A flat surface with X plugs underneath for positioning an attachment on the mat.",
+      "description": "A flat R2 body with exact X plugs underneath. Bambu projects place its broad body face down so the plugs grow upward.",
       "dimensions": [
         480,
         300
       ],
       "pixels_per_mm": 2.489015869776647,
-      "bytes": 13781,
-      "sha256": "eb40baf6349d18d423bf4fa4efeb13659b7095bd13fbec906903a6be72cd5ada",
-      "source_render_sha256": "dba1b84472b53f50e8513631128f70253878c6e742c059baced097159099816f",
-      "source_step_sha256": "28e00dd961f6b45bdef1d96038790230168f00cf1fcad7ceaa0cd0eb4635b693"
+      "bytes": 14051,
+      "sha256": "7d95c5a2c2b6cd1100c74e29759ca88c79d7b447e9b5695b54acce642511cace",
+      "source_render_sha256": "3e2a5849d24d7d3f7b584260e37053e679f6fa0cd3b34ada3855ebd70b48f660",
+      "source_step_sha256": "e2f0a4f8b5e7d92ca87fb833e8493e1a008349edaf9689211bb21ec594dd7e69"
     },
     {
       "key": "plate-2x2",
@@ -342,16 +342,16 @@
       ],
       "file": "images/attachments/plate-2x2.png",
       "alt": "plate, 2 x 2, original joints: isometric STEP-derived render",
-      "description": "A flat surface with X plugs underneath for positioning an attachment on the mat.",
+      "description": "A flat R2 body with exact X plugs underneath. Bambu projects place its broad body face down so the plugs grow upward.",
       "dimensions": [
         480,
         300
       ],
       "pixels_per_mm": 2.489015869776647,
-      "bytes": 18265,
-      "sha256": "a9f0b03a55f8d34f08d19f79b83f15cb6783b1476e126bdda54fcaa3999ffe01",
-      "source_render_sha256": "ca328f52d34e5d268e46b5a42c024f0c2c87db11622ecc63e8c5776a0e67e5cd",
-      "source_step_sha256": "6e995226a357032ea57e36e9309eecff8beab0f3413f8ec989988d14085e4746"
+      "bytes": 18280,
+      "sha256": "f4fc51a8e0f0e1ce835b268f7b00e74005e260886feb3cae4350e95d19849462",
+      "source_render_sha256": "f6473ec3ba792bb9e32bf3ef0c2d70714642c37e7c9e0dc26ee4a1a82cf70db6",
+      "source_step_sha256": "a99d72b6a10b5e35f8d62440b2cef28a2ffdfa53c416720e614ff13e9dc8befa"
     },
     {
       "key": "vertical-tile-bracket-1x2",
@@ -373,22 +373,22 @@
         "panel_height_cells": null
       },
       "size_mm": [
-        60.0,
+        60.00000020000476,
         120.00000000000001,
-        140.37817459305202
+        140.378174156312
       ],
       "file": "images/attachments/vertical-tile-bracket-1x2.png",
       "alt": "vertical-tile-bracket, floor base 1 x 2 / wall 1 x 2, original joints: isometric STEP-derived render",
-      "description": "A one-piece filled wedge carrying a separate ordinary tile vertically. Three original variants match floor depth to wall height; two shallow variants keep one floor row under a two-row wall. Bambu projects use the validated per-design pose.",
+      "description": "A filled mixed-R1/R2 wedge carrying a separate ordinary tile vertically. Three original variants match floor depth to wall height; two shallow variants keep one floor row under a two-row wall.",
       "dimensions": [
         480,
         300
       ],
-      "pixels_per_mm": 1.263292535376226,
-      "bytes": 13941,
-      "sha256": "e763a1e66afbdc1106320f26bf6c117daaad0d8f91a84697fe4836ec424719d0",
-      "source_render_sha256": "0c78fc67345d81278c3c8a7a8b5d8ca4246795c91c3810244b3174010ccfeeba",
-      "source_step_sha256": "ee1a619606be33b75a6c4327dc10e793e797f7d3eb372552a292792f8087c86e"
+      "pixels_per_mm": 1.263292537162149,
+      "bytes": 14160,
+      "sha256": "38ed6feb4dad936b3cec31580a2c4e0e19d589ad27ca833ffe21bcdfd1f507d2",
+      "source_render_sha256": "a45818b4c83c28a94a0b89a0c236473ee66180db7e30804c02430d2c69234523",
+      "source_step_sha256": "3423af8f096d428f36c17c6fa8eff791d8d0c85624704ac849520a448bf65bb1"
     },
     {
       "key": "vertical-tile-bracket-2x1",
@@ -410,22 +410,22 @@
         "panel_height_cells": null
       },
       "size_mm": [
-        120.0,
-        60.0,
-        80.37817459305202
+        120.00000020000476,
+        60.00000000000001,
+        80.3781738055828
       ],
       "file": "images/attachments/vertical-tile-bracket-2x1.png",
       "alt": "vertical-tile-bracket, floor base 2 x 1 / wall 2 x 1, original joints: isometric STEP-derived render",
-      "description": "A one-piece filled wedge carrying a separate ordinary tile vertically. Three original variants match floor depth to wall height; two shallow variants keep one floor row under a two-row wall. Bambu projects use the validated per-design pose.",
+      "description": "A filled mixed-R1/R2 wedge carrying a separate ordinary tile vertically. Three original variants match floor depth to wall height; two shallow variants keep one floor row under a two-row wall.",
       "dimensions": [
         480,
         300
       ],
-      "pixels_per_mm": 1.263292535376226,
-      "bytes": 13809,
-      "sha256": "c6648e550e26914706b053706dc6d61fa63d987abbb8ef967479685ad55b75ee",
-      "source_render_sha256": "5d98193d7073ba95ac5d35445927c9635668cc832d46c0a70f9b1ecbb462fd40",
-      "source_step_sha256": "295eb7975e4050ca5fe6d1c39ed8b77422f6bb3d54ce7317664af7a7f5108130"
+      "pixels_per_mm": 1.263292537162149,
+      "bytes": 14085,
+      "sha256": "8847d22423d12f8272dda126f6ff8c3bf9ca22b342dd9c326865c8fa45bd746c",
+      "source_render_sha256": "98c19d54d39e1ca8d58498d4be091cf0a725e448650891e151f452e4b00b8cd7",
+      "source_step_sha256": "63f94080f354944efd65b38995d4017679a0d3af5bef14fe1b16a902827ec8d3"
     },
     {
       "key": "vertical-tile-bracket-2x2",
@@ -447,22 +447,22 @@
         "panel_height_cells": null
       },
       "size_mm": [
-        120.0,
+        120.00000020000476,
         120.00000000000001,
-        140.37817459305202
+        140.378174156312
       ],
       "file": "images/attachments/vertical-tile-bracket-2x2.png",
       "alt": "vertical-tile-bracket, floor base 2 x 2 / wall 2 x 2, original joints: isometric STEP-derived render",
-      "description": "A one-piece filled wedge carrying a separate ordinary tile vertically. Three original variants match floor depth to wall height; two shallow variants keep one floor row under a two-row wall. Bambu projects use the validated per-design pose.",
+      "description": "A filled mixed-R1/R2 wedge carrying a separate ordinary tile vertically. Three original variants match floor depth to wall height; two shallow variants keep one floor row under a two-row wall.",
       "dimensions": [
         480,
         300
       ],
-      "pixels_per_mm": 1.263292535376226,
-      "bytes": 21810,
-      "sha256": "5cba7bad0819f0d284a42d8021efb1714bef5941cb9f83fd38aab2f3b177a189",
-      "source_render_sha256": "63031df9c7e2564650a0ce2fc61a65f56fdb63ec10b9961c67a47fd9b302def3",
-      "source_step_sha256": "516808261fdca4161ec65f2d7ca471f8a5b48e83cbe0009b5714f5bf44d2c5eb"
+      "pixels_per_mm": 1.263292537162149,
+      "bytes": 22065,
+      "sha256": "a589a95fc064a804e71ed18f33cfcad978adb0c78be95f7339e57c63c28fabaa",
+      "source_render_sha256": "81bb72486a7d14b92b3818cbf2afb1713eaf4e7974096e8f7ae5fe2f479adf19",
+      "source_step_sha256": "e89eb87c71b0ad10dedd862afb6994135e0167a0bc4b52c5da529fcd6b782c5a"
     },
     {
       "key": "vertical-tile-bracket-base1x1-wall1x2",
@@ -484,22 +484,22 @@
         "panel_height_cells": 2
       },
       "size_mm": [
-        60.00000000000001,
+        60.00000020000476,
         60.00000000000003,
         140.37817459305202
       ],
       "file": "images/attachments/vertical-tile-bracket-base1x1-wall1x2.png",
       "alt": "vertical-tile-bracket, floor base 1 x 1 / wall 1 x 2, original joints: isometric STEP-derived render",
-      "description": "A one-piece filled wedge carrying a separate ordinary tile vertically. Three original variants match floor depth to wall height; two shallow variants keep one floor row under a two-row wall. Bambu projects use the validated per-design pose.",
+      "description": "A filled mixed-R1/R2 wedge carrying a separate ordinary tile vertically. Three original variants match floor depth to wall height; two shallow variants keep one floor row under a two-row wall.",
       "dimensions": [
         480,
         300
       ],
-      "pixels_per_mm": 1.263292535376226,
-      "bytes": 12838,
-      "sha256": "4b969381ea1959386cd803d8ec2b7f85878ece34162868f39a5e196ac4be6946",
-      "source_render_sha256": "914b353d96b1e5a49be32d9335c7cf9bd61d2b99e2b288358e3efa5d2f087ab6",
-      "source_step_sha256": "f327b9139293a81199bbb7a64417ebbd9bdb6d8d589044ef6a9412256f04cb85"
+      "pixels_per_mm": 1.263292537162149,
+      "bytes": 12977,
+      "sha256": "5eb22d349a20e83083342691601990c92d54eb1abce366c3e15bc01e3ebd5c04",
+      "source_render_sha256": "89399a0568b86480ead8a99a55226dbf668877649554ec019ce2215577e644dc",
+      "source_step_sha256": "d14bde6b4ed58b0ca2c4e59e820ab5b0d945b88e0f58a408bd8f1f2724f2a789"
     },
     {
       "key": "vertical-tile-bracket-base2x1-wall2x2",
@@ -521,22 +521,22 @@
         "panel_height_cells": 2
       },
       "size_mm": [
-        120.00000000000001,
+        120.00000020000476,
         60.00000000000003,
         140.37817459305202
       ],
       "file": "images/attachments/vertical-tile-bracket-base2x1-wall2x2.png",
       "alt": "vertical-tile-bracket, floor base 2 x 1 / wall 2 x 2, original joints: isometric STEP-derived render",
-      "description": "A one-piece filled wedge carrying a separate ordinary tile vertically. Three original variants match floor depth to wall height; two shallow variants keep one floor row under a two-row wall. Bambu projects use the validated per-design pose.",
+      "description": "A filled mixed-R1/R2 wedge carrying a separate ordinary tile vertically. Three original variants match floor depth to wall height; two shallow variants keep one floor row under a two-row wall.",
       "dimensions": [
         480,
         300
       ],
-      "pixels_per_mm": 1.263292535376226,
-      "bytes": 20701,
-      "sha256": "054bd7fe258107f331b972e90fbcd2727b9401b8db4e00e47907f69a6be0d9db",
-      "source_render_sha256": "8d04629fa23334482be312cec8c67d3920d46e5ea5cdc5ecea4c6250c259a4ce",
-      "source_step_sha256": "71f8bafb90192503d3246b331e37f9c4c0657df11b0532268fc65829f3db502e"
+      "pixels_per_mm": 1.263292537162149,
+      "bytes": 20782,
+      "sha256": "07233d96c032553448fca3977c81f37cec313ba396057adcd7fb98ced075cb1f",
+      "source_render_sha256": "4ed29fe2b5d6f2019b8223f97f210f7a13dddabd61391410abcb4bafabc7e6b8",
+      "source_step_sha256": "3aac67a68a4a401c0167b078d6dec01c02485732060d97ac0600861732b872ed"
     },
     {
       "key": "vertical-stop-1x1-h60",
@@ -573,7 +573,7 @@
       "bytes": 4925,
       "sha256": "40fd58f80ec6795597c2fef807c6a8fbcd6b09ab31339ba43c880cb007abb0fe",
       "source_render_sha256": "66437e655dd520b7d041adb88c7bb14be94359e9418661c9e1e362296be4dd86",
-      "source_step_sha256": "ea957358c8ad9243ea9457e9a084f87e6a81a1c4ce792fc85267f1d2e465fcde"
+      "source_step_sha256": "230ddb00349b4ae700f7a142c6fea4189eb055da85026c09ecf26485043394b8"
     },
     {
       "key": "vertical-stop-1x1-h120",
@@ -610,7 +610,7 @@
       "bytes": 5539,
       "sha256": "49260dfae472f836db93b96c63e7f20d65b82ffb81a0d39c3149f2fb262d743d",
       "source_render_sha256": "bea2b2f9958bb5cd04975a3eb6a1b0ba855c37af1aaa7f9729ec52c9f9337969",
-      "source_step_sha256": "d7e4110fb4991b9b6094dd8900d762d697e5235450733f2dea91ae2ac763c6bf"
+      "source_step_sha256": "a0323698d0b0699f7ffde283003719dd4a2c2891d27cedfc4ed656c71e9b378b"
     },
     {
       "key": "vertical-stop-1x2-h60",
@@ -647,7 +647,7 @@
       "bytes": 6457,
       "sha256": "70301b973e8821dee2edda9c4811680d0bd281d57b941b4e4dd7734276cbe659",
       "source_render_sha256": "1b1be98e0d820afee0ab3ecb6fb07494f4ab6b4307f0debe872959440c4d33f6",
-      "source_step_sha256": "cf8f7484083c688bf0a82072eb48801a7c26762e5c03db8c6cda5d43004278a1"
+      "source_step_sha256": "7fa5a0e58248d52dba8222dc27e1d41b7bd26a28b891ff6b86cdde2a3af3c1bd"
     },
     {
       "key": "vertical-stop-1x2-h120",
@@ -684,7 +684,7 @@
       "bytes": 6921,
       "sha256": "6adab068455bd0dccdfe7315c91524a1b930b9b84bd448cae4044ad8b8976652",
       "source_render_sha256": "433ec56217a70d05c27d2ec1171337d90bf54d2dd6297d4499c2de56048e5d42",
-      "source_step_sha256": "d8ef78bbeca2149200315c592ea03632e516a26822df41162ce46950ef581b85"
+      "source_step_sha256": "17e7d88042c615de10904288489edca23f7ce87d23ba2f0a30eb1738991f362d"
     },
     {
       "key": "vertical-stop-2x1-h60",
@@ -721,7 +721,7 @@
       "bytes": 6686,
       "sha256": "16dc2c6cfdca0258c131d9e4cd661ae34ea40b2900baa1ad683eae3cef17bee2",
       "source_render_sha256": "1911a9a20367dc0b1dab1daa37c47a92adab6284699727c07660ade834be78cf",
-      "source_step_sha256": "27579fbaab5a68396b50abbc98e34180acd326e39fe452252f5b57dfd4acaead"
+      "source_step_sha256": "6d4245b3a2e98a21d507ddb1e3a264ce24b423dfd02e2266a49c39a2229fbc7c"
     },
     {
       "key": "vertical-stop-2x1-h120",
@@ -758,7 +758,7 @@
       "bytes": 7428,
       "sha256": "3a858020457351e18c48b0d9ad613f946c25072b2c948ba81217090f55821ebf",
       "source_render_sha256": "c0e9c91a2442fbd9cb1a8038eeafc77d304a5a43a8291d84c844f61565e3dc81",
-      "source_step_sha256": "f916d44623adbf18320b6f15b99a4809ae7d9d14fbcdceb9fe02264fa65843ea"
+      "source_step_sha256": "b1c92d080f6c62af69d3e884893588642aaab60772f5d7d239674cc66a639dc0"
     },
     {
       "key": "vertical-stop-2x2-h60",
@@ -795,7 +795,7 @@
       "bytes": 8547,
       "sha256": "9577d5ccbf3b72766b591542075a98d521f9c43c550e619c96e8b1edcdb9f290",
       "source_render_sha256": "f4b6664af7e0f933f49b87908c6cb4d5c7453207a29dd5479c164b214153c801",
-      "source_step_sha256": "e9e24f38d0d4bfa77d4ae1534c183075bbad35dee276d569b58aab595cc7af21"
+      "source_step_sha256": "6907193edd0ca89eda9633fffdb3fa0347908ce5ab4542aa6abb10bdc3c020fd"
     },
     {
       "key": "vertical-stop-2x2-h120",
@@ -832,7 +832,7 @@
       "bytes": 8757,
       "sha256": "8845c43eb87022d2c03ad407f7b4dc7e39a680e74c2bca228e121b841735f024",
       "source_render_sha256": "5d3fd089508eb688f2babb5b0bd30ac0b3a5915534e8cba789766db45717836d",
-      "source_step_sha256": "d476788523ece5455affd7489b7ad4ad5ef8305a6f845e32c2f2fb24378564da"
+      "source_step_sha256": "99268b27d07d93972c3eb0e2f5af43d5532f3a1b5017fbf532163cac702c4e31"
     },
     {
       "key": "lock-45-1x1",
@@ -860,16 +860,16 @@
       ],
       "file": "images/attachments/lock-45-1x1.png",
       "alt": "lock-45, 1 x 1 / H 50 mm, original joints: isometric STEP-derived render",
-      "description": "A full-width filled angled cargo wedge with a 6 mm horizontal cap and R1 on every free body edge. Exact X plugs and roots remain protected. Use the recommended back-face-down print pose.",
+      "description": "A full-width filled angled cargo wedge with a 6 mm horizontal cap and R2 on every free body edge. Exact X plugs and roots remain protected. Use the recommended back-face-down print pose.",
       "dimensions": [
         480,
         300
       ],
       "pixels_per_mm": 1.8437337626148207,
-      "bytes": 9260,
-      "sha256": "14e99fab6c333f026d033df3a6539c8dc2639f473df5d35d4c3f6f42a8752b03",
-      "source_render_sha256": "ba691ea18a80936242cc0c33908e35d016c5df810d2de4ad14cacc3ed5346970",
-      "source_step_sha256": "1dfb58a3fe668672ed7ca5916377effa6bf5a4fbc3094b6eeeb766dd9b8b57c2"
+      "bytes": 9653,
+      "sha256": "9eace3562aae223626bb104317b73354b446fb3724878124d061e86bbd8639b1",
+      "source_render_sha256": "f40bb311147d405d319cd1dc25f45f28e8c0ac81ff234d90102014449d2974d8",
+      "source_step_sha256": "82bbdc23289b3cd7da50f5228f5af43ea00c959704d4a4ac17fa4ee0ad47e5d7"
     },
     {
       "key": "lock-45-2x2",
@@ -897,16 +897,16 @@
       ],
       "file": "images/attachments/lock-45-2x2.png",
       "alt": "lock-45, 2 x 2 / H 50 mm, original joints: isometric STEP-derived render",
-      "description": "A full-width filled angled cargo wedge with a 6 mm horizontal cap and R1 on every free body edge. Exact X plugs and roots remain protected. Use the recommended back-face-down print pose.",
+      "description": "A full-width filled angled cargo wedge with a 6 mm horizontal cap and R2 on every free body edge. Exact X plugs and roots remain protected. Use the recommended back-face-down print pose.",
       "dimensions": [
         480,
         300
       ],
       "pixels_per_mm": 1.8437337626148207,
-      "bytes": 15454,
-      "sha256": "7cdf7b49e6e71011c468cc00ac78353d17b84c6c93c9e97547941ee0a4ae95fd",
-      "source_render_sha256": "0e84bdd0103d987ceabd91b42293060834e3d8b66ee34d0ae56bff1c0af050ab",
-      "source_step_sha256": "037f010faf938f1dcd57ead34881c4dbd592b658a65372e7252ac837147810d6"
+      "bytes": 15981,
+      "sha256": "74dda52462756f91bc449b7ac5b98143af91cb4bfbe10ccfcd32af24cde0b34d",
+      "source_render_sha256": "374b3fbd15e4f3af680a4b7bf3d528f0af5e1825334d409992cc37ff06a259f5",
+      "source_step_sha256": "840b47200eec3f7f62e5a50c6734dfd52736b36a34149297ddeef20b2bf09d44"
     },
     {
       "key": "edge-x-1",
@@ -928,22 +928,22 @@
         "panel_height_cells": null
       },
       "size_mm": [
-        60.0000002,
+        60.0,
         16.0,
-        13.0000001
+        13.000000200005319
       ],
       "file": "images/attachments/edge-x-1.png",
       "alt": "edge-x, 1 cell, original joints: isometric STEP-derived render",
-      "description": "A straight finishing strip with male tile-facing joins; length follows the cell count.",
+      "description": "An R3 finishing strip with male tile-facing joins; length follows the cell count.",
       "dimensions": [
         480,
         300
       ],
-      "pixels_per_mm": 1.8903917986339145,
-      "bytes": 4985,
-      "sha256": "fe1033c3d0916da528fe24fdb860edcde34610c4594d4ac1d97f29005328720f",
-      "source_render_sha256": "bcf456fbd5c9015b313366e296df14aaee7ca930ef93da6bd8fec5eb0d3539ee",
-      "source_step_sha256": "f245879de13ed090450cae717e77b74b1ea78f1879362c6548550ee6a2de9da1"
+      "pixels_per_mm": 1.8903917998303652,
+      "bytes": 4988,
+      "sha256": "37618a27e4581ce22fc5ea034cb15d2249e44fd1b214e659711495087892506a",
+      "source_render_sha256": "0d21858950c94ac66c1e5704fc08ac38d5545e8b614862699b52dba517039d00",
+      "source_step_sha256": "c6bf31d5e17ede0fc9eae7bb7a17212ba9ec2aa66c6b51961554aa5d8375740b"
     },
     {
       "key": "edge-x-2",
@@ -965,22 +965,22 @@
         "panel_height_cells": null
       },
       "size_mm": [
-        120.00000019999999,
+        120.0,
         16.0,
-        13.0000001
+        13.000000200005319
       ],
       "file": "images/attachments/edge-x-2.png",
       "alt": "edge-x, 2 cells, original joints: isometric STEP-derived render",
-      "description": "A straight finishing strip with male tile-facing joins; length follows the cell count.",
+      "description": "An R3 finishing strip with male tile-facing joins; length follows the cell count.",
       "dimensions": [
         480,
         300
       ],
-      "pixels_per_mm": 1.8903917986339145,
-      "bytes": 8717,
-      "sha256": "3162d5e2054c000666dfb35407683e7358853da6911cf72644c1a171b1fe71bd",
-      "source_render_sha256": "d47f2b06b08d9cb0124751574dd4156a93f1efd5264492ce48c4939c999b97de",
-      "source_step_sha256": "08724e7a71d082dfd4b31bc4f717b02dfbd815e20cbd33070d7755c8db1acab7"
+      "pixels_per_mm": 1.8903917998303652,
+      "bytes": 8492,
+      "sha256": "783fbe8ce58c01b272961612d3616568c1137977c50bb3c952d4e85a700e555e",
+      "source_render_sha256": "535a196c5b3f95b5cd97382745ed1f38fcad70a5e8538924d46b957199e9aaf2",
+      "source_step_sha256": "8666c3b2dad631ed8e19bf6b5b85d205936b9f1e7b19caf591cbdc95d0670076"
     },
     {
       "key": "edge-x-3",
@@ -1002,22 +1002,22 @@
         "panel_height_cells": null
       },
       "size_mm": [
-        180.0000002,
+        180.0,
         16.0,
-        13.0000001
+        13.000000200005319
       ],
       "file": "images/attachments/edge-x-3.png",
       "alt": "edge-x, 3 cells, original joints: isometric STEP-derived render",
-      "description": "A straight finishing strip with male tile-facing joins; length follows the cell count.",
+      "description": "An R3 finishing strip with male tile-facing joins; length follows the cell count.",
       "dimensions": [
         480,
         300
       ],
-      "pixels_per_mm": 1.8903917986339145,
-      "bytes": 12025,
-      "sha256": "93f2b2b515fe14f5b805ddb6c655ff155385306bf4aef573a8a0b3000c84721e",
-      "source_render_sha256": "e8ce732f5aeb76c5cdff38d38660b6c1f9aac821c8491fc6a6539089b1562469",
-      "source_step_sha256": "b3358a4c07b49ba059157234682525eb58d42a42ee185da381e2c2f7c461c9a7"
+      "pixels_per_mm": 1.8903917998303652,
+      "bytes": 11908,
+      "sha256": "419e68b712b32644c032dbd240563ed7ffcd446530660dfd911446650866d702",
+      "source_render_sha256": "7ebc8d1fb2d098722d90013935458813208fb6e69f0678956f47529f99365dbb",
+      "source_step_sha256": "ff7f7f8c99c090c7d4037454515246dbb1d01bfb83e1b5dda7b869b60c3aa4f1"
     },
     {
       "key": "edge-x-4",
@@ -1039,22 +1039,22 @@
         "panel_height_cells": null
       },
       "size_mm": [
-        240.0000002,
+        240.0,
         16.0,
-        13.0000001
+        13.000000200005319
       ],
       "file": "images/attachments/edge-x-4.png",
       "alt": "edge-x, 4 cells, original joints: isometric STEP-derived render",
-      "description": "A straight finishing strip with male tile-facing joins; length follows the cell count.",
+      "description": "An R3 finishing strip with male tile-facing joins; length follows the cell count.",
       "dimensions": [
         480,
         300
       ],
-      "pixels_per_mm": 1.8903917986339145,
-      "bytes": 15792,
-      "sha256": "247bb897346acd7af9b3f59c783e6197203a966efd7fbe720fb56ee489624075",
-      "source_render_sha256": "dc81115ad2e6fbce4e520a15d749ed702fdbe7f3944242b24a302b38d942730f",
-      "source_step_sha256": "0042773b40582fbd4a0c7b55fc008da177cfa6611b9e26b4b74a0e3d43b97449"
+      "pixels_per_mm": 1.8903917998303652,
+      "bytes": 15449,
+      "sha256": "39cebd5ae5126b05bb725983827b04ed5b1c98147f9a95775afd676a093395c2",
+      "source_render_sha256": "1913719ea05917ae39719b0423e9940e293dc68bcae0bcb27d2c6f7d86c95493",
+      "source_step_sha256": "03477cdad148173ee9411ac62c3b16fdefedc3624c3ab67f910ca2d0da1d2594"
     },
     {
       "key": "edge-x-5",
@@ -1076,22 +1076,22 @@
         "panel_height_cells": null
       },
       "size_mm": [
-        300.00000020000004,
+        300.0,
         16.0,
-        13.0000001
+        13.000000200005319
       ],
       "file": "images/attachments/edge-x-5.png",
       "alt": "edge-x, 5 cells, original joints: isometric STEP-derived render",
-      "description": "A straight finishing strip with male tile-facing joins; length follows the cell count.",
+      "description": "An R3 finishing strip with male tile-facing joins; length follows the cell count.",
       "dimensions": [
         480,
         300
       ],
-      "pixels_per_mm": 1.8903917986339145,
-      "bytes": 20187,
-      "sha256": "1b49a10b4893f0ce0a864e94feb8e112002f0695786e6e2ab02c91faff1c6b51",
-      "source_render_sha256": "cf0eb3a213d1fa45e53713489eb26a5183cdc8e77211f2a73aa8416e59153219",
-      "source_step_sha256": "1cb7e4a439baba21379d68e10eda2eb16b92c1761c12dab506a7d6bbaef93ce7"
+      "pixels_per_mm": 1.8903917998303652,
+      "bytes": 19948,
+      "sha256": "67aeb685853a379061b1d0185faf29fb3eb5867a8b1319440d4e32f9ca3d6f64",
+      "source_render_sha256": "3336df129f4550b991ed2cada230f7c54e9a1fce2dc071725cb1a9c39330dc74",
+      "source_step_sha256": "b9bbf1307f40973c92d056938edba1efde7f17d507bb3b9b40a54dceb8d97254"
     },
     {
       "key": "edge-y-1",
@@ -1113,22 +1113,22 @@
         "panel_height_cells": null
       },
       "size_mm": [
-        60.0000002,
-        10.000000100000003,
-        13.0000001
+        60.0,
+        10.000000100000001,
+        13.0000002
       ],
       "file": "images/attachments/edge-y-1.png",
       "alt": "edge-y, 1 cell, original joints: isometric STEP-derived render",
-      "description": "A straight finishing strip with female tile-facing joins; length follows the cell count.",
+      "description": "An R3 finishing strip with female tile-facing joins; length follows the cell count.",
       "dimensions": [
         480,
         300
       ],
-      "pixels_per_mm": 1.926980026349359,
-      "bytes": 4393,
-      "sha256": "596428b2cb26dec85b22f2d65f1ffac400e04137aa605b51c56b13b102c8c7cd",
-      "source_render_sha256": "36ed8a474e63d025be7ea5519c4e867e2f94ca887de134b295e4d0ff99cf0522",
-      "source_step_sha256": "aed4cbe1f631cbacad194aea2cd1eed8c898044016510bb5ed8ac943df02c0d9"
+      "pixels_per_mm": 1.9269800275925724,
+      "bytes": 4339,
+      "sha256": "e577a36e134f1964cca98ca89bd76de0b962ec86448629fb73fac58523c84273",
+      "source_render_sha256": "3f1113fc693b651a828161646e625d3d867869896e323ab112ffaba833015787",
+      "source_step_sha256": "d341bb9acde90483224f03e1d2b6384d7ada6b0e298d27dde7ecefc6d8b17aa8"
     },
     {
       "key": "edge-y-2",
@@ -1150,22 +1150,22 @@
         "panel_height_cells": null
       },
       "size_mm": [
-        120.00000019999999,
-        10.000000100000003,
-        13.0000001
+        120.0,
+        10.000000100000001,
+        13.0000002
       ],
       "file": "images/attachments/edge-y-2.png",
       "alt": "edge-y, 2 cells, original joints: isometric STEP-derived render",
-      "description": "A straight finishing strip with female tile-facing joins; length follows the cell count.",
+      "description": "An R3 finishing strip with female tile-facing joins; length follows the cell count.",
       "dimensions": [
         480,
         300
       ],
-      "pixels_per_mm": 1.926980026349359,
-      "bytes": 6850,
-      "sha256": "d99bcdb3c0c97dced852360636675cfdf027c53119833581db9fe9df78aa90ba",
-      "source_render_sha256": "7382f67b4754c662e1024294666a3560c497041e2d887605a85b21409fb740b4",
-      "source_step_sha256": "f12ad5683d9f1ee40a1ba3dfc66ea3287b801bdf687f735096cb229adb7d8eb5"
+      "pixels_per_mm": 1.9269800275925724,
+      "bytes": 6729,
+      "sha256": "30d12848be99f9b6dabd5915b02d7a8ed5079f322ef2986134ce057e266b9fa0",
+      "source_render_sha256": "6408588e791a782d1e45d10cf7f27bd3e60a04e4c869560b48eec074fc0d6a33",
+      "source_step_sha256": "99189d2965175bccc6c19baa4edb3e0890a2aad05644f1e019480e572265f549"
     },
     {
       "key": "edge-y-3",
@@ -1187,22 +1187,22 @@
         "panel_height_cells": null
       },
       "size_mm": [
-        180.0000002,
-        10.000000100000003,
-        13.0000001
+        180.0,
+        10.000000100000001,
+        13.0000002
       ],
       "file": "images/attachments/edge-y-3.png",
       "alt": "edge-y, 3 cells, original joints: isometric STEP-derived render",
-      "description": "A straight finishing strip with female tile-facing joins; length follows the cell count.",
+      "description": "An R3 finishing strip with female tile-facing joins; length follows the cell count.",
       "dimensions": [
         480,
         300
       ],
-      "pixels_per_mm": 1.926980026349359,
-      "bytes": 9123,
-      "sha256": "dc7c2ee75774d6f8399a190ab2d2fe2062e18e31376f69e9eada803f8dbebbf2",
-      "source_render_sha256": "0e8e03528933d7689df13f91c3aad3425b0c73cb3fc142f4b9f47b42123bfd1f",
-      "source_step_sha256": "5e3f191dde29805bb54d145edc64b433f4bac0ce5270d907d6b5ece2761c1b13"
+      "pixels_per_mm": 1.9269800275925724,
+      "bytes": 9186,
+      "sha256": "42e483d704aa6dcb29508b8fcc3e6fdee122b19407136f0fe93f2223e5019370",
+      "source_render_sha256": "41cb46ffaeb39d1812eebf7af66143bb3383dec6d61046a5cd0ca93c0387f738",
+      "source_step_sha256": "07533853efb0d1a4c5cce0058288cc95132a665882dff847a7befeab88241088"
     },
     {
       "key": "edge-y-4",
@@ -1224,22 +1224,22 @@
         "panel_height_cells": null
       },
       "size_mm": [
-        240.0000002,
-        10.000000100000003,
-        13.0000001
+        240.0,
+        10.000000100000001,
+        13.0000002
       ],
       "file": "images/attachments/edge-y-4.png",
       "alt": "edge-y, 4 cells, original joints: isometric STEP-derived render",
-      "description": "A straight finishing strip with female tile-facing joins; length follows the cell count.",
+      "description": "An R3 finishing strip with female tile-facing joins; length follows the cell count.",
       "dimensions": [
         480,
         300
       ],
-      "pixels_per_mm": 1.926980026349359,
-      "bytes": 12431,
-      "sha256": "619342c4033d44c6c6b1286803f42e103aeb4d5998735cc0315fe0440edeff1e",
-      "source_render_sha256": "bbbd83d157b240784f5aec9a336e8d8e62a34f6808aa8dfacadeda77f358c339",
-      "source_step_sha256": "2cfa17e19dd6912defe1d9454c424fb9c21c7145337f9f35f99f75642aecf81a"
+      "pixels_per_mm": 1.9269800275925724,
+      "bytes": 12177,
+      "sha256": "b8a21fea4e601a95804f36c318075320ff98e5cbf8a5e11942a3b0cb2bce72e6",
+      "source_render_sha256": "ad2f18d17be6323628b6a8cfa09dcdeba2c305ea63346d9b9057cd3bfa5a6762",
+      "source_step_sha256": "82b3b903792dd046e4ecbb33b758a6ead1ee5636209b2085c9c6ea481e877e79"
     },
     {
       "key": "edge-y-5",
@@ -1261,22 +1261,22 @@
         "panel_height_cells": null
       },
       "size_mm": [
-        300.00000020000004,
-        10.000000100000003,
-        13.0000001
+        300.0,
+        10.000000100000001,
+        13.0000002
       ],
       "file": "images/attachments/edge-y-5.png",
       "alt": "edge-y, 5 cells, original joints: isometric STEP-derived render",
-      "description": "A straight finishing strip with female tile-facing joins; length follows the cell count.",
+      "description": "An R3 finishing strip with female tile-facing joins; length follows the cell count.",
       "dimensions": [
         480,
         300
       ],
-      "pixels_per_mm": 1.926980026349359,
-      "bytes": 15975,
-      "sha256": "7f7c113d2d189c4eb5849b92c47e10c2b7806a53c828e509177919308a3b10d4",
-      "source_render_sha256": "1ae710e824b97566782eb999295224865473c2fd0709ba518cfc01613e8fd9a3",
-      "source_step_sha256": "da1a2b39449afa1c7dfbaa36afe8d26152793a3b0cd0bb9c7df6b1b514c2522c"
+      "pixels_per_mm": 1.9269800275925724,
+      "bytes": 15336,
+      "sha256": "1c958e5970b0fe130b6723ed8236a6b3078c03ebf84846902ac6435f1c14c35c",
+      "source_render_sha256": "de2de806c55951f24c924e0ab418a63e7df421ebca75631d353f7d69b828c838",
+      "source_step_sha256": "019b51163d3c94ad48d9dce05ecfbb89a081799d92eb8628bc9338ae742c6299"
     },
     {
       "key": "corner-in-v1",
@@ -1298,22 +1298,22 @@
         "panel_height_cells": null
       },
       "size_mm": [
-        60.0000002,
-        66.0000001,
-        13.0000001
+        60.0000001,
+        66.0,
+        13.000000200005319
       ],
       "file": "images/attachments/corner-in-v1.png",
       "alt": "corner-in, variant 1, original joints: isometric STEP-derived render",
-      "description": "A corner finishing piece in one of four supported joining arrangements.",
+      "description": "An R3 corner finishing piece in one of four supported joining arrangements.",
       "dimensions": [
         480,
         300
       ],
-      "pixels_per_mm": 4.364626152712514,
-      "bytes": 18363,
-      "sha256": "e2618860fdff98abf83d40f6ce507541c9a797d3714405e8b3feb0ca4e3b587e",
-      "source_render_sha256": "9e9714037a131586226f7c38e71ceaecf9a5745f1e017fe7e226398fb4bf3bc0",
-      "source_step_sha256": "dd47ff82fcc53da13211b42d27b8da81fb311a7c0a0bebb8bbf629a69afdba58"
+      "pixels_per_mm": 4.3646261520004925,
+      "bytes": 19291,
+      "sha256": "09277ec27e57edd051a175349fa7712645422f66214e41f2626297ea85fb9670",
+      "source_render_sha256": "5ef0ef47e5b4582b054ddf478d02fc35e3f7b7db4954700679439b315f8044dd",
+      "source_step_sha256": "dd5c28d5003e40e425f46529d7e30854c8a67ffcc5a54b704dbbaeff68772587"
     },
     {
       "key": "corner-in-v2",
@@ -1335,22 +1335,22 @@
         "panel_height_cells": null
       },
       "size_mm": [
-        66.0000001,
-        66.0000001,
-        13.0000001
+        66.0,
+        66.0,
+        13.000000200005319
       ],
       "file": "images/attachments/corner-in-v2.png",
       "alt": "corner-in, variant 2, original joints: isometric STEP-derived render",
-      "description": "A corner finishing piece in one of four supported joining arrangements.",
+      "description": "An R3 corner finishing piece in one of four supported joining arrangements.",
       "dimensions": [
         480,
         300
       ],
-      "pixels_per_mm": 4.364626152712514,
-      "bytes": 20833,
-      "sha256": "ec56e3756602e926e2ef89bdaa6a6cf61036221175f2666b6e467ccbb56ed889",
-      "source_render_sha256": "7bfa4929b1ca761cf6e72bc210790fe87cd70ef1a8e2fcef93269da84f0f3ace",
-      "source_step_sha256": "b4b4a881ae9d6dc4e4e2fccafb0066c140ba417f9f8be5876bf17543df873543"
+      "pixels_per_mm": 4.3646261520004925,
+      "bytes": 21627,
+      "sha256": "d44d2badb5b9674c2a3bc550f0a99cb0bcb8b113af2cb05361ab9fd8ef348377",
+      "source_render_sha256": "6f0b9473436882a3c6907157444a409c42de8dd7604310a59250e7b2e3d776b6",
+      "source_step_sha256": "1db0fc450c06cec984e5fa54bebe6c764a8289ae320c495d415529b9b003d8f7"
     },
     {
       "key": "corner-in-v3",
@@ -1372,22 +1372,22 @@
         "panel_height_cells": null
       },
       "size_mm": [
-        66.0000001,
-        60.0000002,
-        13.0000001
+        66.0,
+        60.0000001,
+        13.000000200005319
       ],
       "file": "images/attachments/corner-in-v3.png",
       "alt": "corner-in, variant 3, original joints: isometric STEP-derived render",
-      "description": "A corner finishing piece in one of four supported joining arrangements.",
+      "description": "An R3 corner finishing piece in one of four supported joining arrangements.",
       "dimensions": [
         480,
         300
       ],
-      "pixels_per_mm": 4.364626152712514,
-      "bytes": 18512,
-      "sha256": "3637775a11a5517223cd8039c81a70b0d8874d11b7d10ecdb368259edc7c7698",
-      "source_render_sha256": "7bcb332e3242339c4d89f8a5f973e82b515bef3a589833d720616e310550a6dd",
-      "source_step_sha256": "9745c63c1c68dde9f4cfc5ff02e00bea80b0a64d34da2e5772ee16ed65b49c6f"
+      "pixels_per_mm": 4.3646261520004925,
+      "bytes": 19596,
+      "sha256": "0696c44cabd6df037c77130a25453811b39b4f37dd11180a5b6fc0973d1724e4",
+      "source_render_sha256": "f77494974d023e3d876b6e282b1b7765b79486fa794d1b9d343d853a87e593ad",
+      "source_step_sha256": "7ee765b8ca335a9025e0b000b3fc18012af76c8e6c44ac9a57a634e8d1de06e0"
     },
     {
       "key": "corner-in-v4",
@@ -1409,22 +1409,22 @@
         "panel_height_cells": null
       },
       "size_mm": [
-        60.0000002,
-        60.0000002,
-        13.0000001
+        60.0000001,
+        60.0000001,
+        13.0000002
       ],
       "file": "images/attachments/corner-in-v4.png",
       "alt": "corner-in, variant 4, original joints: isometric STEP-derived render",
-      "description": "A corner finishing piece in one of four supported joining arrangements.",
+      "description": "An R3 corner finishing piece in one of four supported joining arrangements.",
       "dimensions": [
         480,
         300
       ],
-      "pixels_per_mm": 4.364626152712514,
-      "bytes": 16989,
-      "sha256": "99404a226a5845fd788b4126d6470adeb9e564602a2ec866eb6bb6168c00273c",
-      "source_render_sha256": "223f758c99f4d76ffab775e142f447422699fcae3bef296adbb24e2d98e442f8",
-      "source_step_sha256": "0897016acedafe77f1f1335d254b48a6ed400de626d4d3b4af46133b874bc67d"
+      "pixels_per_mm": 4.3646261520004925,
+      "bytes": 18214,
+      "sha256": "5869f7914c18a057775869542b7a896298e1e7c181f810e5f35b4d65d96c08a4",
+      "source_render_sha256": "933534397193829847de7a82c800bc37246beb64a631e94ae369979a5ad36721",
+      "source_step_sha256": "9a984193227c07075d4a77edeb5a2a89f0f1a019be569ac19c1ec65187b92289"
     },
     {
       "key": "corner-out-v1",
@@ -1446,22 +1446,22 @@
         "panel_height_cells": null
       },
       "size_mm": [
-        16.000000000000004,
-        67.07106791186547,
-        13.0000001
+        16.000000000000007,
+        67.07106784524687,
+        13.000000200005319
       ],
       "file": "images/attachments/corner-out-v1.png",
       "alt": "corner-out, variant 1, original joints: isometric STEP-derived render",
-      "description": "An outer-edge finishing piece in one of six supported arrangements.",
+      "description": "An R3 outer-edge finishing piece in one of six supported arrangements.",
       "dimensions": [
         480,
         300
       ],
-      "pixels_per_mm": 4.158531006085914,
-      "bytes": 11227,
-      "sha256": "f82e496238f35b1a6ab4f064a4263c1e44569c50dd5386b7eb092a53141333b8",
-      "source_render_sha256": "77c79b5affeea2f263209a738fbeee74f0f4f16196ea8b0197589c51e1f4c5e0",
-      "source_step_sha256": "d282f8d4707514660c6e738f6a13db5aada4474956f6747aa70349848d4aac7e"
+      "pixels_per_mm": 4.158531005439545,
+      "bytes": 13224,
+      "sha256": "7f07af61e72310d2e27b75c5056d91950099fa0a4c702e48e4a4b5eecf7db104",
+      "source_render_sha256": "83f7f52842980efe81a7ee42a8be56f0ee78d705241ea2152fe602c09ffda1ae",
+      "source_step_sha256": "59b00e5f8a419298c28a2f36a76e8551839a45874865c8d047e40e17fbdebb35"
     },
     {
       "key": "corner-out-v2",
@@ -1483,22 +1483,22 @@
         "panel_height_cells": null
       },
       "size_mm": [
-        67.07106791186548,
-        10.000000100000003,
-        13.0000001
+        67.07106784524687,
+        10.000000100000001,
+        13.0000002
       ],
       "file": "images/attachments/corner-out-v2.png",
       "alt": "corner-out, variant 2, original joints: isometric STEP-derived render",
-      "description": "An outer-edge finishing piece in one of six supported arrangements.",
+      "description": "An R3 outer-edge finishing piece in one of six supported arrangements.",
       "dimensions": [
         480,
         300
       ],
-      "pixels_per_mm": 4.158531006085914,
-      "bytes": 8901,
-      "sha256": "d26564d92330a563aef10bf8a98d3b0f0a9f2834b15c09ae47234675c832675a",
-      "source_render_sha256": "1abe23e64a0e90f8be4b29825b648378f8add8dd6886714c2553f05b19263668",
-      "source_step_sha256": "ad5d6a84630ce4b7104e112117948a9eeb4d413ab7865dbfd6b23863c0277fe4"
+      "pixels_per_mm": 4.158531005439545,
+      "bytes": 9761,
+      "sha256": "1a694637ebe38b38a4eecc6dc464c21fdcf70c0666f9a10db6495ce8419ecaf8",
+      "source_render_sha256": "f8839f9808d3bdeee051e0b8977aaa8356fea69ea2d3e4e9bc24dd0644170db3",
+      "source_step_sha256": "ba4439533ec78e6af737f9d79b74caa8c9d608f7e47c5374612a8b75342cbdd1"
     },
     {
       "key": "corner-out-v3",
@@ -1520,22 +1520,22 @@
         "panel_height_cells": null
       },
       "size_mm": [
-        70.0000001,
-        70.0000001,
-        13.0000001
+        70.0,
+        70.0,
+        13.0000002
       ],
       "file": "images/attachments/corner-out-v3.png",
       "alt": "corner-out, variant 3, original joints: isometric STEP-derived render",
-      "description": "An outer-edge finishing piece in one of six supported arrangements.",
+      "description": "An R3 outer-edge finishing piece in one of six supported arrangements.",
       "dimensions": [
         480,
         300
       ],
-      "pixels_per_mm": 4.158531006085914,
-      "bytes": 18743,
-      "sha256": "6fdcd028b45dc407d2884b4ce2125ff53b0a22c5bca1d759fcdc6ac7f64c3460",
-      "source_render_sha256": "e289a4b43eeddadca0f75af1d4e16158f1b2fca1a558415dc49cd82ab4790977",
-      "source_step_sha256": "2519a3ad1f7fccaa99d30f9d4c7af0cd5b1ea414c30c9f8f6492b20f33bb4e87"
+      "pixels_per_mm": 4.158531005439545,
+      "bytes": 19587,
+      "sha256": "502fc64ab4333e1922a058d10c78e5f9b8b6d1721cfec58ca67f8b5ecec82501",
+      "source_render_sha256": "18cf2b762c0db197b112f95ef005a66bd00dfd5148f4a20fc630de80b8d3c7dd",
+      "source_step_sha256": "2aa5b1cd9a80c9cb100e86027e98500f8a30e280337f280fadc9edd0f5f5bbcc"
     },
     {
       "key": "corner-out-v4",
@@ -1557,22 +1557,22 @@
         "panel_height_cells": null
       },
       "size_mm": [
-        10.000000100000006,
-        67.07106791186548,
-        13.0000001
+        10.000000100000005,
+        67.07106784524687,
+        13.0000002
       ],
       "file": "images/attachments/corner-out-v4.png",
       "alt": "corner-out, variant 4, original joints: isometric STEP-derived render",
-      "description": "An outer-edge finishing piece in one of six supported arrangements.",
+      "description": "An R3 outer-edge finishing piece in one of six supported arrangements.",
       "dimensions": [
         480,
         300
       ],
-      "pixels_per_mm": 4.158531006085914,
-      "bytes": 10354,
-      "sha256": "30584baed58571a38efd7eafc3865a93057b7b51a11a017fdb98464990d33192",
-      "source_render_sha256": "0abd2712d40f0f34fe47e4243ea0e23218eb9fb95ccb36972160900e919cfda0",
-      "source_step_sha256": "a36aa1a62ab93a00ac801d54ed143cfc8973420d06ebaecce11e403ebc1cd63d"
+      "pixels_per_mm": 4.158531005439545,
+      "bytes": 11483,
+      "sha256": "0166872ebf00a1c8cf18a76d21f00c6a85978cc70ea93782474ee7a116c0f523",
+      "source_render_sha256": "406644e817f136f2849e107ff4094884d6024e64e6209f9917fa33f4650ccce8",
+      "source_step_sha256": "c5421326f930395fc28bdb1a8eee21dd73ce9a51c8cb329f9c047416461bf9f1"
     },
     {
       "key": "corner-out-v5",
@@ -1594,22 +1594,22 @@
         "panel_height_cells": null
       },
       "size_mm": [
-        67.07106791186547,
+        67.07106784524687,
         16.0,
-        13.0000001
+        13.000000200005319
       ],
       "file": "images/attachments/corner-out-v5.png",
       "alt": "corner-out, variant 5, original joints: isometric STEP-derived render",
-      "description": "An outer-edge finishing piece in one of six supported arrangements.",
+      "description": "An R3 outer-edge finishing piece in one of six supported arrangements.",
       "dimensions": [
         480,
         300
       ],
-      "pixels_per_mm": 4.158531006085914,
-      "bytes": 9793,
-      "sha256": "7e49308c0122f8ccb308eb0f150b49d20e4c8115d8def410061eecb926ee899c",
-      "source_render_sha256": "b114ba2446bb0775fab0509ff67204aaf94e35f6530376cebe91952e5b8e80fb",
-      "source_step_sha256": "4d55362e1e7bc5f64563fc853a2238ca77fe8d4319d669ed6e1f9067da2ed9e9"
+      "pixels_per_mm": 4.158531005439545,
+      "bytes": 11024,
+      "sha256": "c50563b34b2b23cbb6bb23d9dee8a2495df188a2345bd226f512022661a3d4ea",
+      "source_render_sha256": "63de24e83909dc86b3c1ebc6402331e343ccfd128d253147159e3f49869dff46",
+      "source_step_sha256": "b087eb10616a0d579e3e422369b18bdbf0e2efdbd31f116305d5932c62a58222"
     },
     {
       "key": "corner-out-v6",
@@ -1631,22 +1631,22 @@
         "panel_height_cells": null
       },
       "size_mm": [
-        70.0000001,
-        70.0000001,
-        13.0000001
+        70.0,
+        70.0,
+        13.000000200005319
       ],
       "file": "images/attachments/corner-out-v6.png",
       "alt": "corner-out, variant 6, original joints: isometric STEP-derived render",
-      "description": "An outer-edge finishing piece in one of six supported arrangements.",
+      "description": "An R3 outer-edge finishing piece in one of six supported arrangements.",
       "dimensions": [
         480,
         300
       ],
-      "pixels_per_mm": 4.158531006085914,
-      "bytes": 21524,
-      "sha256": "226239f8136f508e08c16144ebb7f4ffbbe5d5671bea2b16496797ee8252980e",
-      "source_render_sha256": "933f8cc38a376d2f91c9e71aa660f4f1df6380d979a06e544d4a47fac29af35c",
-      "source_step_sha256": "2a2805718a4c1f6a2b3f2f2ce1d074db03c53a57b8fc38a66be86da457d718ed"
+      "pixels_per_mm": 4.158531005439545,
+      "bytes": 23138,
+      "sha256": "411f90ac0ef2b9e36daaa5bf15bd260c9f55d781a7aa130ebbd3254b58d24f4d",
+      "source_render_sha256": "fe64263af2d350e071c1b30a3dccc6b2260b3bc3cb2b4e501fee840180210357",
+      "source_step_sha256": "28178ea52f05eb8af8f1519ac23abc0a18a54e1f027b208d65a487020edd0ad7"
     },
     {
       "key": "support-1",
@@ -1674,16 +1674,16 @@
       ],
       "file": "images/attachments/support-1.png",
       "alt": "support, 1 cell, original joints: isometric STEP-derived render",
-      "description": "A physical bearing rail with separate end-to-end joins, not a slicer support or X-plug attachment.",
+      "description": "An R3 physical bearing rail with rounded windows and separate end-to-end joins.",
       "dimensions": [
         480,
         300
       ],
       "pixels_per_mm": 1.706753738784431,
-      "bytes": 7613,
-      "sha256": "92ddf5a9a599d12b8ab8395666445bd221609dbbded32798b7d78e18052f72b6",
-      "source_render_sha256": "4994bc810c079afe9955ab8c7d98641ad0b430d5d4a64a9358ecb6e2f0af21f0",
-      "source_step_sha256": "a1b8c86d79eb9c055ebba43163381e1bb1bef49f4c039beb008551ddbad53cec"
+      "bytes": 8269,
+      "sha256": "fdd24316e22a1eeebe1ed6c219f6348e93bd8524e2fdd342405865539811ccd8",
+      "source_render_sha256": "f0d573247731a7cc5c204f41ec1e4db1cceda01d542c083b757f0ee7331f7ef3",
+      "source_step_sha256": "b3ecf05d77786b123fecc47a0a44b53d9a00307f724e4826775bbf45f1a64031"
     },
     {
       "key": "support-2",
@@ -1711,16 +1711,16 @@
       ],
       "file": "images/attachments/support-2.png",
       "alt": "support, 2 cells, original joints: isometric STEP-derived render",
-      "description": "A physical bearing rail with separate end-to-end joins, not a slicer support or X-plug attachment.",
+      "description": "An R3 physical bearing rail with rounded windows and separate end-to-end joins.",
       "dimensions": [
         480,
         300
       ],
       "pixels_per_mm": 1.706753738784431,
-      "bytes": 11653,
-      "sha256": "db02d4893eebb0c57b64d008c757aa6a582e173a383fe0c70ba2ac0a1a196254",
-      "source_render_sha256": "70dfb16e23c3e3b362a67833369a96f3555fd966a5205cf45fe5f67b702278c0",
-      "source_step_sha256": "445d35439df954f886756baa44b207b58dd2a412aee261a6a8751bcdf1ade8bf"
+      "bytes": 12627,
+      "sha256": "b618f0586e36a6b698f48019ec9fff95778338e59c037c9d1c96da85d9f7c408",
+      "source_render_sha256": "17d820f83d70a07e2dcf670847ebc8fe0c7a63af31dd41c4d2f86c32109b8de1",
+      "source_step_sha256": "2046f634087682242918869305115696b4fed51444d1af5b1a99febf64ec9f6c"
     },
     {
       "key": "support-3",
@@ -1748,16 +1748,16 @@
       ],
       "file": "images/attachments/support-3.png",
       "alt": "support, 3 cells, original joints: isometric STEP-derived render",
-      "description": "A physical bearing rail with separate end-to-end joins, not a slicer support or X-plug attachment.",
+      "description": "An R3 physical bearing rail with rounded windows and separate end-to-end joins.",
       "dimensions": [
         480,
         300
       ],
       "pixels_per_mm": 1.706753738784431,
-      "bytes": 15354,
-      "sha256": "9d6d24479788f21c0657537fac42763c0cfcb89966b4c6d8ecc014bb4feab7ae",
-      "source_render_sha256": "7e2d139c4c1c235e167d638ab0d8d4b8f4bf63fa7ecf616ec5285f782f75c2eb",
-      "source_step_sha256": "982e27449216f5e2121a4d53c1e3e84d162fff8f31fab605e87dc3a90cd708f6"
+      "bytes": 16171,
+      "sha256": "163cf3ec1a36ce285981aa6e29dca543f488f9c8abc0d24115744bd5bb1d835a",
+      "source_render_sha256": "69069f53c605a2bfcf26ced6ba2fa5cd01ed6774bfe5c00662132a91dcad523b",
+      "source_step_sha256": "bddcf76429fa2350690b4dfc37479635b390cb957b0c33d36c96a0f1825eecee"
     },
     {
       "key": "support-4",
@@ -1785,16 +1785,16 @@
       ],
       "file": "images/attachments/support-4.png",
       "alt": "support, 4 cells, original joints: isometric STEP-derived render",
-      "description": "A physical bearing rail with separate end-to-end joins, not a slicer support or X-plug attachment.",
+      "description": "An R3 physical bearing rail with rounded windows and separate end-to-end joins.",
       "dimensions": [
         480,
         300
       ],
       "pixels_per_mm": 1.706753738784431,
-      "bytes": 19185,
-      "sha256": "8ffe6365b87262b6cbc49e3b73fc505f6aeb75895a83b5842448d2256b37ff67",
-      "source_render_sha256": "6c5726343e5aa3216212c253567ec321eeefc62e47c60b7fdd6098aee3e7a883",
-      "source_step_sha256": "12ad67252e2bebdce1d8cc751fa15d996643c514a3c0f3dd499b8842db33e83d"
+      "bytes": 20357,
+      "sha256": "fc67290ae03d19a4d773e57d2c1523c4d29f06a6254a77141230e481f5c9d3ba",
+      "source_render_sha256": "aa543d48ab2954230e5047e5d7e6df7b8815548ec85aae2c383cba25e87d5c7c",
+      "source_step_sha256": "5f3f0e1cc117498f3f3512bf370d0f01a4134539c32118804d488e8d2b6660f9"
     },
     {
       "key": "support-5",
@@ -1822,16 +1822,16 @@
       ],
       "file": "images/attachments/support-5.png",
       "alt": "support, 5 cells, original joints: isometric STEP-derived render",
-      "description": "A physical bearing rail with separate end-to-end joins, not a slicer support or X-plug attachment.",
+      "description": "An R3 physical bearing rail with rounded windows and separate end-to-end joins.",
       "dimensions": [
         480,
         300
       ],
       "pixels_per_mm": 1.706753738784431,
-      "bytes": 23943,
-      "sha256": "9f998d421d1c9f638a3d70e91589b5da9d4069cdf85245b5bd4a6ce46927e38d",
-      "source_render_sha256": "af1665d6272ec2b8d0851175cfd4632c7af4d19def40b8f6106071da8971ed66",
-      "source_step_sha256": "285db6cf1b7b93253181e892c3a14b1e92738e1ad838d7f61861301c7c1f98fd"
+      "bytes": 24674,
+      "sha256": "e0416bc8a8347e51c534421f17549cf21951fab3e09032f5068101cb0c7c9026",
+      "source_render_sha256": "1514bcfdc1a60f7f7b8ad15400c013698482b0c2472640dcc6dc7a56ca77ee33",
+      "source_step_sha256": "2fbb3b86b9a8ddc0ed241b59e19c3e3c906313286cea5ed3179f7026b0f1a0ef"
     },
     {
       "key": "support-end-v1",
@@ -1854,21 +1854,21 @@
       },
       "size_mm": [
         45.0,
-        120.00000005208246,
-        25.0
+        120.00000075080864,
+        25.000000200000024
       ],
       "file": "images/attachments/support-end-v1.png",
       "alt": "support-end, variant 1 / X, original joints: isometric STEP-derived render",
-      "description": "A ramped rail-end piece; X, Xs, Y and Ys select the supported end arrangements.",
+      "description": "A rounded ramped rail end; X, Xs, Y and Ys select the supported arrangements.",
       "dimensions": [
         480,
         300
       ],
-      "pixels_per_mm": 3.109474040204719,
-      "bytes": 22132,
-      "sha256": "c2042d771a56deea20c8ae7fceaa096f1b77271be6680564ff395b7d6113190b",
-      "source_render_sha256": "a92625cf6bc20b122c42a6c8b31f5a67ee0c6a3fc0776047f34e1687845ebe2d",
-      "source_step_sha256": "ce5fb492726367dee56987064b01e4ec4bbf912f76cc212a41e0ae9847fded6f"
+      "pixels_per_mm": 3.109474037098798,
+      "bytes": 23463,
+      "sha256": "1d18ae86bb45812386408321b8bfc6fd823ab51af914bb6f7967ae0e3c038092",
+      "source_render_sha256": "fefc8bf19dfc465db5fbce3441f004502f70e909d92834f86173f6b427371e3e",
+      "source_step_sha256": "c6622f656b24f8e5c0c512a0c67293c4484dc8b8ae239d15ba30ef7f874c3c4c"
     },
     {
       "key": "support-end-v2",
@@ -1891,21 +1891,21 @@
       },
       "size_mm": [
         45.0,
-        120.00000005208246,
-        25.0
+        120.00000075080864,
+        25.000000200000002
       ],
       "file": "images/attachments/support-end-v2.png",
       "alt": "support-end, variant 2 / Xs, original joints: isometric STEP-derived render",
-      "description": "A ramped rail-end piece; X, Xs, Y and Ys select the supported end arrangements.",
+      "description": "A rounded ramped rail end; X, Xs, Y and Ys select the supported arrangements.",
       "dimensions": [
         480,
         300
       ],
-      "pixels_per_mm": 3.109474040204719,
-      "bytes": 22048,
-      "sha256": "f887c7b5985ce5887cd2709f4335ae193b09b975e9bf3900670488d379b54a65",
-      "source_render_sha256": "62c939e6e4eec935735d3e5376e9ba331d261d2dad5f5b318870c3f31e5fd108",
-      "source_step_sha256": "3e8ec55aba0e25fd28fbedea6b61c11fa04dc36bfbb09c20b5e1913888ab3520"
+      "pixels_per_mm": 3.109474037098798,
+      "bytes": 24295,
+      "sha256": "28643891c171334916950c9a9efb000b371095aa996c575e92279a851cebb25d",
+      "source_render_sha256": "8926de2d69faea17511668cd5af6b3e0e11539a4854779524db18f5e405bc04a",
+      "source_step_sha256": "baa76e3ff2274f019c730f5e250be4ec4ff1dd2e7ef90de1dfce155f63611911"
     },
     {
       "key": "support-end-v3",
@@ -1929,20 +1929,20 @@
       "size_mm": [
         45.0,
         125.00000004860253,
-        25.0
+        25.0000001
       ],
       "file": "images/attachments/support-end-v3.png",
       "alt": "support-end, variant 3 / Y, original joints: isometric STEP-derived render",
-      "description": "A ramped rail-end piece; X, Xs, Y and Ys select the supported end arrangements.",
+      "description": "A rounded ramped rail end; X, Xs, Y and Ys select the supported arrangements.",
       "dimensions": [
         480,
         300
       ],
-      "pixels_per_mm": 3.109474040204719,
-      "bytes": 21183,
-      "sha256": "44dd0e2cd1df88a450cc0a0b3f7c4ca26bcbbfdd35987d0b947b7c4bd18ef32f",
-      "source_render_sha256": "d03aa27669be886e6f72e3e529a07e24f86c0288a59e91438dac8f58d283a92c",
-      "source_step_sha256": "e680f3937998c3776eee8752dbf78ec4632245df7fef9d03e9ba2a6785550271"
+      "pixels_per_mm": 3.109474037098798,
+      "bytes": 23927,
+      "sha256": "d2c48a08e76acba857278316db4872c97a5a467840aadf1c2fa3c0f0f2a2db40",
+      "source_render_sha256": "52eccd9e952e7f555f8afa27671a58138ba886fbd4159abf1b2fc02506a0636b",
+      "source_step_sha256": "3c49e6c609e5a55ba4b38341c001079929d328ec9d71056a16fd4b31bdd60a44"
     },
     {
       "key": "support-end-v4",
@@ -1970,16 +1970,16 @@
       ],
       "file": "images/attachments/support-end-v4.png",
       "alt": "support-end, variant 4 / Ys, original joints: isometric STEP-derived render",
-      "description": "A ramped rail-end piece; X, Xs, Y and Ys select the supported end arrangements.",
+      "description": "A rounded ramped rail end; X, Xs, Y and Ys select the supported arrangements.",
       "dimensions": [
         480,
         300
       ],
-      "pixels_per_mm": 3.109474040204719,
-      "bytes": 21193,
-      "sha256": "4093d5891aed0fbadb98a592fd1d7a695c5641b66df5dd5093df5838eb921165",
-      "source_render_sha256": "4f6e44b4983e59c740936fdf50b3ccf0d8a1dd076ebb90859f2654ebd2b87e65",
-      "source_step_sha256": "72943fdec294efb7d02f38caee3a2d12f0710016253e037e901c8cefffa3e6ba"
+      "pixels_per_mm": 3.109474037098798,
+      "bytes": 23920,
+      "sha256": "420c805a26aa676a24ada570aabd994424b901a1dc25ad58b8c2a99a6bb43a7f",
+      "source_render_sha256": "c7fc6576384ed889acb6abfbeffcd0966b08b1aaee43c74c97a0526162f3b7c1",
+      "source_step_sha256": "5b2ee90fb7abd3b5980bd3c8152e01d89b05b51540b06a535dc46f8cd5715b83"
     },
     {
       "key": "support-bit-20mm",
@@ -2007,16 +2007,16 @@
       ],
       "file": "images/attachments/support-bit-20mm.png",
       "alt": "support-bit, 20 mm length, original joints: isometric STEP-derived render",
-      "description": "A short rail connector with a projecting join; the label gives its specified length.",
+      "description": "A rounded rail connector with a projecting join; the label gives its specified length.",
       "dimensions": [
         480,
         300
       ],
       "pixels_per_mm": 4.499579215429579,
-      "bytes": 10431,
-      "sha256": "3469d169d756d28f19aeca60cce4872f80c18a0a854ebcd9287d4a8dda292897",
-      "source_render_sha256": "bf1412f2a2dcb251cb85196ca68f5bb924f5db1b9fbc5a14db6ebee70564b6df",
-      "source_step_sha256": "f383cce933e92964c62b91ed0cefa9a09e607380ae2eeadba07faea41bc02321"
+      "bytes": 12014,
+      "sha256": "a9c91ae70de3233e41c37a9f9a13e6cf224363c755e823d3dc4750ed58f77100",
+      "source_render_sha256": "5da67c0a11caa73c54abbeef1aa7d0469ed501c7c02059fb1e48dd9f39d1f27b",
+      "source_step_sha256": "357f0b77d575f9e30d87d7d6b7b4d35ee076a161816a1bd3d1ddb907790771de"
     },
     {
       "key": "support-bit-30mm",
@@ -2044,16 +2044,16 @@
       ],
       "file": "images/attachments/support-bit-30mm.png",
       "alt": "support-bit, 30 mm length, original joints: isometric STEP-derived render",
-      "description": "A short rail connector with a projecting join; the label gives its specified length.",
+      "description": "A rounded rail connector with a projecting join; the label gives its specified length.",
       "dimensions": [
         480,
         300
       ],
       "pixels_per_mm": 4.499579215429579,
-      "bytes": 11842,
-      "sha256": "c6c12acd69689f3a6d2c7c934809d69ab7027ce6126121e827832dded08423ec",
-      "source_render_sha256": "757f1835b0831d384bd4594153e0bef3f509a7f75de3a23ee56b2968f3cb91e3",
-      "source_step_sha256": "259fa12614d03dad6f9653f06772893ea9a085f368dfac37414a6d7c951682d8"
+      "bytes": 13703,
+      "sha256": "62bb6da4042a67c8905f35c1389ae21e175bc09814afa0cd66c33bb926e4ac67",
+      "source_render_sha256": "8bb79ffc7fed7b569b898332c4974b9cece06ac1d856bd0ba3461b214c3f591a",
+      "source_step_sha256": "722057d852896f8a657db7941656b684f5db25b52a767ee62bb118ab030114c6"
     },
     {
       "key": "support-bit-40mm",
@@ -2081,16 +2081,16 @@
       ],
       "file": "images/attachments/support-bit-40mm.png",
       "alt": "support-bit, 40 mm length, original joints: isometric STEP-derived render",
-      "description": "A short rail connector with a projecting join; the label gives its specified length.",
+      "description": "A rounded rail connector with a projecting join; the label gives its specified length.",
       "dimensions": [
         480,
         300
       ],
       "pixels_per_mm": 4.499579215429579,
-      "bytes": 15938,
-      "sha256": "9fe6293afe52c4ecdef2b72df4e01b274e71596a62fd6083fb7855ab3d5642ce",
-      "source_render_sha256": "265c901acf348cf9d7987c044a7fe1fdba54c711a2a18bc3b78d7d82fe8dec11",
-      "source_step_sha256": "577a19f8d645ee4ea5f629275469a8ca2be0e50732471ff303afd8d6cae298de"
+      "bytes": 18591,
+      "sha256": "1b028cd4858249a080d98d431d0f9987bbe44530e2f5d6e60990f1fff7b07d86",
+      "source_render_sha256": "d7e62044066b421452ed23d0daf84061b0ae130ac15a8a6406937280773931df",
+      "source_step_sha256": "7fc3b7295552a9514e528832ea3dc8b52860df4e606dc07504df11878e629835"
     },
     {
       "key": "support-bit-50mm",
@@ -2118,16 +2118,16 @@
       ],
       "file": "images/attachments/support-bit-50mm.png",
       "alt": "support-bit, 50 mm length, original joints: isometric STEP-derived render",
-      "description": "A short rail connector with a projecting join; the label gives its specified length.",
+      "description": "A rounded rail connector with a projecting join; the label gives its specified length.",
       "dimensions": [
         480,
         300
       ],
       "pixels_per_mm": 4.499579215429579,
-      "bytes": 18428,
-      "sha256": "9582d46f5f18754f4e6158e0f18bf714fd15eb7fac628c616d2736beaa0f8fb6",
-      "source_render_sha256": "c9b2e09a619607e07b974e187f0cfafaf46af649a8d7a0b2065686adb948d984",
-      "source_step_sha256": "674b2c3cc38192196f19379e4b22edbbdd709ef4e2759f9629330cd3557127f5"
+      "bytes": 21497,
+      "sha256": "93743b274e39a5e524c071e5d4520cfa33ff6486f3ee6f1da45552e930259739",
+      "source_render_sha256": "0c98f3ebe0cf259883111e1a270a47fd76953b0120c12f91c970697764b874d6",
+      "source_step_sha256": "0d0b93a4e1ea515d88d6403208e0df0c46e11cb19213a2c2739a9df474006c82"
     }
   ]
 }

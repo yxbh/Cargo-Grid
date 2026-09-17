@@ -24,7 +24,7 @@ from cargo_grid.catalogue import BRACKET_DISPLAY_NAMES, accessory_variants
 ROOT = Path(__file__).resolve().parents[1]
 BUILD = BuildVolume(350, 320, 325)
 WORKBENCH_REVISION = "c3f63ef8d8604d3ec7eeba40a229047887c03d86"
-GEOMETRY_REVISION = "727a9cb9bee6a0edba12d46d113c18bc4ce3f384"
+GEOMETRY_REVISION = "0cc079ee252b459930d032757fd16a28833005e7"
 GEOMETRY_FILES = (
     "parameters.py",
     "interfaces.py",
@@ -59,11 +59,11 @@ FAMILIES = {
     ),
     "plate": (
         "Attachment plates",
-        "A flat surface with X plugs underneath for positioning an attachment on the mat.",
+        "A flat R2 body with exact X plugs underneath. Bambu projects place its broad body face down so the plugs grow upward.",
     ),
     "vertical-tile-bracket": (
         "Vertical tile brackets",
-        "A one-piece filled wedge carrying a separate ordinary tile vertically. Three original variants match floor depth to wall height; two shallow variants keep one floor row under a two-row wall. Bambu projects use the validated per-design pose.",
+        "A filled mixed-R1/R2 wedge carrying a separate ordinary tile vertically. Three original variants match floor depth to wall height; two shallow variants keep one floor row under a two-row wall.",
     ),
     "vertical-stop": (
         "Normal full-solid stops",
@@ -71,35 +71,35 @@ FAMILIES = {
     ),
     "lock-45": (
         "Angled stops",
-        "A full-width filled angled cargo wedge with a 6 mm horizontal cap and R1 on every free body edge. Exact X plugs and roots remain protected. Use the recommended back-face-down print pose.",
+        "A full-width filled angled cargo wedge with a 6 mm horizontal cap and R2 on every free body edge. Exact X plugs and roots remain protected. Use the recommended back-face-down print pose.",
     ),
     "edge-x": (
         "Male edge strips",
-        "A straight finishing strip with male tile-facing joins; length follows the cell count.",
+        "An R3 finishing strip with male tile-facing joins; length follows the cell count.",
     ),
     "edge-y": (
         "Female edge strips",
-        "A straight finishing strip with female tile-facing joins; length follows the cell count.",
+        "An R3 finishing strip with female tile-facing joins; length follows the cell count.",
     ),
     "corner-in": (
         "Inner corners",
-        "A corner finishing piece in one of four supported joining arrangements.",
+        "An R3 corner finishing piece in one of four supported joining arrangements.",
     ),
     "corner-out": (
         "Outer corners",
-        "An outer-edge finishing piece in one of six supported arrangements.",
+        "An R3 outer-edge finishing piece in one of six supported arrangements.",
     ),
     "support": (
         "Support rails",
-        "A physical bearing rail with separate end-to-end joins, not a slicer support or X-plug attachment.",
+        "An R3 physical bearing rail with rounded windows and separate end-to-end joins.",
     ),
     "support-end": (
         "Rail ends",
-        "A ramped rail-end piece; X, Xs, Y and Ys select the supported end arrangements.",
+        "A rounded ramped rail end; X, Xs, Y and Ys select the supported arrangements.",
     ),
     "support-bit": (
         "Rail connectors",
-        "A short rail connector with a projecting join; the label gives its specified length.",
+        "A rounded rail connector with a projecting join; the label gives its specified length.",
     ),
 }
 THUMBNAIL_SIZE = (480, 300)
@@ -668,7 +668,7 @@ def compose_all(work: Path, provenance: dict) -> None:
         "",
         "Normal `vertical-stop` names give base X cells, base Y cells and H60/H120 shoulder height. They are filled CAD wedges with no wall holes, panel connectors or ledges. The slicer still chooses perimeters and infill.",
         "",
-        "Edge/corner top rims and normal-stop outer edges use R2. Rails, bracket lips, shallow brackets and angled stops use the documented R1 rounds. Tile joints, rail joints, bracket bearing surfaces and X attachments keep their mating geometry.",
+        "Original-style edge/corner bodies and rail outer bodies use R3. Plates and angled stops use R2. Brackets use R2 on thick free edges and R1 around the thin bearing lip; normal stops and ramps keep R2. Tile joints, rail joints, bracket bearing surfaces and X attachments keep their mating geometry.",
         "",
         "Bambu projects put original brackets on their diagonal rear face, shallow brackets on a broad side, normal stops on their broad rear face and angled stops on their rear face before packing. STEP, STL and core 3MF keep model orientation. Ramps, normal stops and shallow brackets request object-level normal Auto support. Remove all support from mating regions before assembly.",
         "",

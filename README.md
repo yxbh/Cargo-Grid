@@ -56,6 +56,8 @@ Generate one accessory with `part`:
 uv run cargo-grid part --family plate --width-cells 1 --depth-cells 1 --build-width-mm 150 --build-depth-mm 150 --build-height-mm 80 --output outputs/x-plate
 ```
 
+For Bambu output, attachment plates are flipped X=180 degrees so the broad plate body starts on the bed and the X plugs grow upward. STEP, STL and core 3MF keep the source orientation.
+
 Generate every tile and accessory that fits a build envelope with `catalogue`:
 
 ```sh
@@ -100,7 +102,7 @@ uv run cargo-grid part --family vertical-tile-bracket --width-cells 1 --depth-ce
 
 This exports the bracket only. Generate its 1x1 floor tile and 1x2 wall tile separately. Brackets require the standard 60 mm pitch, 13 mm tile height and zero fit offset.
 
-Bambu projects place the original three brackets X=135 degrees with the diagonal rear face down. The shallow brackets use Y=-90 degrees with a broad side down and request normal Auto support on those objects. In both checked H2D PETG profiles, shallow-bracket support touched the floor and wall X mating regions. Those regions are exposed in the side-down pose, but the support must be removed completely before checking fit.
+Bambu projects place the original three brackets on their retangented diagonal rear face (about X=133–134 degrees, depending on depth). The shallow brackets use Y=-90 degrees with a broad side down and request normal Auto support on those objects. In both checked H2D PETG profiles, shallow-bracket support touched the floor and wall X mating regions. Those regions are exposed in the side-down pose, but the support must be removed completely before checking fit.
 
 ## Normal and angled cargo stops
 
@@ -114,7 +116,7 @@ uv run cargo-grid part --family vertical-stop --width-cells 2 --depth-cells 1 --
 
 Every free outer edge is R2; the X plugs and roots stay unchanged. Bambu rotates each normal stop onto its broad rear face and enables normal Auto support on that object. The 1x1/H120 and 2x1/H120 variants produced support in the mounting region during the checked H2D slices, so remove it before testing fit.
 
-The two `lock-45` angled stops are also filled wedges. Their free body edges are R1, their X geometry is unchanged and Bambu places them X=-135 degrees with the rear face down.
+The two `lock-45` angled stops are also filled wedges. Their free body edges are R2, their X geometry is unchanged and Bambu places them X=-135 degrees with the rear face down.
 
 ## Floor ramps
 
