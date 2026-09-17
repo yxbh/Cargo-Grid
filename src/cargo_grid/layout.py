@@ -5,7 +5,13 @@ from functools import lru_cache
 from math import floor
 from typing import Literal
 
-from cargo_grid.parameters import BuildVolume, Interface, Tile, positive
+from cargo_grid.parameters import (
+    DEFAULT_HOLE_DIAMETER_MM,
+    BuildVolume,
+    Interface,
+    Tile,
+    positive,
+)
 
 
 @dataclass(frozen=True)
@@ -58,8 +64,8 @@ def exact_layout(
     *,
     interface: Interface = Interface(),
     distribution: Literal["balanced", "positive", "negative"] = "balanced",
-    hole_diameter: float | None = None,
-    hole_scope: Literal["interior", "full"] = "interior",
+    hole_diameter: float | None = DEFAULT_HOLE_DIAMETER_MM,
+    hole_scope: Literal["interior", "full"] = "full",
 ) -> Layout:
     positive("width", width)
     positive("depth", depth)
@@ -110,8 +116,14 @@ def exact_layout(
                     hole_scope=hole_scope,
                 )
                 size = (
-                    cx * p + tile.filler_west + tile.filler_east + (6 if tile.east else 0),
-                    cy * p + tile.filler_south + tile.filler_north + (6 if tile.north else 0),
+                    cx * p
+                    + tile.filler_west
+                    + tile.filler_east
+                    + (interface.male_join_depth if tile.east else 0),
+                    cy * p
+                    + tile.filler_south
+                    + tile.filler_north
+                    + (interface.male_join_depth if tile.north else 0),
                     interface.height,
                 )
                 if build.placement(size) is None:

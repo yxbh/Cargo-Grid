@@ -12,7 +12,15 @@ from cargo_grid.catalogue import accessory_design, catalogue_job, h2d_dual_safe_
 from cargo_grid.export import BambuSettings, Material, export_job
 from cargo_grid.jobs import Job, layout_job, tile_design
 from cargo_grid.layout import exact_layout
-from cargo_grid.parameters import BuildVolume, Exclusion, Interface, Tile, count, positive
+from cargo_grid.parameters import (
+    DEFAULT_HOLE_DIAMETER_MM,
+    BuildVolume,
+    Exclusion,
+    Interface,
+    Tile,
+    count,
+    positive,
+)
 from cargo_grid.roof_support import RoofSupportSettings
 from cargo_grid.stacking import StackSettings
 
@@ -34,8 +42,10 @@ LEGACY_OPTION_REPLACEMENTS = {
     "--part-gap": "--packing-gap-mm MM",
     "--reserve": "--build-reserve-width-mm MM --build-reserve-depth-mm MM --build-reserve-height-mm MM",
     "--exclude": "--exclude-rectangle-mm X_MM Y_MM WIDTH_MM DEPTH_MM",
-    "--pitch": "--grid-pitch-mm MM",
-    "--height": "--tile-height-mm MM",
+    "--pitch": "--unit-size-mm MM",
+    "--height": "--tile-thickness-mm MM",
+    "--grid-pitch-mm": "--unit-size-mm MM",
+    "--tile-height-mm": "--tile-thickness-mm MM",
     "--fit-offset": "--fit-offset-mm MM",
     "--hole-diameter": "--hole-diameter-mm MM",
     "--nozzle": "--nozzle-diameter-mm MM",
@@ -142,8 +152,8 @@ def _build_volume(args) -> BuildVolume:
 
 def _interface(args) -> Interface:
     return Interface(
-        args.grid_pitch_mm,
-        args.tile_height_mm,
+        args.unit_size_mm,
+        args.tile_thickness_mm,
         args.fit_offset_mm,
         args.joint_style,
     )
@@ -265,7 +275,7 @@ def _stack_settings(args, bambu, build: BuildVolume, interface: Interface):
 def parser() -> argparse.ArgumentParser:
     root = _ArgumentParser(
         description="Parametric cargo mats: STEP-first geometry and unsliced print-job exports.",
-        epilog="Original roofed joints; optional holes and roof supports are off by default. No slicing or printer control.",
+        epilog="Original roofed joints and full 10 mm round-hole tiles are the defaults; roof support remains off. No slicing or printer control.",
         allow_abbrev=False,
     )
     root.add_argument("--version", action="version", version=f"cargo-grid {__version__}")
@@ -332,18 +342,18 @@ def parser() -> argparse.ArgumentParser:
             help="repeatable build exclusion: lower-left X, lower-left Y, width, depth; e.g. --exclude-rectangle-mm 0 0 20 30",
         )
         p.add_argument(
-            "--grid-pitch-mm",
+            "--unit-size-mm",
             type=float,
             default=60,
             metavar="MM",
-            help="grid spacing in mm; changing it changes interface assumptions",
+            help="cell size and nominal local-plane interface scale in mm (default: 60)",
         )
         p.add_argument(
-            "--tile-height-mm",
+            "--tile-thickness-mm",
             type=float,
             default=13,
             metavar="MM",
-            help="tile/interface model height in mm, not build capacity or stop height",
+            help="independent tile thickness and connector insertion depth in mm (default: 13)",
         )
         p.add_argument(
             "--joint-style",
@@ -358,22 +368,31 @@ def parser() -> argparse.ArgumentParser:
             metavar="MM",
             help="socket offset in mm; nonzero changes the compatibility preset",
         )
-        p.add_argument(
+        holes = p.add_mutually_exclusive_group()
+        holes.add_argument(
             "--holes",
+            dest="holes",
             action="store_true",
-            help="enable optional round holes; requires --hole-diameter-mm",
+            help="use round holes (the default); pair with diameter/scope options to customize",
         )
+        holes.add_argument(
+            "--no-holes",
+            dest="holes",
+            action="store_false",
+            help="make solid tile webs without the additional round-hole pattern",
+        )
+        p.set_defaults(holes=None)
         p.add_argument(
             "--hole-diameter-mm",
             type=float,
             metavar="MM",
-            help="round-hole diameter in mm; required with --holes",
+            help="round-hole diameter in mm; defaults to 10 when holes are enabled",
         )
         p.add_argument(
             "--hole-scope",
             choices=("interior", "full"),
-            default="interior",
-            help="interior holes (default), or explicit edge/corner lattice on retained joining edges",
+            default="full",
+            help="full half-pitch pattern including retained edge/corner sites (default), or interior-only",
         )
         p.add_argument("--output", type=Path, required=True, help="new or empty job directory")
         p.add_argument("--no-stl", action="store_true")
@@ -563,6 +582,19 @@ def parser() -> argparse.ArgumentParser:
     return root
 
 
+def _resolved_hole_diameter(args) -> float | None:
+    tile_workflow = args.command != "part" or args.family == "tile"
+    if not tile_workflow:
+        if args.holes is True or args.hole_diameter_mm is not None:
+            raise ValueError("round-hole options apply to tiles, not accessory bodies")
+        return None
+    if args.holes is False:
+        if args.hole_diameter_mm is not None:
+            raise ValueError("--no-holes cannot be combined with --hole-diameter-mm")
+        return None
+    return args.hole_diameter_mm if args.hole_diameter_mm is not None else DEFAULT_HOLE_DIAMETER_MM
+
+
 def main(argv: list[str] | None = None) -> int:
     p = parser()
     args = p.parse_args(argv)
@@ -580,10 +612,7 @@ def main(argv: list[str] | None = None) -> int:
                 f"reference comparison (joint-style original): {'PASS' if result['checked_pass'] else 'FAIL'}; {args.output}"
             )
             return 0 if result["checked_pass"] else 1
-        if args.holes != (args.hole_diameter_mm is not None):
-            raise ValueError("enable holes with BOTH --holes and an explicit --hole-diameter-mm")
-        if args.hole_scope == "full" and not args.holes:
-            raise ValueError("--hole-scope full requires --holes and --hole-diameter-mm")
+        hole_diameter = _resolved_hole_diameter(args)
         build = _build_volume(args)
         interface = _interface(args)
         roof_support = _roof_support(args)
@@ -618,11 +647,9 @@ def main(argv: list[str] | None = None) -> int:
             )
             if args.family == "tile":
                 design = tile_design(
-                    Tile(*cells, interface, args.hole_diameter_mm, hole_scope=args.hole_scope)
+                    Tile(*cells, interface, hole_diameter, hole_scope=args.hole_scope)
                 )
             else:
-                if args.holes:
-                    raise ValueError("optional web holes apply to tiles, not accessory bodies")
                 design = accessory_design(
                     Accessory(
                         args.family,
@@ -646,7 +673,7 @@ def main(argv: list[str] | None = None) -> int:
                 build,
                 interface=interface,
                 distribution=args.filler_placement,
-                hole_diameter=args.hole_diameter_mm,
+                hole_diameter=hole_diameter,
                 hole_scope=args.hole_scope,
             )
             job = layout_job(layout, build)
@@ -668,21 +695,21 @@ def main(argv: list[str] | None = None) -> int:
                     )
                 if interface != Interface():
                     raise ValueError(
-                        "--h2d-dual-safe requires original joints, 60 mm pitch, "
-                        "13 mm tile height and zero fit offset"
+                        "--h2d-dual-safe requires original joints, --unit-size-mm 60, "
+                        "--tile-thickness-mm 13 and zero fit offset"
                     )
                 requested_gap = getattr(args, "packing_gap_mm", None)
                 if requested_gap not in (None, 10):
                     raise ValueError("--h2d-dual-safe uses a fixed --packing-gap-mm 10")
                 job = h2d_dual_safe_catalogue_job(
-                    hole_diameter=args.hole_diameter_mm,
+                    hole_diameter=hole_diameter,
                     hole_scope=args.hole_scope,
                 )
             else:
                 job = catalogue_job(
                     build,
                     interface=interface,
-                    hole_diameter=args.hole_diameter_mm,
+                    hole_diameter=hole_diameter,
                     hole_scope=args.hole_scope,
                     orient_for_bambu=bool(bambu),
                 )
@@ -693,7 +720,18 @@ def main(argv: list[str] | None = None) -> int:
         rejected = sum(not h["accepted"] for d in job.designs for h in d.holes)
         if rejected:
             print(
-                f"WARNING: {rejected} optional hole placements rejected by keep-outs; see manifest.",
+                f"WARNING: {rejected} round-hole placements rejected by keep-outs; see manifest.",
+                file=sys.stderr,
+            )
+        if any(
+            design.parameters.get("hole_diameter") is not None
+            and design.holes
+            and not any(hole["accepted"] for hole in design.holes)
+            for design in job.designs
+        ):
+            print(
+                "WARNING: no requested round holes fit at least one tile; "
+                "use a smaller --hole-diameter-mm or --no-holes.",
                 file=sys.stderr,
             )
         if job.omitted:

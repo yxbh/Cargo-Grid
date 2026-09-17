@@ -226,7 +226,6 @@ def test_custom_pitch_and_extended_rails():
         {"family": "vertical-tile-bracket"},
         {"family": "vertical-tile-bracket", "nx": 3},
         {"family": "vertical-tile-bracket", "nx": 2, "height": 100},
-        {"family": "vertical-tile-bracket", "nx": 2, "interface": Interface(pitch=65)},
         {"family": "vertical-stop"},
         {"family": "vertical-stop", "nx": 2, "ny": 1, "height": 100},
         {"family": "lock-45", "ny": 2},

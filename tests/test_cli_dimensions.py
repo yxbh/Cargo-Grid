@@ -112,7 +112,8 @@ def test_named_dimensions_generate_the_same_two_by_one_contract(tmp_path):
     design = manifest["designs"][0]
     assert design["quantity"] == 2
     assert design["parameters"]["interface"]["joint_style"] == "original"
-    assert design["parameters"]["hole_diameter"] is None
+    assert design["parameters"]["hole_diameter"] == 10
+    assert design["parameters"]["hole_scope"] == "full"
     shape = import_step(output / f"{design['name']}.step")
     assert shape.is_valid and len(shape.solids()) == 1 and shape.volume > 0
     assert tuple(shape.bounding_box().size) == pytest.approx((126, 66, 13), abs=1e-5)
@@ -123,8 +124,10 @@ def test_named_dimensions_generate_the_same_two_by_one_contract(tmp_path):
     [
         ("--cells", "--width-cells COUNT --depth-cells COUNT"),
         ("--margin", "--build-margin-mm MM"),
-        ("--pitch", "--grid-pitch-mm MM"),
-        ("--height", "--tile-height-mm MM"),
+        ("--pitch", "--unit-size-mm MM"),
+        ("--height", "--tile-thickness-mm MM"),
+        ("--grid-pitch-mm", "--unit-size-mm MM"),
+        ("--tile-height-mm", "--tile-thickness-mm MM"),
         ("--quantity", "--copy-count COUNT"),
         ("--footprint", "--layout-width-mm MM --layout-depth-mm MM"),
     ],

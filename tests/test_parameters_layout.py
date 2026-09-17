@@ -17,7 +17,9 @@ def test_invalid_parameters():
         with pytest.raises(ValueError):
             Tile(**values)
     with pytest.raises(ValueError):
-        Interface(pitch=30)
+        Interface(pitch=29)
+    with pytest.raises(ValueError):
+        Interface(height=5)
     with pytest.raises(ValueError):
         BuildVolume(100, 100, 10, margin=50)
 

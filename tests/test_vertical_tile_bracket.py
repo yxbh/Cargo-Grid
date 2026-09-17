@@ -81,7 +81,7 @@ def test_bracket_solid_datums_and_actual_step_roundtrip(nx, ny, tmp_path):
     assert datums["supported_outward_tile_faces"] == ("underside", "top")
     assert datums["top_outward_tile_rotation_degrees"] == {"z": 180, "x": -90}
     assert datums["panel_stem_profile_inset"] == 0.08
-    assert datums["panel_tip_transition"] == (10.7, 10.8)
+    assert datums["panel_tip_transition"] == pytest.approx((10.7, 10.8))
     assert not datums["bidirectional_physical_fit_verified"]
     path = tmp_path / f"bracket_{nx}x{ny}.step"
     assert export_step(part, path)
@@ -95,9 +95,9 @@ def test_bracket_solid_datums_and_actual_step_roundtrip(nx, ny, tmp_path):
 @pytest.mark.parametrize(
     "nx,ny,expected",
     [
-        (1, 2, 561925.8254538283),
-        (2, 1, 338865.96203102154),
-        (2, 2, 1124563.7899143),
+        (1, 2, 561919.7811806262),
+        (2, 1, 338854.6656768019),
+        (2, 2, 1124551.6313881178),
     ],
 )
 def test_bracket_volume_fixture_and_mixed_free_edge_radii(nx, ny, expected):
@@ -119,6 +119,48 @@ def test_bracket_volume_fixture_and_mixed_free_edge_radii(nx, ny, expected):
         and f.bounding_box().max.Z > 10
         for f in rounded.faces()
     )
+    assert any(
+        f.geom_type == GeomType.CYLINDER
+        and BRepAdaptor_Surface(f.wrapped).Cylinder().Radius() == pytest.approx(3)
+        and f.bounding_box().max.Y < 1
+        and f.bounding_box().min.Z > 19
+        for f in rounded.faces()
+    )
+
+
+@pytest.mark.parametrize("nx,base_y,panel_z", VERTICAL_BRACKET_CONFIGS)
+def test_all_five_brackets_have_one_g1_r3_front_to_slope_transition(
+    nx,
+    base_y,
+    panel_z,
+):
+    shape = make_accessory(
+        Accessory(
+            "vertical-tile-bracket",
+            nx=nx,
+            ny=base_y,
+            panel_height_cells=panel_z if panel_z != base_y else None,
+        )
+    )
+    transitions = [
+        face
+        for face in shape.faces()
+        if face.geom_type == GeomType.CYLINDER
+        and BRepAdaptor_Surface(face.wrapped).Cylinder().Radius() == pytest.approx(3)
+        and face.bounding_box().max.Y < 1
+        and face.bounding_box().min.Z > 19
+    ]
+    assert len(transitions) == 1
+    assert min(edge.length for edge in transitions[0].edges()) > 1
+    for edge in transitions[0].edges():
+        adjacent = [
+            face
+            for face in shape.faces()
+            if any(candidate.is_same(edge) for candidate in face.edges())
+        ]
+        assert len(adjacent) == 2
+        normals = [face.normal_at(edge.center()) for face in adjacent]
+        assert normals[0].dot(normals[1]) == pytest.approx(1, abs=1e-9)
 
 
 @pytest.mark.parametrize("nx,ny", [(2, 1), (2, 2)])
@@ -255,7 +297,7 @@ def test_separate_tile_insertion_bearing_and_solid_backing(nx, ny, holes):
             assert ny * 60 - end == pytest.approx(13, abs=1e-5)
 
 
-def test_bracket_variants_and_reference_only_interface_policy():
+def test_bracket_variants_and_scaled_interface_policy():
     variants = accessory_variants(BuildVolume(350, 320, 325))
     assert len(variants) == 56
     assert {
@@ -265,12 +307,20 @@ def test_bracket_variants_and_reference_only_interface_policy():
     } == set(VERTICAL_BRACKET_CONFIGS)
     assert not any(a.family == "lock-90" for a in variants)
     custom = Interface(pitch=65)
-    assert not any(
+    assert any(
         a.family == "vertical-tile-bracket"
         for a in accessory_variants(BuildVolume(350, 320, 325), custom)
     )
-    with pytest.raises(ValueError, match="requires 60 mm"):
-        Accessory("vertical-tile-bracket", nx=2, interface=custom)
+    custom_bracket = make_accessory(
+        Accessory(
+            "vertical-tile-bracket",
+            nx=1,
+            ny=1,
+            panel_height_cells=2,
+            interface=custom,
+        )
+    )
+    assert custom_bracket.is_valid
     with pytest.raises(ValueError, match="was replaced"):
         Accessory("lock-90")
     a = accessory_design(Accessory("vertical-tile-bracket", nx=1, ny=2))

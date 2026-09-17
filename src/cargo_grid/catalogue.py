@@ -18,7 +18,7 @@ from cargo_grid.accessories import (
 )
 from cargo_grid.jobs import Design, Job, tile_design
 from cargo_grid.packing import PrintPlacement, pack_sizes
-from cargo_grid.parameters import BuildVolume, Exclusion, Interface, Tile
+from cargo_grid.parameters import DEFAULT_HOLE_DIAMETER_MM, BuildVolume, Exclusion, Interface, Tile
 
 BRACKET_DISPLAY_NAMES = {
     (1, 2, 2): "Deep tall tile bracket — floor 1x2, wall 1x2",
@@ -36,7 +36,13 @@ def tile_sizes(build: BuildVolume, interface: Interface = Interface()) -> list[t
         (x, y)
         for x in range(1, maximum + 1)
         for y in range(1, maximum + 1)
-        if build.placement((x * interface.pitch + 6, y * interface.pitch + 6, interface.height))
+        if build.placement(
+            (
+                x * interface.pitch + interface.male_join_depth,
+                y * interface.pitch + interface.male_join_depth,
+                interface.height,
+            )
+        )
         is not None
     ]
 
@@ -55,18 +61,17 @@ def accessory_variants(build: BuildVolume, interface: Interface = Interface()) -
     result.extend(
         Accessory("support-bit", length=length, interface=interface) for length in (20, 30, 40, 50)
     )
-    if interface.reference_socket_dimensions:
-        result.extend(
-            Accessory(
-                "vertical-tile-bracket",
-                nx=x,
-                ny=base_y,
-                interface=interface,
-                panel_height_cells=panel_z if panel_z != base_y else None,
-            )
-            for x, base_y, panel_z in VERTICAL_BRACKET_CONFIGS
+    result.extend(
+        Accessory(
+            "vertical-tile-bracket",
+            nx=x,
+            ny=base_y,
+            interface=interface,
+            panel_height_cells=panel_z if panel_z != base_y else None,
         )
-    if interface.reference_defaults:
+        for x, base_y, panel_z in VERTICAL_BRACKET_CONFIGS
+    )
+    if interface.joint_style == "original":
         result.extend(Accessory("ramp", nx=n, interface=interface) for n in range(1, nmax + 1))
     result.extend(
         Accessory("vertical-stop", nx=x, ny=y, height=height, interface=interface)
@@ -74,7 +79,9 @@ def accessory_variants(build: BuildVolume, interface: Interface = Interface()) -
         for height in VERTICAL_STOP_HEIGHTS_MM
     )
     result.extend(
-        Accessory("lock-45", nx=x, ny=y, interface=interface) for x, y in ((1, 1), (2, 2))
+        Accessory("lock-45", nx=x, ny=y, interface=interface)
+        for x, y in ((1, 1), (2, 2))
+        if 50 <= y * interface.pitch and (x == 1 or interface.pitch <= 60)
     )
     result.extend(
         Accessory("plate", nx=x, ny=y, interface=interface) for x, y in ((1, 1), (1, 2), (2, 2))
@@ -122,8 +129,8 @@ def catalogue_job(
     build: BuildVolume,
     *,
     interface: Interface = Interface(),
-    hole_diameter: float | None = None,
-    hole_scope: Literal["interior", "full"] = "interior",
+    hole_diameter: float | None = DEFAULT_HOLE_DIAMETER_MM,
+    hole_scope: Literal["interior", "full"] = "full",
     orient_for_bambu: bool = False,
 ) -> Job:
     designs = [
@@ -155,8 +162,8 @@ def catalogue_job(
 
 def h2d_dual_safe_catalogue_job(
     *,
-    hole_diameter: float | None = None,
-    hole_scope: Literal["interior", "full"] = "interior",
+    hole_diameter: float | None = DEFAULT_HOLE_DIAMETER_MM,
+    hole_scope: Literal["interior", "full"] = "full",
 ) -> Job:
     interface = Interface()
     physical_build = BuildVolume(350, 320, 325)

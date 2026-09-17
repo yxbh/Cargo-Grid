@@ -53,7 +53,7 @@ If a separate CAD workbench is needed, use its documented interpreter and launch
 ## Check the physical assumptions
 
 - Keep original joints and experimental full-height joints clearly separated.
-- Leave holes and roof support off unless the job asks for them.
+- Confirm the default full 10 mm hole pattern or an explicit `--no-holes` opt-out; roof support remains opt-in.
 - Confirm roof support appears only under retained west/south female roofs.
 - Recheck support, brim and tower paths after profile changes.
 - Record printer, nozzle, layer height, materials, fit, roof finish, support removal and flatness for any physical trial.

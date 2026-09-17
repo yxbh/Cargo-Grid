@@ -55,7 +55,7 @@ def test_default_contract_and_invalid_styles():
 
 @pytest.mark.parametrize("style", ["full-height", "original"])
 def test_actual_sections_open_through_and_male_top_planes(style, tmp_path):
-    shape = make_tile(Tile(2, 3, Interface(joint_style=style)))
+    shape = make_tile(Tile(2, 3, Interface(joint_style=style), hole_diameter=None))
     full = style == "full-height"
     for z in (10.3, 11, 12, 12.9):
         for xyz in ((123, 30, z), (30, 183, z)):
@@ -78,7 +78,7 @@ def test_actual_sections_open_through_and_male_top_planes(style, tmp_path):
 
 @pytest.mark.parametrize("axis", [0, 1])
 def test_full_height_mating_has_no_intersection_in_both_directions(axis):
-    tile = make_tile(Tile(interface=Interface(joint_style="full-height")))
+    tile = make_tile(Tile(interface=Interface(joint_style="full-height"), hole_diameter=None))
     move = [0, 0, 0]
     move[axis] = 60
     adjacent = tile.moved(Location(move))
@@ -86,7 +86,9 @@ def test_full_height_mating_has_no_intersection_in_both_directions(axis):
     volume = 0 if common is None else sum(s.volume for s in common.solids())
     assert volume < 1e-4
     assert tile.distance_to(adjacent) < 1e-6
-    old = make_tile(Tile(interface=Interface(joint_style="original"))).moved(Location(move))
+    old = make_tile(Tile(interface=Interface(joint_style="original"), hole_diameter=None)).moved(
+        Location(move)
+    )
     assert sum(s.volume for s in tile.intersect(old).solids()) > 100
 
 
@@ -114,8 +116,8 @@ def test_every_tile_facing_family_opens_and_reaches_top(family, variants):
 
 
 def test_socket_throat_and_unaffected_entry_envelope_preserved():
-    original = make_tile(Tile(interface=Interface(joint_style="original")))
-    current = make_tile(Tile(interface=Interface(joint_style="full-height")))
+    original = make_tile(Tile(interface=Interface(joint_style="original"), hole_diameter=None))
+    current = make_tile(Tile(interface=Interface(joint_style="full-height"), hole_diameter=None))
     for z in (1.5, 5, 9.5, 10.5, 12):
         for angle in range(0, 360, 5):
             for radius in (10, 14, 19, 24, 28):
@@ -124,7 +126,7 @@ def test_socket_throat_and_unaffected_entry_envelope_preserved():
                 # entry only edge-pocket cuts may remove material.
                 if 10 < p.X < 50 and 10 < p.Y < 50:
                     assert original.is_inside(p) == current.is_inside(p), (z, angle, radius)
-    cutter = socket_entry_tool(13, 0)
+    cutter = socket_entry_tool(Interface())
     assert cutter.is_valid and cutter.volume > 0
     assert original.cut(current).volume > 0  # roof removal is an intentional surface change
     assert Interface().compatibility()["original_x_attachment_dimensions"]
@@ -141,7 +143,7 @@ def test_open_pockets_reduce_plate_bearing_land_without_changing_seating_datum()
     ]
     areas = {}
     for style in ("original", "full-height"):
-        tile = make_tile(Tile(interface=Interface(joint_style=style)))
+        tile = make_tile(Tile(interface=Interface(joint_style=style), hole_diameter=None))
         top = [
             f
             for f in tile.faces()
@@ -163,7 +165,7 @@ def test_open_pockets_reduce_plate_bearing_land_without_changing_seating_datum()
 
 @pytest.mark.parametrize("nx,ny", [(x, y) for x in range(1, 6) for y in range(1, 6)])
 def test_all_full_height_ordered_sizes_through_five_cells(nx, ny):
-    tile = make_tile(Tile(nx, ny, Interface(joint_style="full-height")))
+    tile = make_tile(Tile(nx, ny, Interface(joint_style="full-height"), hole_diameter=None))
     assert tile.is_valid and len(tile.solids()) == 1
     assert tuple(tile.bounding_box().size) == pytest.approx(
         (60 * nx + 6, 60 * ny + 6, 13), abs=1e-5
@@ -203,13 +205,16 @@ def test_non_edge_interfaces_and_support_rails_do_not_change_with_style(family):
 def test_style_survives_layout_and_exported_manifest(style, tmp_path):
     interface = Interface(joint_style=style)
     build = BuildVolume(150, 140, 50)
-    job = layout_job(exact_layout(121, 137, build, interface=interface), build)
+    job = layout_job(
+        exact_layout(121, 137, build, interface=interface, hole_diameter=None),
+        build,
+    )
     assert all(
         d.parameters["interface"]["joint_style"] == style and style in d.name for d in job.designs
     )
     shape = Compound([d.shape.moved(Location(f)) for d in job.designs for f in d.assembly_frames])
     assert tuple(shape.bounding_box().size) == pytest.approx((121, 137, 13), abs=1e-5)
-    design = tile_design(Tile(interface=interface))
+    design = tile_design(Tile(interface=interface, hole_diameter=None))
     manifest = json.loads(
         export_job(Job([design], build, "part"), tmp_path / style, stl=False).read_text()
     )

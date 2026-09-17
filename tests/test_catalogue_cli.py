@@ -1,3 +1,5 @@
+import json
+
 import pytest
 
 from cargo_grid.catalogue import accessory_variants, tile_sizes
@@ -36,8 +38,6 @@ def test_accessory_families_finite_and_complete():
 @pytest.mark.parametrize(
     "extra",
     [
-        ["--holes"],
-        ["--hole-diameter-mm", "10"],
         ["--stack-count", "2"],
         ["--bambu"],
         ["--material", "Unknown", "PETG", "#ffffff"],
@@ -59,4 +59,55 @@ def test_cli_rejects_incomplete_settings(tmp_path, extra):
                 *extra,
             ]
         )
+    assert caught.value.code == 2
+
+
+def test_cli_default_holes_alias_and_opt_out(tmp_path):
+    common = [
+        "part",
+        "--build-width-mm",
+        "150",
+        "--build-depth-mm",
+        "150",
+        "--build-height-mm",
+        "50",
+        "--no-stl",
+    ]
+    expected = [
+        ("default", [], 10, "full", 8),
+        ("alias", ["--holes"], 10, "full", 8),
+        ("solid", ["--no-holes"], None, "full", 0),
+        (
+            "interior",
+            ["--hole-diameter-mm", "8", "--hole-scope", "interior"],
+            8,
+            "interior",
+            0,
+        ),
+    ]
+    for name, extra, diameter, scope, holes in expected:
+        output = tmp_path / name
+        assert main([*common, *extra, "--output", str(output)]) == 0
+        design = json.loads((output / "manifest.json").read_text())["designs"][0]
+        assert design["parameters"]["hole_diameter"] == diameter
+        assert design["parameters"]["hole_scope"] == scope
+        assert sum(hole["accepted"] for hole in design["hole_placements"]) == holes
+
+
+def test_accessory_part_ignores_default_tile_holes_but_rejects_explicit_holes(tmp_path):
+    common = [
+        "part",
+        "--family",
+        "plate",
+        "--build-width-mm",
+        "150",
+        "--build-depth-mm",
+        "150",
+        "--build-height-mm",
+        "50",
+        "--no-stl",
+    ]
+    assert main([*common, "--output", str(tmp_path / "plain")]) == 0
+    with pytest.raises(SystemExit) as caught:
+        main([*common, "--holes", "--output", str(tmp_path / "invalid")])
     assert caught.value.code == 2

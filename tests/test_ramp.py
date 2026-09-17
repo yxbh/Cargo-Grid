@@ -200,9 +200,9 @@ def test_bambu_ramp_scopes_normal_auto_without_changing_orientation_or_other_obj
 
 
 def test_ramp_rejects_irrelevant_height_and_unsupported_interfaces():
-    with pytest.raises(ValueError, match="original roofed joints"):
-        Accessory("ramp", interface=Interface(pitch=65))
-    with pytest.raises(ValueError, match="original roofed joints"):
+    custom = make_accessory(Accessory("ramp", interface=Interface(pitch=65, height=18)))
+    assert tuple(custom.bounding_box().size) == pytest.approx((65, 50, 18), abs=1e-5)
+    with pytest.raises(ValueError, match="original roofed tile-edge joints"):
         Accessory("ramp", interface=Interface(joint_style="full-height"))
     with pytest.raises(ValueError, match="height does not apply"):
         Accessory("ramp", height=120)

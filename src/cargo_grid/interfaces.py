@@ -14,12 +14,25 @@ from OCP.StdFail import StdFail_NotDone
 
 from cargo_grid.parameters import Interface
 
+SOCKET_LOBE_MM = 14.5
+SOCKET_RADIUS_MM = 5.5 * sqrt(2)
+SOCKET_NECK_RADIUS_MM = 4.5 * sqrt(2)
+PLUG_LOBE_ALLOWANCE_MM = 14.344 - SOCKET_LOBE_MM
+PLUG_RADIUS_ALLOWANCE_MM = 7.85556 - SOCKET_RADIUS_MM
+PLUG_NECK_ALLOWANCE_MM = 6.214 - SOCKET_NECK_RADIUS_MM
 
-def x_profile(*, plug: bool = False, offset: float = 0.0) -> Face:
-    """Four round lobes and four concave necks joined by diagonal tangents."""
-    lobe = 14.344 if plug else 14.5
-    radius = 7.85556 if plug else 5.5 * sqrt(2)
-    neck_radius = 6.214 if plug else 4.5 * sqrt(2)
+
+def x_profile(
+    interface: Interface = Interface(),
+    *,
+    plug: bool = False,
+    offset: float = 0.0,
+) -> Face:
+    """Scaled nominal X outline with absolute plug and fit allowances."""
+    scale = interface.unit_scale
+    lobe = SOCKET_LOBE_MM * scale + (PLUG_LOBE_ALLOWANCE_MM if plug else 0)
+    radius = SOCKET_RADIUS_MM * scale + (PLUG_RADIUS_ALLOWANCE_MM if plug else 0)
+    neck_radius = SOCKET_NECK_RADIUS_MM * scale + (PLUG_NECK_ALLOWANCE_MM if plug else 0)
     neck_center = (radius + neck_radius) * sqrt(2)
     a = neck_radius / sqrt(2)
     b = radius / sqrt(2)
@@ -68,20 +81,29 @@ def rectangle(x: float, y: float, width: float, depth: float) -> Face:
     )
 
 
-def dovetail_face(*, depth: float = 6.0) -> Face:
+def dovetail_face(
+    interface: Interface = Interface(),
+    *,
+    depth: float | None = None,
+) -> Face:
     """Sharp tool, extending outside a boundary to make the root blend possible."""
-    head = 11.5 + depth
+    depth = interface.male_join_depth if depth is None else depth
+    scale = interface.unit_scale
+    half_width = 25 * scale
+    root_half_width = 11.5 * scale
+    outside = 4 * scale
+    head = root_half_width + depth
     return Face(
         Wire.make_polygon(
             [
-                (-25, -4, 0),
-                (25, -4, 0),
-                (25, 0, 0),
-                (11.5, 0, 0),
+                (-half_width, -outside, 0),
+                (half_width, -outside, 0),
+                (half_width, 0, 0),
+                (root_half_width, 0, 0),
                 (head, depth, 0),
                 (-head, depth, 0),
-                (-11.5, 0, 0),
-                (-25, 0, 0),
+                (-root_half_width, 0, 0),
+                (-half_width, 0, 0),
             ],
             close=True,
         )
@@ -111,28 +133,46 @@ def underside_fillet(shape: Part) -> Solid:
     return result
 
 
-def joining_tool(*, depth: float = 6, ledge: float = 10, height: float = 13) -> Part:
+def joining_tool(
+    interface: Interface,
+    *,
+    depth: float,
+    ledge: float,
+) -> Part:
     """Wall plus rounded dovetail, solving shared corner blends simultaneously."""
-    wall = prism(rectangle(-25, -4, 50, 4), height)
-    shape = wall.fuse(prism(dovetail_face(depth=depth), ledge))
-    shape = shape.fillet(1, list(shape.edges().filter_by(Axis.Z)) + horizontal_edges(shape, ledge))
-    return shape.fillet(1, horizontal_edges(shape, height))
+    scale = interface.unit_scale
+    blend = interface.tile_join_blend_radius
+    wall = prism(rectangle(-25 * scale, -4 * scale, 50 * scale, 4 * scale), interface.height)
+    shape = wall.fuse(prism(dovetail_face(interface, depth=depth), ledge))
+    shape = shape.fillet(
+        blend,
+        list(shape.edges().filter_by(Axis.Z)) + horizontal_edges(shape, ledge),
+    )
+    return shape.fillet(blend, horizontal_edges(shape, interface.height))
 
 
-def tile_join_tool(interface: Interface, *, depth: float = 6, male: bool) -> Part:
+def tile_join_tool(
+    interface: Interface,
+    *,
+    depth: float | None = None,
+    male: bool,
+) -> Part:
     """Consistent tile/edging join: original roof or full-height open pocket."""
+    if depth is None:
+        depth = interface.male_join_depth if male else interface.female_join_depth
     if interface.joint_style == "original":
         return joining_tool(
+            interface,
             depth=depth,
             ledge=interface.male_height if male else interface.female_opening_height,
-            height=interface.height,
         )
-    face = dovetail_face(depth=depth)
-    face = face.fillet_2d(1, face.vertices())
+    face = dovetail_face(interface, depth=depth)
+    blend = interface.tile_join_blend_radius
+    face = face.fillet_2d(blend, face.vertices())
     if not male:
         return prism(face, interface.height + 2).moved(Location((0, 0, -1)))
     shape = prism(face, interface.height)
-    return shape.fillet(1, horizontal_edges(shape, interface.height))
+    return shape.fillet(blend, horizontal_edges(shape, interface.height))
 
 
 def full_height_part(
@@ -144,6 +184,7 @@ def full_height_part(
     round_body_corners: bool = True,
     free_top_rims: list[tuple[str, float]] | None = None,
     free_top_radius: float = 2.0,
+    interface_blend_radius: float = 1.0,
 ) -> Part:
     """Build roofless joints in the planar outline, avoiding coincident 3D cuts."""
     outline = body
@@ -162,7 +203,7 @@ def full_height_part(
             if all(v.distance_to(original) > 1e-6 for original in body.vertices())
         ]
     if vertices:
-        face = face.fillet_2d(1, vertices)
+        face = face.fillet_2d(interface_blend_radius, vertices)
     part = prism(face, height)
     if free_top_rims is not None:
         operation = BRepFilletAPI_MakeFillet(part.wrapped)
@@ -175,7 +216,10 @@ def full_height_part(
                 for axis, coordinate in free_top_rims
             )
             selected += free
-            operation.Add(free_top_radius if free else 1.0, edge.wrapped)
+            operation.Add(
+                free_top_radius if free else interface_blend_radius,
+                edge.wrapped,
+            )
         if not selected:
             raise ValueError("full-height accessory has no selected free top rims")
         try:
@@ -185,31 +229,34 @@ def full_height_part(
         if not rounded.is_valid or len(rounded.solids()) != 1:
             raise ValueError("selective full-height top rounding produced invalid geometry")
         return rounded
-    return part.fillet(1, horizontal_edges(part, height))
+    return part.fillet(interface_blend_radius, horizontal_edges(part, height))
 
 
 @lru_cache(maxsize=16)
-def socket_entry_tool(height: float, fit_offset: float) -> Part:
+def socket_entry_tool(interface: Interface) -> Part:
     """Preserve the 3 mm entry roundover even where open edge pockets meet it."""
-    profile = x_profile(offset=fit_offset)
-    carrier = prism(rectangle(-35, -35, 70, 70), height + 1).moved(Location((0, 0, -1)))
-    bore = prism(profile, height + 3).moved(Location((0, 0, -2)))
+    profile = x_profile(interface, offset=interface.fit_offset)
+    half = interface.pitch / 2 + 5
+    carrier = prism(rectangle(-half, -half, 2 * half, 2 * half), interface.height + 1).moved(
+        Location((0, 0, -1))
+    )
+    bore = prism(profile, interface.height + 3).moved(Location((0, 0, -2)))
     material = carrier.cut(bore)
-    rim = profile.outer_wire().moved(Location((0, 0, height)))
+    rim = profile.outer_wire().moved(Location((0, 0, interface.height)))
     material = material.fillet(
-        3,
+        interface.socket_entry_radius,
         [
             edge
-            for edge in horizontal_edges(material, height)
+            for edge in horizontal_edges(material, interface.height)
             if rim.distance_to(edge.center()) < 1e-5
         ],
     )
     return Part(carrier.cut(material).solids())
 
 
-def make_plug() -> Part:
-    plug = prism(x_profile(plug=True), 12.8)
-    return plug.fillet(2, horizontal_edges(plug, 12.8))
+def make_plug(interface: Interface = Interface()) -> Part:
+    plug = prism(x_profile(interface, plug=True), interface.plug_depth)
+    return plug.fillet(2, horizontal_edges(plug, interface.plug_depth))
 
 
 def section_face(shape: Part, z: float) -> Face:

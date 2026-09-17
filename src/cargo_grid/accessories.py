@@ -62,7 +62,6 @@ RAMP_PROFILE_TIP_Y_MM = 65.224331674
 RAMP_FREE_EDGE_RADIUS_MM = 2.0
 BASE_HEIGHT_MM = 4.1
 PANEL_BOTTOM_MM = 6.1
-BRACKET_INSET_MM = 13.0
 BRACKET_BACKING_MM = 4.1
 BRACKET_ENVELOPE_MARGIN_MM = 0.1
 STOP_WALL_MM = 6.0
@@ -76,14 +75,14 @@ SUPPORT_END_PROFILE_RADII_MM = {1: 0.75, 2: 0.25}
 SUPPORT_END_CAP_RADIUS_MM = 3.0
 SUPPORT_END_WINDOW_RADII_MM = {1: 2.5, 2: 2.0, 3: 3.0, 4: 3.0}
 SUPPORT_END_1_WINDOW_RIM_RADIUS_MM = 1.0
-SUPPORT_END_SLOPED_WINDOW_RIM_RADII_MM = {1: 0.5, 2: 1.5}
+SUPPORT_END_SLOPED_WINDOW_RIM_RADII_MM = {1: 0.5, 2: 1.5, 3: 1.0, 4: 0.75}
 BRACKET_LIP_RADIUS_MM = 1.0
 BRACKET_FREE_EDGE_RADIUS_MM = 2.0
-SHALLOW_BRACKET_TRANSITION_RADIUS_MM = 3.0
+BRACKET_FRONT_SLOPE_RADIUS_MM = 3.0
 BRACKET_TOP_EXTENSION_MM = {1: 3.0515422, 2: 2.921921}
 PANEL_STEM_PROFILE_INSET_MM = 0.08
-PANEL_TIP_TRANSITION_START_MM = 10.7
-PANEL_TIP_START_MM = 10.8
+PANEL_TIP_TRANSITION_MM = 0.1
+PANEL_TIP_RADIUS_MM = 2.0
 PANEL_ROOT_OVERLAP_MM = 2.0
 VERTICAL_STOP_RADIUS_MM = 2.0
 BAMBU_PRINT_ROTATIONS = {
@@ -111,9 +110,9 @@ class Accessory:
     60 or 120 mm height. They are filled cargo wedges without wall holes.
     Ramps use ``nx`` cells along a tile edge. Their approved finished run is
     fixed at 50 mm and ``ny`` remains one.
-    ``variant`` selects corner and support-end types. Pitch and tile height can
-    follow a custom Interface, but only reference defaults imply nominal
-    reference dimensions; fixed attachment and support joins are not scaled.
+    ``variant`` selects corner and support-end types. Interface unit size scales
+    tile-facing local-plane geometry; tile thickness independently controls
+    insertion depth. Comfort radii and the separate support-rail join stay in mm.
     """
 
     family: str
@@ -163,6 +162,11 @@ class Accessory:
             raise ValueError("lock height must be at least 12 mm")
         if self.family == "lock-45" and self.height > self.ny * self.interface.pitch:
             raise ValueError("45-degree lock height must not exceed its base depth")
+        if self.family == "lock-45" and self.nx == 2 and self.interface.pitch > 60:
+            raise ValueError(
+                "2x2 angled stop with R2 free edges supports unit size <= 60 mm; "
+                "use the 1x1 stop or a smaller unit size"
+            )
         if self.family == "vertical-tile-bracket":
             panel_rows = self.panel_height_cells or self.ny
             if (self.nx, self.ny, panel_rows) not in VERTICAL_BRACKET_CONFIGS:
@@ -172,22 +176,16 @@ class Accessory:
                 )
             if panel_rows == self.ny and self.panel_height_cells is not None:
                 object.__setattr__(self, "panel_height_cells", None)
-            if not self.interface.reference_socket_dimensions:
-                raise ValueError(
-                    "vertical-tile-bracket requires 60 mm pitch, 13 mm tile height and zero fit offset"
-                )
             if self.height != 50:
                 raise ValueError(
                     "vertical-tile-bracket height follows its cells; accessory height is only for lock-45"
                 )
         if self.family == "vertical-stop" and self.height not in VERTICAL_STOP_HEIGHTS_MM:
             raise ValueError("vertical-stop requires explicit accessory height 60 or 120 mm")
-        if self.family == "ramp" and not self.interface.reference_defaults:
-            raise ValueError(
-                "ramp requires original roofed joints at 60 mm pitch, 13 mm height and zero fit offset"
-            )
+        if self.family == "ramp" and self.interface.joint_style != "original":
+            raise ValueError("ramp requires original roofed tile-edge joints")
         if self.family == "ramp" and self.height != 50:
-            raise ValueError("ramp rise is fixed at 13 mm; accessory height does not apply")
+            raise ValueError("ramp rise follows tile thickness; accessory height does not apply")
 
 
 def _box(x: float, y: float, w: float, d: float, h: float, z: float = 0) -> Part:
@@ -206,6 +204,7 @@ def _join(
     *,
     support: bool = False,
     depth: float | None = None,
+    interface: Interface = Interface(),
 ) -> dict:
     return {
         "position": (x, y, -25 if support else 0),
@@ -213,8 +212,16 @@ def _join(
         "sex": "male" if male else "female",
         "depth": depth
         if depth is not None
-        else ((5 if male else 5.085) if support else (6 if male else 6.1)),
-        "height": 25 if support else (10 if male else 10.2),
+        else (
+            (5 if male else 5.085)
+            if support
+            else interface.male_join_depth
+            if male
+            else interface.female_join_depth
+        ),
+        "height": (
+            25 if support else interface.male_height if male else interface.female_opening_height
+        ),
         "interface": "support-dovetail" if support else "tile-dovetail",
     }
 
@@ -228,7 +235,7 @@ def _edge_plan(
     if spec.family in ("edge-x", "edge-y"):
         male = spec.family == "edge-x"
         return rectangle(0, -10 if male else 0, spec.nx * p, 10), [
-            _join((i + 0.5) * p, 0, 0, male) for i in range(spec.nx)
+            _join((i + 0.5) * p, 0, 0, male, interface=spec.interface) for i in range(spec.nx)
         ]
     if spec.family == "corner-in":
         # Square internal elbows replace the source's curved non-mating web.
@@ -238,8 +245,8 @@ def _edge_plan(
         horizontal = rectangle(0, p - 10 if top else 0, p, 10)
         face = Face(vertical.fuse(horizontal).faces()[0].wrapped)
         return face, [
-            _join(p if right else 0, p / 2, -90, right),
-            _join(p / 2, p if top else 0, 0, top),
+            _join(p if right else 0, p / 2, -90, right, interface=spec.interface),
+            _join(p / 2, p if top else 0, 0, top, interface=spec.interface),
         ]
     v = spec.variant
     if v in (3, 6):
@@ -254,7 +261,10 @@ def _edge_plan(
                     (0, p + 10),
                 ]
             )
-            joins = [_join(p, p / 2, -90, False), _join(p / 2, p, 0, False)]
+            joins = [
+                _join(p, p / 2, -90, False, interface=spec.interface),
+                _join(p / 2, p, 0, False, interface=spec.interface),
+            ]
         else:
             face = _polygon(
                 [
@@ -266,7 +276,10 @@ def _edge_plan(
                     (-10, p),
                 ]
             )
-            joins = [_join(0, p / 2, -90, True), _join(p / 2, 0, 0, True)]
+            joins = [
+                _join(0, p / 2, -90, True, interface=spec.interface),
+                _join(p / 2, 0, 0, True, interface=spec.interface),
+            ]
         return face, joins
     extension = 5 * sqrt(2)
     rounded_extension = extension + free_miter_extension
@@ -289,7 +302,7 @@ def _edge_plan(
                 (p, 10),
                 (0, 10),
             ]
-        return _polygon(points), [_join(p / 2, 0, 0, male)]
+        return _polygon(points), [_join(p / 2, 0, 0, male, interface=spec.interface)]
     if v == 1:
         points = [
             (-10, 0),
@@ -306,7 +319,7 @@ def _edge_plan(
             (10, p),
             (0, p),
         ]
-    return _polygon(points), [_join(0, p / 2, -90, male)]
+    return _polygon(points), [_join(0, p / 2, -90, male, interface=spec.interface)]
 
 
 def _join_solid(join: dict, *, interface: Interface = Interface()) -> Part:
@@ -328,9 +341,9 @@ def _apply_joins(part: Part, joins: list[dict], *, interface: Interface = Interf
     return part.clean()
 
 
-@lru_cache(maxsize=1)
-def _downward_plug() -> Part:
-    return make_plug().rotate(Axis.X, 180)
+@lru_cache(maxsize=16)
+def _downward_plug(interface: Interface = Interface()) -> Part:
+    return make_plug(interface).rotate(Axis.X, 180)
 
 
 def _mount_centers(spec: Accessory) -> list[tuple[float, float, float]]:
@@ -354,12 +367,14 @@ def _mounted_base(spec: Accessory, *, root_radius: float, round_top: bool = True
         part = part.fillet(1, horizontal_edges(part, BASE_HEIGHT_MM))
     centers = _mount_centers(spec)
     for center in centers:
-        part = part.fuse(_downward_plug().moved(Location(center)))
+        part = part.fuse(_downward_plug(spec.interface).moved(Location(center)))
+    root_limit = spec.interface.pitch * 23 / 60
     roots = [
         edge
         for edge in horizontal_edges(part, 0)
         if any(
-            abs(edge.center().X - x) < 23 and abs(edge.center().Y - y) < 23 for x, y, _ in centers
+            abs(edge.center().X - x) < root_limit and abs(edge.center().Y - y) < root_limit
+            for x, y, _ in centers
         )
     ]
     return part.fillet(root_radius, roots)
@@ -377,12 +392,14 @@ def _plate(spec: Accessory) -> Part:
     part = Part(Solid(operation.Shape()).wrapped)
     centers = _mount_centers(spec)
     for center in centers:
-        part = part.fuse(_downward_plug().moved(Location(center)))
+        part = part.fuse(_downward_plug(spec.interface).moved(Location(center)))
+    root_limit = spec.interface.pitch * 23 / 60
     roots = [
         edge
         for edge in horizontal_edges(part, 0)
         if any(
-            abs(edge.center().X - x) < 23 and abs(edge.center().Y - y) < 23 for x, y, _ in centers
+            abs(edge.center().X - x) < root_limit and abs(edge.center().Y - y) < root_limit
+            for x, y, _ in centers
         )
     ]
     return part.fillet(2, roots).clean()
@@ -400,55 +417,108 @@ def _filled_angled_stop(spec: Accessory) -> Part:
         (top_front, spec.height),
         (0, BASE_HEIGHT_MM - 1),
     ]
-    envelope = _cross_prism(profile, w)
-    operation = BRepFilletAPI_MakeFillet(envelope.wrapped)
-    for edge in envelope.edges():
-        operation.Add(2.0, edge.wrapped)
-    operation.Build()
-    if not operation.IsDone():
-        raise ValueError("filled angled-stop R2 envelope failed")
-    rounded = Part(Solid(operation.Shape()).wrapped)
+    if spec.interface.unit_scale == 1:
+        envelope = _cross_prism(profile, w)
+        operation = BRepFilletAPI_MakeFillet(envelope.wrapped)
+        for edge in envelope.edges():
+            operation.Add(2.0, edge.wrapped)
+        operation.Build()
+        if not operation.IsDone():
+            raise ValueError("filled angled-stop R2 envelope failed")
+        rounded = Part(Solid(operation.Shape()).wrapped)
+    else:
+        face = Face(Wire.make_polygon([(0, y, z) for y, z in profile], close=True))
+        face = face.fillet_2d(2, face.vertices())
+        rounded = Part(Solid.extrude(face, (w, 0, 0)).wrapped)
+        cap_edges = [
+            edge
+            for edge in rounded.edges()
+            if edge.bounding_box().size.X < 1e-6
+            and (abs(edge.bounding_box().min.X) < 1e-6 or abs(edge.bounding_box().min.X - w) < 1e-6)
+        ]
+        rounded = rounded.fillet(2, cap_edges)
     mounted = _mounted_base(spec, root_radius=1, round_top=False)
     connectors = []
+    region_size = spec.interface.pitch * 0.8
     for x, y, _ in _mount_centers(spec):
-        region = Solid.make_box(48, 48, 13.2).moved(Location((x - 24, y - 24, -13)))
+        region = Solid.make_box(
+            region_size,
+            region_size,
+            spec.interface.height + 0.2,
+        ).moved(
+            Location(
+                (
+                    x - region_size / 2,
+                    y - region_size / 2,
+                    -spec.interface.height,
+                )
+            )
+        )
         connectors.extend(mounted.intersect(region).solids())
     return Part(rounded.fuse(*connectors).clean().solids())
 
 
-@lru_cache(maxsize=1)
-def _legacy_panel_connector() -> Part:
-    plate = _mounted_base(Accessory("plate"), root_radius=2)
-    domain = prism(x_profile(offset=5), 18).moved(Location((30, 30, -13)))
+@lru_cache(maxsize=16)
+def _legacy_panel_connector(interface: Interface = Interface()) -> Part:
+    plate = _mounted_base(Accessory("plate", interface=interface), root_radius=2)
+    center = interface.pitch / 2
+    domain = prism(
+        x_profile(interface, offset=5),
+        interface.height + 5,
+    ).moved(Location((center, center, -interface.height)))
     return Part(plate.intersect(domain).solids())
 
 
-@lru_cache(maxsize=1)
-def _bidirectional_panel_post() -> Part:
-    narrow_profile = x_profile(plug=True, offset=-PANEL_STEM_PROFILE_INSET_MM)
+@lru_cache(maxsize=16)
+def _bidirectional_panel_post(interface: Interface = Interface()) -> Part:
+    tip_start = interface.plug_depth - PANEL_TIP_RADIUS_MM
+    transition_start = tip_start - PANEL_TIP_TRANSITION_MM
+    narrow_profile = x_profile(
+        interface,
+        plug=True,
+        offset=-PANEL_STEM_PROFILE_INSET_MM,
+    )
     stem = prism(
         narrow_profile,
-        PANEL_TIP_TRANSITION_START_MM + PANEL_ROOT_OVERLAP_MM,
+        transition_start + PANEL_ROOT_OVERLAP_MM,
     ).moved(Location((0, 0, -PANEL_ROOT_OVERLAP_MM)))
     transition = Part(
         Solid.make_loft(
             [
-                narrow_profile.outer_wire().moved(Location((0, 0, PANEL_TIP_TRANSITION_START_MM))),
-                x_profile(plug=True).outer_wire().moved(Location((0, 0, PANEL_TIP_START_MM))),
+                narrow_profile.outer_wire().moved(Location((0, 0, transition_start))),
+                x_profile(interface, plug=True).outer_wire().moved(Location((0, 0, tip_start))),
             ]
         ).wrapped
     )
-    tip_region = Solid.make_box(100, 100, 2.1).moved(Location((-50, -50, PANEL_TIP_START_MM)))
-    exact_tip = Part(make_plug().intersect(tip_region).solids())
+    carrier = interface.pitch + 10
+    tip_region = Solid.make_box(
+        carrier,
+        carrier,
+        PANEL_TIP_RADIUS_MM + 0.1,
+    ).moved(
+        Location(
+            (
+                -carrier / 2,
+                -carrier / 2,
+                tip_start,
+            )
+        )
+    )
+    exact_tip = Part(make_plug(interface).intersect(tip_region).solids())
     result = Part(stem.fuse(transition, exact_tip).clean().solids())
     if not result.is_valid or len(result.solids()) != 1:
         raise ValueError("bidirectional panel post is invalid")
     return result
 
 
-@lru_cache(maxsize=1)
-def _panel_connector() -> Part:
-    return _bidirectional_panel_post().rotate(Axis.X, 180).moved(Location((30, 30, 0)))
+@lru_cache(maxsize=16)
+def _panel_connector(interface: Interface = Interface()) -> Part:
+    center = interface.pitch / 2
+    return (
+        _bidirectional_panel_post(interface)
+        .rotate(Axis.X, 180)
+        .moved(Location((center, center, 0)))
+    )
 
 
 def _vertical_bracket(spec: Accessory, *, round_lip: bool = True) -> Part:
@@ -459,16 +529,16 @@ def _vertical_bracket(spec: Accessory, *, round_lip: bool = True) -> Part:
         return _rounded_original_bracket(spec)
     p = spec.interface.pitch
     w, d = spec.nx * p, spec.ny * p
-    seat = d - BRACKET_INSET_MM
+    seat = d - spec.interface.height
     base = _mounted_base(spec, root_radius=1, round_top=False)
-    node = _panel_connector()
-    envelope = _legacy_panel_connector()
+    node = _panel_connector(spec.interface)
+    envelope = _legacy_panel_connector(spec.interface)
     # Cover the highest rear backing corner, retaining the exact45-degree bed plane.
     intercept = (
         PANEL_BOTTOM_MM
         + envelope.bounding_box().max.Y
         + BRACKET_BACKING_MM
-        + BRACKET_INSET_MM
+        + spec.interface.height
         - p
         + BRACKET_ENVELOPE_MARGIN_MM
     )
@@ -481,7 +551,14 @@ def _vertical_bracket(spec: Accessory, *, round_lip: bool = True) -> Part:
         for row in range(spec.ny)
         for column in range(spec.nx)
     ]
-    land = _box(0, seat, w, BRACKET_INSET_MM, PANEL_BOTTOM_MM - BASE_HEIGHT_MM, BASE_HEIGHT_MM)
+    land = _box(
+        0,
+        seat,
+        w,
+        spec.interface.height,
+        PANEL_BOTTOM_MM - BASE_HEIGHT_MM,
+        BASE_HEIGHT_MM,
+    )
     if round_lip:
         # The outermost1mm lies beyond the tile's rounded-edge planar bearing land.
         edges = [
@@ -496,14 +573,14 @@ def _vertical_bracket(spec: Accessory, *, round_lip: bool = True) -> Part:
 def _rounded_original_bracket(spec: Accessory) -> Part:
     p = spec.interface.pitch
     width, depth = spec.nx * p, spec.ny * p
-    seat = depth - BRACKET_INSET_MM
-    node = _panel_connector()
-    envelope = _legacy_panel_connector()
+    seat = depth - spec.interface.height
+    node = _panel_connector(spec.interface)
+    envelope = _legacy_panel_connector(spec.interface)
     intercept = (
         PANEL_BOTTOM_MM
         + envelope.bounding_box().max.Y
         + BRACKET_BACKING_MM
-        + BRACKET_INSET_MM
+        + spec.interface.height
         - p
         + BRACKET_ENVELOPE_MARGIN_MM
     )
@@ -529,6 +606,13 @@ def _rounded_original_bracket(spec: Accessory) -> Part:
             and abs(bounds.max.Z - PANEL_BOTTOM_MM) < 1e-5
         ):
             continue
+        front_to_slope = (
+            abs(bounds.min.Y) < 1e-5
+            and abs(bounds.max.Y) < 1e-5
+            and abs(bounds.min.Z - intercept) < 1e-5
+            and abs(bounds.max.Z - intercept) < 1e-5
+            and bounds.size.X > width - 1
+        )
         bearing_lip = (
             abs(bounds.min.Z - PANEL_BOTTOM_MM) < 1e-5
             and abs(bounds.max.Z - PANEL_BOTTOM_MM) < 1e-5
@@ -539,17 +623,34 @@ def _rounded_original_bracket(spec: Accessory) -> Part:
             and bounds.max.Z <= PANEL_BOTTOM_MM + 1e-5
         )
         operation.Add(
-            BRACKET_LIP_RADIUS_MM if bearing_lip else BRACKET_FREE_EDGE_RADIUS_MM,
+            BRACKET_FRONT_SLOPE_RADIUS_MM
+            if front_to_slope
+            else BRACKET_LIP_RADIUS_MM
+            if bearing_lip
+            else BRACKET_FREE_EDGE_RADIUS_MM,
             edge.wrapped,
         )
     operation.Build()
     if not operation.IsDone():
-        raise ValueError("original tile-bracket coupled R2 body fillet failed")
+        raise ValueError("original tile-bracket coupled body fillet failed")
     rounded_body = Part(Solid(operation.Shape()).wrapped)
     mounted = _mounted_base(spec, root_radius=1, round_top=False)
     floor_connectors = []
+    region_size = spec.interface.pitch * 0.8
     for x, y, _ in _mount_centers(spec):
-        region = Solid.make_box(48, 48, 14.1).moved(Location((x - 24, y - 24, -13)))
+        region = Solid.make_box(
+            region_size,
+            region_size,
+            spec.interface.height + 1.1,
+        ).moved(
+            Location(
+                (
+                    x - region_size / 2,
+                    y - region_size / 2,
+                    -spec.interface.height,
+                )
+            )
+        )
         floor_connectors.extend(mounted.intersect(region).solids())
     panel_connectors = [
         node.rotate(Axis.X, 90).moved(Location((column * p, seat, PANEL_BOTTOM_MM + row * p)))
@@ -562,17 +663,17 @@ def _rounded_original_bracket(spec: Accessory) -> Part:
 def _rounded_shallow_bracket_body(spec: Accessory, panel_rows: int) -> Part:
     p = spec.interface.pitch
     w, d = spec.nx * p, spec.ny * p
-    seat = d - BRACKET_INSET_MM
-    envelope = _legacy_panel_connector()
+    seat = d - spec.interface.height
+    envelope = _legacy_panel_connector(spec.interface)
     intercept = (
         PANEL_BOTTOM_MM
         + envelope.bounding_box().max.Y
         + BRACKET_BACKING_MM
-        + BRACKET_INSET_MM
+        + spec.interface.height
         - p
         + BRACKET_ENVELOPE_MARGIN_MM
     )
-    panel_top = panel_rows * p - BRACKET_INSET_MM + intercept
+    panel_top = panel_rows * p - spec.interface.height + intercept
     upper_rear = seat - BRACKET_BACKING_MM - BRACKET_ENVELOPE_MARGIN_MM
     body = _cross_prism(
         [
@@ -613,7 +714,7 @@ def _rounded_shallow_bracket_body(spec: Accessory, panel_rows: int) -> Part:
             and bounds.max.Z <= PANEL_BOTTOM_MM + 1e-5
         )
         operation.Add(
-            SHALLOW_BRACKET_TRANSITION_RADIUS_MM
+            BRACKET_FRONT_SLOPE_RADIUS_MM
             if front_to_slope
             else BRACKET_LIP_RADIUS_MM
             if bearing_lip
@@ -628,13 +729,26 @@ def _rounded_shallow_bracket_body(spec: Accessory, panel_rows: int) -> Part:
 
 def _shallow_vertical_bracket(spec: Accessory, panel_rows: int) -> Part:
     p = spec.interface.pitch
-    seat = spec.ny * p - BRACKET_INSET_MM
+    seat = spec.ny * p - spec.interface.height
     rounded_body = _rounded_shallow_bracket_body(spec, panel_rows)
-    node = _panel_connector()
+    node = _panel_connector(spec.interface)
     mounted = _mounted_base(spec, root_radius=1, round_top=False)
     floor_connectors = []
+    region_size = spec.interface.pitch * 0.8
     for x, y, _ in _mount_centers(spec):
-        region = Solid.make_box(48, 48, 14.1).moved(Location((x - 24, y - 24, -13)))
+        region = Solid.make_box(
+            region_size,
+            region_size,
+            spec.interface.height + 1.1,
+        ).moved(
+            Location(
+                (
+                    x - region_size / 2,
+                    y - region_size / 2,
+                    -spec.interface.height,
+                )
+            )
+        )
         floor_connectors.extend(mounted.intersect(region).solids())
     panel_connectors = [
         node.rotate(Axis.X, 90).moved(Location((column * p, seat, PANEL_BOTTOM_MM + row * p)))
@@ -661,7 +775,7 @@ def bambu_print_rotation(spec: Accessory) -> float | None:
     if spec.family == "vertical-tile-bracket" and spec.panel_height_cells is not None:
         return None
     if spec.family == "vertical-tile-bracket":
-        seat = spec.ny * spec.interface.pitch - BRACKET_INSET_MM
+        seat = spec.ny * spec.interface.pitch - spec.interface.height
         slope = (seat + BRACKET_TOP_EXTENSION_MM[spec.ny]) / seat
         return 180 - degrees(atan(slope))
     return (
@@ -686,8 +800,9 @@ def required_bambu_print_rotation(parameters: dict) -> float | None:
     if family == "vertical-tile-bracket":
         interface = parameters.get("interface", {})
         pitch = interface.get("pitch", 60)
+        thickness = interface.get("height", 13)
         rows = parameters["ny"]
-        seat = rows * pitch - BRACKET_INSET_MM
+        seat = rows * pitch - thickness
         slope = (seat + BRACKET_TOP_EXTENSION_MM[rows]) / seat
         return 180 - degrees(atan(slope))
     if family != "vertical-stop":
@@ -810,13 +925,54 @@ def _vertical_stop(spec: Accessory) -> Part:
     return Part(Solid(operation.Shape()).wrapped)
 
 
+@lru_cache(maxsize=16)
+def _ramp_profile_tip_y(tile_thickness: float) -> float:
+    if tile_thickness == 13:
+        return RAMP_PROFILE_TIP_Y_MM
+
+    def finished_run(raw_tip: float) -> float:
+        profile = Face(
+            Wire.make_polygon(
+                [
+                    (0, 0, 0),
+                    (0, raw_tip, 0),
+                    (0, RAMP_CARRIER_RUN_MM, tile_thickness),
+                    (0, 0, tile_thickness),
+                ],
+                close=True,
+            )
+        )
+        tip = max(profile.vertices(), key=lambda vertex: vertex.Y)
+        return (
+            profile.fillet_2d(
+                RAMP_FREE_EDGE_RADIUS_MM,
+                [tip],
+            )
+            .bounding_box()
+            .max.Y
+        )
+
+    low = RAMP_RUN_MM
+    high = RAMP_RUN_MM + 4 * tile_thickness
+    while finished_run(high) < RAMP_RUN_MM:
+        high += max(10, tile_thickness)
+    for _ in range(48):
+        middle = (low + high) / 2
+        if finished_run(middle) < RAMP_RUN_MM:
+            low = middle
+        else:
+            high = middle
+    return (low + high) / 2
+
+
 def _ramp(spec: Accessory, *, cut_joins: bool = True) -> Part:
     width = spec.nx * spec.interface.pitch
+    raw_tip = _ramp_profile_tip_y(spec.interface.height)
     profile = Face(
         Wire.make_polygon(
             [
                 (0, 0, 0),
-                (0, RAMP_PROFILE_TIP_Y_MM, 0),
+                (0, raw_tip, 0),
                 (0, RAMP_CARRIER_RUN_MM, spec.interface.height),
                 (0, 0, spec.interface.height),
             ],
@@ -845,9 +1001,11 @@ def _ramp(spec: Accessory, *, cut_joins: bool = True) -> Part:
     if not cut_joins:
         return part
     cutters = [
-        tile_join_tool(spec.interface, depth=6.1, male=False).moved(
-            Location(((cell + 0.5) * spec.interface.pitch, 0, 0))
-        )
+        tile_join_tool(
+            spec.interface,
+            depth=spec.interface.female_join_depth,
+            male=False,
+        ).moved(Location(((cell + 0.5) * spec.interface.pitch, 0, 0)))
         for cell in range(spec.nx)
     ]
     result = part.cut(*cutters).clean()
@@ -917,10 +1075,23 @@ def _support_plan(spec: Accessory) -> tuple[float, list[dict]]:
     ]
 
 
+def _support_window_spans(spec: Accessory, length: float) -> list[tuple[float, float]]:
+    scale = 1.0 if spec.family == "support-bit" else spec.interface.unit_scale
+    period = 60 * scale
+    start = 0.0
+    result = []
+    while start < length - 35 * scale - 1e-9:
+        span = min(32 * scale, length - start - 24 * scale)
+        if span >= 12 * scale:
+            result.append((start + 12 * scale, span))
+        start += period
+    return result
+
+
 def _support(spec: Accessory, *, round_top: bool = True) -> Part:
     length, joins = _support_plan(spec)
     if spec.family == "support-end":
-        ramp = 55 if spec.variant in (2, 4) else 75
+        ramp = (55 if spec.variant in (2, 4) else 75) * spec.interface.unit_scale
         if spec.variant in (1, 2):
             points = [(0, -12), (ramp, -25), (length, -25), (length, 0), (0, 0)]
         else:
@@ -945,10 +1116,8 @@ def _support(spec: Accessory, *, round_top: bool = True) -> Part:
     else:
         part = _box(-22.5, 0, 45, length, 25, -25)
     if not round_top:
-        for start in range(0, int(length) - 35, 60):
-            span = min(32, length - start - 24)
-            if span >= 12:
-                part = part.cut(_box(-10, start + 12, 20, span, 27, -26))
+        for start, span in _support_window_spans(spec, length):
+            part = part.cut(_box(-10, start, 20, span, 27, -26))
         return _apply_joins(part, joins)
     if spec.family == "support-end" and spec.variant in (3, 4):
         operation = BRepFilletAPI_MakeFillet(part.wrapped)
@@ -961,47 +1130,50 @@ def _support(spec: Accessory, *, round_top: bool = True) -> Part:
     elif spec.family != "support-end":
         outer_edges = [edge for edge in part.edges() if edge.bounding_box().size.Y > length - 1]
         part = part.fillet(SUPPORT_BODY_RADIUS_MM, outer_edges)
-    for start in range(0, int(length) - 35, 60):
-        span = min(32, length - start - 24)
-        if span >= 12:
-            window = rectangle(-10, start + 12, 20, span)
-            window_radius = (
-                SUPPORT_END_WINDOW_RADII_MM[spec.variant]
-                if spec.family == "support-end"
-                else SUPPORT_BODY_RADIUS_MM
-            )
-            window = window.fillet_2d(window_radius, window.vertices())
-            part = part.cut(prism(window, 27).moved(Location((0, 0, -26))))
+    for start, span in _support_window_spans(spec, length):
+        window = rectangle(-10, start, 20, span)
+        window_radius = (
+            SUPPORT_END_WINDOW_RADII_MM[spec.variant]
+            if spec.family == "support-end"
+            else SUPPORT_BODY_RADIUS_MM
+        )
+        window = window.fillet_2d(window_radius, window.vertices())
+        part = part.cut(prism(window, 27).moved(Location((0, 0, -26))))
+    rim_margin = 10 * (1.0 if spec.family == "support-bit" else spec.interface.unit_scale)
     window_rims = [
         edge
         for edge in part.edges()
         if edge.bounding_box().min.X >= -10.01
         and edge.bounding_box().max.X <= 10.01
-        and edge.center().Y >= 10
-        and edge.center().Y <= length - 10
+        and edge.center().Y >= rim_margin
+        and edge.center().Y <= length - rim_margin
         and (abs(edge.bounding_box().min.Z) < 1e-5 or abs(edge.bounding_box().max.Z + 25) < 1e-5)
     ]
     if window_rims:
-        rim_radius = (
-            SUPPORT_END_1_WINDOW_RIM_RADIUS_MM
-            if spec.family == "support-end" and spec.variant == 1
-            else SUPPORT_WINDOW_RADIUS_MM
-        )
+        if spec.family == "support-end":
+            rim_radius = (
+                SUPPORT_END_1_WINDOW_RIM_RADIUS_MM
+                if spec.variant == 1
+                else SUPPORT_WINDOW_RADIUS_MM
+            ) * min(1.0, spec.interface.unit_scale)
+        else:
+            rim_radius = SUPPORT_WINDOW_RADIUS_MM
         part = part.fillet(rim_radius, window_rims)
-    if spec.family == "support-end" and spec.variant in (1, 2):
+    if spec.family == "support-end":
         sloped_window_rims = [
             edge
             for edge in part.edges()
             if edge.bounding_box().min.X >= -10.01
             and edge.bounding_box().max.X <= 10.01
-            and edge.center().Y >= 10
-            and edge.center().Y <= length - 10
+            and edge.center().Y >= rim_margin
+            and edge.center().Y <= length - rim_margin
             and abs(edge.bounding_box().min.Z) > 1e-5
             and abs(edge.bounding_box().max.Z + 25) > 1e-5
             and not (edge.bounding_box().size.X < 1e-5 and edge.bounding_box().size.Y < 1e-5)
         ]
         part = part.fillet(
-            SUPPORT_END_SLOPED_WINDOW_RIM_RADII_MM[spec.variant],
+            SUPPORT_END_SLOPED_WINDOW_RIM_RADII_MM[spec.variant]
+            * min(1.0, spec.interface.unit_scale),
             sloped_window_rims,
         )
     return _apply_joins(part, joins)
@@ -1012,17 +1184,17 @@ def accessory_datums(spec: Accessory) -> dict:
     if spec.family in ("plate", "vertical-tile-bracket", "vertical-stop", "lock-45"):
         if spec.family == "vertical-tile-bracket":
             p = spec.interface.pitch
-            seat = spec.ny * p - BRACKET_INSET_MM
+            seat = spec.ny * p - spec.interface.height
             panel_rows = spec.panel_height_cells or spec.ny
             return {
                 "shoulder_z": 0,
-                "plug_tip_z": -12.8,
+                "plug_tip_z": -spec.interface.plug_depth,
                 "mount_centers": _mount_centers(spec),
                 "joins": [],
                 "base_cells_x_y": (spec.nx, spec.ny),
                 "panel_cells_x_z": (spec.nx, panel_rows),
                 "panel_seat_y": seat,
-                "panel_plug_tip_y": seat + 12.8,
+                "panel_plug_tip_y": seat + spec.interface.plug_depth,
                 "panel_plug_centers": [
                     ((column + 0.5) * p, seat, PANEL_BOTTOM_MM + (row + 0.5) * p)
                     for row in range(panel_rows)
@@ -1031,21 +1203,21 @@ def accessory_datums(spec: Accessory) -> dict:
                 "panel_bottom_z": PANEL_BOTTOM_MM,
                 "bearing_z": PANEL_BOTTOM_MM,
                 "nominal_bearing_gap": 0,
-                "panel_inset": BRACKET_INSET_MM,
+                "panel_inset": spec.interface.height,
                 "outward_tile_face": "underside",
                 "supported_outward_tile_faces": ("underside", "top"),
                 "top_outward_tile_rotation_degrees": {"z": 180, "x": -90},
                 "panel_stem_profile_inset": PANEL_STEM_PROFILE_INSET_MM,
                 "panel_tip_transition": (
-                    PANEL_TIP_TRANSITION_START_MM,
-                    PANEL_TIP_START_MM,
+                    spec.interface.plug_depth - PANEL_TIP_RADIUS_MM - PANEL_TIP_TRANSITION_MM,
+                    spec.interface.plug_depth - PANEL_TIP_RADIUS_MM,
                 ),
                 "bidirectional_physical_fit_verified": False,
                 "backing": "solid; backed interior round holes are blind",
             }
         result = {
             "shoulder_z": 0,
-            "plug_tip_z": -12.8,
+            "plug_tip_z": -spec.interface.plug_depth,
             "mount_centers": _mount_centers(spec),
             "joins": [],
         }
@@ -1068,7 +1240,13 @@ def accessory_datums(spec: Accessory) -> dict:
             "mount_centers": [],
             "joins": [
                 {
-                    **_join((cell + 0.5) * spec.interface.pitch, 0, 0, False),
+                    **_join(
+                        (cell + 0.5) * spec.interface.pitch,
+                        0,
+                        0,
+                        False,
+                        interface=spec.interface,
+                    ),
                     "joint_style": spec.interface.joint_style,
                     "height": spec.interface.female_opening_height,
                     "open_through_top": spec.interface.joint_style == "full-height",
@@ -1088,7 +1266,7 @@ def accessory_datums(spec: Accessory) -> dict:
         if spec.family == "support-end":
             result.update(
                 end=SUPPORT_END_NAMES[spec.variant - 1],
-                ramp_length=55 if spec.variant in (2, 4) else 75,
+                ramp_length=(55 if spec.variant in (2, 4) else 75) * spec.interface.unit_scale,
                 ramp_rise=13,
             )
         return result
@@ -1136,7 +1314,9 @@ def make_accessory(spec: Accessory) -> Part:
         if spec.interface.joint_style == "full-height":
             males, females = [], []
             for join in joins:
-                profile = dovetail_face(depth=join["depth"]).rotate(Axis.Z, join["angle"])
+                profile = dovetail_face(spec.interface, depth=join["depth"]).rotate(
+                    Axis.Z, join["angle"]
+                )
                 profile = profile.moved(Location(join["position"]))
                 (males if join["sex"] == "male" else females).append(profile)
             part = full_height_part(
@@ -1147,6 +1327,7 @@ def make_accessory(spec: Accessory) -> Part:
                 round_body_corners=False,
                 free_top_rims=_free_top_rims(spec),
                 free_top_radius=EDGE_TOP_RADIUS_MM,
+                interface_blend_radius=spec.interface.tile_join_blend_radius,
             )
         else:
             body = prism(face, spec.interface.height)

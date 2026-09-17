@@ -58,7 +58,9 @@ def test_version_and_module_entrypoint(tmp_path):
         command in help_result.stdout
         for command in ("part", "layout", "catalogue", "compare-reference")
     )
-    assert "off by default" in help_result.stdout
+    normalized_help = " ".join(help_result.stdout.split())
+    assert "full 10 mm round-hole tiles are the defaults" in normalized_help
+    assert "roof support remains off" in normalized_help
 
 
 def test_manifest_version_design_mode_and_limits(block_job, tmp_path):

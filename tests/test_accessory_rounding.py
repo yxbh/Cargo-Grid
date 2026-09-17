@@ -1,6 +1,6 @@
 """Selective visible radii preserve real mating geometry, not only constants."""
 
-from math import sqrt
+from math import cos, radians, sqrt
 
 import pytest
 from build123d import Axis, GeomType, Location, Part, Solid, Vector, export_step, import_step
@@ -123,7 +123,7 @@ def test_support_rounding_preserves_full_height_dovetails(spec, tmp_path):
             1: {0.5, 0.75, 1.0, 2.5, 3.0},
             2: {0.25, 1.5, 2.0, 3.0},
             3: {1.0, 2.0, 3.0},
-            4: {1.0, 2.0, 3.0},
+            4: {0.75, 1.0, 2.0, 3.0},
         }[spec.variant]
         if spec.family == "support-end"
         else {3.0}
@@ -131,6 +131,28 @@ def test_support_rounding_preserves_full_height_dovetails(spec, tmp_path):
     assert all(
         any(radius == pytest.approx(expected) for radius in radii) for expected in expected_radii
     )
+
+
+@pytest.mark.parametrize("variant", range(1, 5))
+def test_support_end_window_rims_have_no_sharp_free_edges(variant):
+    shape = make_accessory(Accessory("support-end", variant=variant))
+    for edge in shape.edges():
+        center = edge.center()
+        if not (-10.01 <= center.X <= 10.01 and 8 < center.Y < 112):
+            continue
+        adjacent = [
+            face
+            for face in shape.faces()
+            if any(candidate.is_same(edge) for candidate in face.edges())
+        ]
+        if len(adjacent) != 2:
+            continue
+        normals = [face.normal_at(center) for face in adjacent]
+        assert normals[0].dot(normals[1]) >= cos(radians(0.001)), (
+            variant,
+            tuple(center),
+            [face.geom_type.name for face in adjacent],
+        )
 
 
 @pytest.mark.parametrize("n,expected", [(1, 123369.26344133946), (2, 474943.3630807313)])

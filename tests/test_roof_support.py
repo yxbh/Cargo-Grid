@@ -49,9 +49,9 @@ def test_full_scope_exact_lattice_and_bores(nx, ny, expected):
     assert shape.volume == pytest.approx(expected_volume, abs=0.002)
 
 
-def test_interior_default_and_terminated_fillers_are_preserved():
-    assert Tile().hole_scope == "interior" and Tile().hole_diameter is None
-    assert len(hole_placements(Tile(2, 3, hole_diameter=10))) == 9
+def test_full_default_interior_override_and_terminated_fillers_are_preserved():
+    assert Tile().hole_scope == "full" and Tile().hole_diameter == 10
+    assert len(hole_placements(Tile(2, 3, hole_diameter=10, hole_scope="interior"))) == 9
     spec = Tile(2, 3, hole_diameter=10, hole_scope="full", west=False, filler_west=3)
     holes = hole_placements(spec)
     assert all(not h.accepted and "terminated" in h.reason for h in holes if h.x == 0)
@@ -283,7 +283,6 @@ def test_non_tile_job_is_rejected_before_creating_output(bambu, tmp_path):
         ["--roof-top-gap-mm", ".2"],
         ["--roof-nozzle-slots", "2", "1"],
         ["--roof-foot-expansion-mm", "0"],
-        ["--hole-scope", "full"],
         [
             "--roof-support",
             "--roof-top-gap-mm",

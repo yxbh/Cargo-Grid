@@ -1,4 +1,4 @@
-"""Shared tile construction and optional circular-hole keep-out checks."""
+"""Shared tile construction and default circular-hole keep-out checks."""
 
 from dataclasses import dataclass
 from math import hypot
@@ -16,7 +16,7 @@ from cargo_grid.interfaces import (
     underside_fillet,
     x_profile,
 )
-from cargo_grid.parameters import Tile
+from cargo_grid.parameters import Interface, Tile
 
 
 @dataclass(frozen=True)
@@ -49,7 +49,10 @@ def hole_placements(tile: Tile) -> list[HolePlacement]:
             if not (i % 2 and j % 2)
         ]
     # Protect the actual top opening and a material band, rather than its bbox.
-    protected = x_profile(offset=3 + tile.minimum_web + tile.interface.fit_offset)
+    protected = x_profile(
+        tile.interface,
+        offset=3 + tile.minimum_web + tile.interface.fit_offset,
+    )
     result = []
     for x, y in candidates:
         w, d = tile.body_size
@@ -83,8 +86,14 @@ def hole_placements(tile: Tile) -> list[HolePlacement]:
     return result
 
 
-def _join_tool(x: float, y: float, angle: float, depth: float = 6) -> Face:
-    return dovetail_face(depth=depth).rotate(Axis.Z, angle).moved(Location((x, y, 0)))
+def _join_tool(
+    interface: Interface,
+    x: float,
+    y: float,
+    angle: float,
+    depth: float,
+) -> Face:
+    return dovetail_face(interface, depth=depth).rotate(Axis.Z, angle).moved(Location((x, y, 0)))
 
 
 def make_tile(tile: Tile = Tile()) -> Part:
@@ -107,24 +116,88 @@ def make_tile(tile: Tile = Tile()) -> Part:
     female_faces = []
     for i in range(tile.nx):
         if tile.north:
-            male_faces.append(_join_tool((i + 0.5) * p, d, 0, 6))
+            male_faces.append(
+                _join_tool(tile.interface, (i + 0.5) * p, d, 0, tile.interface.male_join_depth)
+            )
             if tile.interface.joint_style == "original":
-                male_tools.append(tool((i + 0.5) * p, d, 0, 6, True))
+                male_tools.append(
+                    tool(
+                        (i + 0.5) * p,
+                        d,
+                        0,
+                        tile.interface.male_join_depth,
+                        True,
+                    )
+                )
         if tile.south:
-            female_faces.append(_join_tool((i + 0.5) * p, 0, 0, 6))
+            female_faces.append(
+                _join_tool(
+                    tile.interface,
+                    (i + 0.5) * p,
+                    0,
+                    0,
+                    tile.interface.male_join_depth,
+                )
+            )
             if tile.interface.joint_style == "original":
-                female_tools.append(tool((i + 0.5) * p, 0, 0, 6, False))
+                female_tools.append(
+                    tool(
+                        (i + 0.5) * p,
+                        0,
+                        0,
+                        tile.interface.male_join_depth,
+                        False,
+                    )
+                )
     for j in range(tile.ny):
         if tile.east:
-            male_faces.append(_join_tool(w, (j + 0.5) * p, -90, 6))
+            male_faces.append(
+                _join_tool(
+                    tile.interface,
+                    w,
+                    (j + 0.5) * p,
+                    -90,
+                    tile.interface.male_join_depth,
+                )
+            )
             if tile.interface.joint_style == "original":
-                male_tools.append(tool(w, (j + 0.5) * p, -90, 6, True))
+                male_tools.append(
+                    tool(
+                        w,
+                        (j + 0.5) * p,
+                        -90,
+                        tile.interface.male_join_depth,
+                        True,
+                    )
+                )
         if tile.west:
-            female_faces.append(_join_tool(0, (j + 0.5) * p, -90, 6.1))
+            female_faces.append(
+                _join_tool(
+                    tile.interface,
+                    0,
+                    (j + 0.5) * p,
+                    -90,
+                    tile.interface.female_join_depth,
+                )
+            )
             if tile.interface.joint_style == "original":
-                female_tools.append(tool(0, (j + 0.5) * p, -90, 6.1, False))
+                female_tools.append(
+                    tool(
+                        0,
+                        (j + 0.5) * p,
+                        -90,
+                        tile.interface.female_join_depth,
+                        False,
+                    )
+                )
     if tile.interface.joint_style == "full-height":
-        part = full_height_part(body, male_faces, female_faces, h)
+        part = full_height_part(
+            body,
+            male_faces,
+            female_faces,
+            h,
+            interface_blend_radius=tile.interface.tile_join_blend_radius,
+        )
     else:
         body = body.fillet_2d(1, body.vertices())
         part = prism(body, h)
@@ -136,14 +209,19 @@ def make_tile(tile: Tile = Tile()) -> Part:
     part = part.clean()
     part = underside_fillet(part)
     if tile.interface.joint_style == "full-height":
-        cutter = socket_entry_tool(h, tile.interface.fit_offset)
+        cutter = socket_entry_tool(tile.interface)
+        part = part.cut(*(cutter.moved(Location((cx, cy, 0))) for cx, cy in socket_centers(tile)))
+    elif tile.interface.unit_scale != 1:
+        cutter = socket_entry_tool(tile.interface)
         part = part.cut(*(cutter.moved(Location((cx, cy, 0))) for cx, cy in socket_centers(tile)))
     else:
         for cx, cy in socket_centers(tile):
-            cutter = prism(x_profile(offset=tile.interface.fit_offset), h + 2)
+            cutter = prism(x_profile(tile.interface, offset=tile.interface.fit_offset), h + 2)
             part = part.cut(cutter.moved(Location((cx, cy, -1))))
         entry_wires = [
-            x_profile(offset=tile.interface.fit_offset).outer_wire().moved(Location((cx, cy, h)))
+            x_profile(tile.interface, offset=tile.interface.fit_offset)
+            .outer_wire()
+            .moved(Location((cx, cy, h)))
             for cx, cy in socket_centers(tile)
         ]
         entry_edges = [
@@ -151,7 +229,7 @@ def make_tile(tile: Tile = Tile()) -> Part:
             for e in horizontal_edges(part, h)
             if any(wire.distance_to(e.center()) < 1e-5 for wire in entry_wires)
         ]
-        part = part.fillet(3, entry_edges)
+        part = part.fillet(tile.interface.socket_entry_radius, entry_edges)
     holes = hole_placements(tile)
     cutters = [
         Solid.make_cylinder(tile.hole_diameter / 2, h + 2).moved(Location((hole.x, hole.y, -1)))

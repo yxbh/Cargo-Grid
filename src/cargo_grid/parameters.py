@@ -5,6 +5,9 @@ from math import isfinite
 from typing import Literal
 
 JointStyle = Literal["full-height", "original"]
+DEFAULT_HOLE_DIAMETER_MM = 10.0
+REFERENCE_UNIT_SIZE_MM = 60.0
+REFERENCE_TILE_THICKNESS_MM = 13.0
 
 
 def positive(name: str, value: float, *, zero: bool = False) -> None:
@@ -19,8 +22,8 @@ def count(name: str, value: int) -> None:
 
 @dataclass(frozen=True)
 class Interface:
-    pitch: float = 60.0
-    height: float = 13.0
+    pitch: float = REFERENCE_UNIT_SIZE_MM
+    height: float = REFERENCE_TILE_THICKNESS_MM
     fit_offset: float = 0.0
     joint_style: JointStyle = "original"
 
@@ -29,9 +32,9 @@ class Interface:
             raise ValueError("joint_style must be full-height or original")
         positive("pitch", self.pitch)
         positive("height", self.height)
-        if self.pitch < 54 or self.height < 12:
+        if self.pitch < 30 or self.height < 6:
             raise ValueError(
-                "pitch >= 54 and height >= 12 mm required by fixed interface envelopes"
+                "unit size >= 30 mm and tile thickness >= 6 mm required by interface envelopes"
             )
         if not isfinite(self.fit_offset) or abs(self.fit_offset) > 0.5:
             raise ValueError("fit_offset must be between -0.5 and 0.5 mm")
@@ -41,32 +44,70 @@ class Interface:
         return self == Interface(joint_style="original")
 
     @property
+    def unit_scale(self) -> float:
+        return self.pitch / REFERENCE_UNIT_SIZE_MM
+
+    @property
     def reference_socket_dimensions(self) -> bool:
-        return self.pitch == 60 and self.height == 13 and self.fit_offset == 0
+        return (
+            self.pitch == REFERENCE_UNIT_SIZE_MM
+            and self.height == REFERENCE_TILE_THICKNESS_MM
+            and self.fit_offset == 0
+        )
 
     @property
     def male_height(self) -> float:
-        return self.height if self.joint_style == "full-height" else 10.0
+        return self.height if self.joint_style == "full-height" else self.height - 3.0
 
     @property
     def female_opening_height(self) -> float:
-        return self.height if self.joint_style == "full-height" else 10.2
+        return self.height if self.joint_style == "full-height" else self.height - 2.8
+
+    @property
+    def plug_depth(self) -> float:
+        return self.height - 0.2
+
+    @property
+    def male_join_depth(self) -> float:
+        return 6.0 * self.unit_scale
+
+    @property
+    def female_join_depth(self) -> float:
+        return self.male_join_depth + 0.1
+
+    @property
+    def tile_join_blend_radius(self) -> float:
+        return min(1.0, self.unit_scale)
+
+    @property
+    def socket_entry_radius(self) -> float:
+        return 3.0
 
     def compatibility(self) -> dict:
         return {
             "joint_style": self.joint_style,
             "experimental": self.joint_style == "full-height",
+            "unit_size_mm": self.pitch,
+            "tile_thickness_mm": self.height,
+            "nominal_local_plane_scale": self.unit_scale,
+            "standard_60x13_dimensions": self.reference_socket_dimensions,
             "original_tile_edge_dimensions": self.reference_defaults,
             "original_x_attachment_dimensions": self.reference_socket_dimensions,
+            "absolute_allowances": {
+                "fit_offset_mm": self.fit_offset,
+                "plug_seating_gap_mm": 0.2,
+                "panel_stem_inset_mm": 0.08,
+            },
+            "support_rail_interface": "separate fixed physical dovetail; not scaled with tile unit size",
             "attachment_seating_note": (
                 "Socket/plug dimensions and seating datum are retained, but open-through edge pockets remove roof-bearing land near edge sockets."
                 if self.joint_style == "full-height"
                 else "Original socket entry and roof-bearing lands; printed friction and load capacity remain unverified."
             ),
             "geometry_warning": (
-                "At reference dimensions the negative-X pocket/socket web thins to about 0.146 mm at Z=12.5 and opens to the exterior near Z=12.75. Optional round holes are not the cause; structural integrity is not validated."
+                "At the standard 60/13 mm dimensions the negative-X pocket/socket web thins to about 0.146 mm at Z=12.5 and opens to the exterior near Z=12.75. Round holes are not the cause; structural integrity is not validated."
                 if self.joint_style == "full-height" and self.reference_socket_dimensions
-                else "Custom dimensions and printed fit require independent checks."
+                else "Custom unit size/thickness match internally but printed fit and compatibility with standard 60/13 mm parts require independent checks."
                 if not self.reference_defaults
                 else None
             ),
@@ -84,7 +125,7 @@ class Tile:
     nx: int = 1
     ny: int = 1
     interface: Interface = Interface()
-    hole_diameter: float | None = None
+    hole_diameter: float | None = DEFAULT_HOLE_DIAMETER_MM
     minimum_web: float = 1.5
     west: bool = True
     east: bool = True
@@ -94,7 +135,7 @@ class Tile:
     filler_east: float = 0
     filler_south: float = 0
     filler_north: float = 0
-    hole_scope: Literal["interior", "full"] = "interior"
+    hole_scope: Literal["interior", "full"] = "full"
 
     def __post_init__(self) -> None:
         count("nx", self.nx)
@@ -104,8 +145,6 @@ class Tile:
             positive("hole_diameter", self.hole_diameter)
         if self.hole_scope not in ("interior", "full"):
             raise ValueError("hole_scope must be interior or full")
-        if self.hole_scope == "full" and self.hole_diameter is None:
-            raise ValueError("full hole scope requires an explicit hole diameter")
         for side in ("west", "east", "south", "north"):
             positive(f"filler_{side}", getattr(self, f"filler_{side}"), zero=True)
             if getattr(self, side) and getattr(self, f"filler_{side}"):

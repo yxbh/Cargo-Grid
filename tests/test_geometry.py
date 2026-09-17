@@ -2,9 +2,10 @@ import os
 from pathlib import Path
 
 import pytest
-from build123d import Compound, Location, Vector, export_step, import_step
+from build123d import Compound, Location, Vector
 
 from cargo_grid import BuildVolume, Tile, make_tile
+from cargo_grid.export import _checked_step_roundtrip
 from cargo_grid.interfaces import make_plug, prism, rectangle, x_profile
 from cargo_grid.jobs import Design, Job, layout_job
 from cargo_grid.layout import exact_layout
@@ -35,16 +36,15 @@ def test_tile_validity_dimensions_and_step_roundtrip(nx, ny, tmp_path):
         (60 * nx + 6, 60 * ny + 6, 13), abs=1e-5
     )
     path = tmp_path / "tile.step"
-    assert export_step(shape, path)
-    restored = import_step(path)
+    restored, _, _, _, _ = _checked_step_roundtrip(shape, path)
     assert restored.is_valid and len(restored.solids()) == 1
     assert tuple(restored.bounding_box().size) == pytest.approx(
         tuple(shape.bounding_box().size), abs=1e-5
     )
 
 
-def test_hole_centers_and_actual_void_radii():
-    tile = Tile(2, 3, hole_diameter=10)
+def test_interior_hole_centers_and_actual_void_radii():
+    tile = Tile(2, 3, hole_diameter=10, hole_scope="interior")
     holes = hole_placements(tile)
     assert len(holes) == 9 and all(h.accepted for h in holes)
     assert {(h.x, h.y) for h in holes} >= {(60, 60), (60, 120), (60, 30)}
@@ -54,6 +54,17 @@ def test_hole_centers_and_actual_void_radii():
             assert not shape.is_inside(Vector(hole.x + 4.99, hole.y, z))
             assert shape.is_inside(Vector(hole.x + 5.01, hole.y, z))
     assert all(not h.accepted for h in hole_placements(Tile(2, 2, hole_diameter=60)))
+
+
+@pytest.mark.parametrize("nx,ny,expected", [(1, 1, 8), (2, 1, 13), (2, 3, 29), (4, 4, 65)])
+def test_default_tile_uses_full_ten_millimeter_pattern(nx, ny, expected):
+    tile = Tile(nx, ny)
+    holes = hole_placements(tile)
+    assert tile.hole_diameter == 10
+    assert tile.hole_scope == "full"
+    assert len(holes) == expected
+    assert all(hole.accepted for hole in holes)
+    assert Tile(nx, ny, hole_diameter=None).hole_diameter is None
 
 
 @pytest.mark.parametrize(

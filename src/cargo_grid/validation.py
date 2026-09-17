@@ -117,7 +117,9 @@ def compare_reference(path: Path) -> dict:
     """Sample interfaces against original-original signed-clearance baselines."""
     original = local_reference_mesh(path, "44")
     original_plug = local_reference_mesh(path, "112")
-    generated = shape_mesh(make_tile(Tile(interface=Interface(joint_style="original"))))
+    generated = shape_mesh(
+        make_tile(Tile(interface=Interface(joint_style="original"), hole_diameter=None))
+    )
     generated_plug = shape_mesh(make_plug())
     rows = []
     # Source 3 mm blends have tessellation/section errors amplified near the
