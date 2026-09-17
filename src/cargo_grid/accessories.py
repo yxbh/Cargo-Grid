@@ -72,7 +72,9 @@ EDGE_MITER_RETANGENT_MM = 4.82962
 SUPPORT_TOP_RADIUS_MM = 1.0
 SUPPORT_BODY_RADIUS_MM = 3.0
 SUPPORT_WINDOW_RADIUS_MM = 2.0
-SUPPORT_END_1_WINDOW_RIM_RADIUS_MM = 1.25
+SUPPORT_END_BODY_RADII_MM = {1: 0.75, 2: 1.0, 3: 3.0, 4: 3.0}
+SUPPORT_END_WINDOW_RADII_MM = {1: 2.5, 2: 3.0, 3: 3.0, 4: 3.0}
+SUPPORT_END_1_WINDOW_RIM_RADIUS_MM = 1.0
 BRACKET_LIP_RADIUS_MM = 1.0
 BRACKET_FREE_EDGE_RADIUS_MM = 2.0
 BRACKET_TOP_EXTENSION_MM = {1: 3.0515422, 2: 2.921921}
@@ -877,7 +879,11 @@ def _support(spec: Accessory, *, round_top: bool = True) -> Part:
             if span >= 12:
                 part = part.cut(_box(-10, start + 12, 20, span, 27, -26))
         return _apply_joins(part, joins)
-    radius = SUPPORT_BODY_RADIUS_MM
+    radius = (
+        SUPPORT_END_BODY_RADII_MM[spec.variant]
+        if spec.family == "support-end"
+        else SUPPORT_BODY_RADIUS_MM
+    )
     if spec.family == "support-end":
         operation = BRepFilletAPI_MakeFillet(part.wrapped)
         for edge in part.edges():
@@ -893,7 +899,12 @@ def _support(spec: Accessory, *, round_top: bool = True) -> Part:
         span = min(32, length - start - 24)
         if span >= 12:
             window = rectangle(-10, start + 12, 20, span)
-            window = window.fillet_2d(3, window.vertices())
+            window_radius = (
+                SUPPORT_END_WINDOW_RADII_MM[spec.variant]
+                if spec.family == "support-end"
+                else SUPPORT_BODY_RADIUS_MM
+            )
+            window = window.fillet_2d(window_radius, window.vertices())
             part = part.cut(prism(window, 27).moved(Location((0, 0, -26))))
     window_rims = [
         edge

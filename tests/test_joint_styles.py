@@ -156,8 +156,8 @@ def test_open_pockets_reduce_plate_bearing_land_without_changing_seating_datum()
                 if common:
                     area += sum(f.area for f in common.faces())
         areas[style] = area
-    assert areas["original"] == pytest.approx(1320.9042794, abs=0.002)
-    assert areas["full-height"] == pytest.approx(1044.0049078, abs=0.002)
+    assert areas["original"] == pytest.approx(1092.9042795, abs=0.002)
+    assert areas["full-height"] == pytest.approx(822.9183841, abs=0.002)
     assert areas["full-height"] < areas["original"]
 
 
