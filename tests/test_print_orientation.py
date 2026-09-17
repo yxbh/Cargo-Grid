@@ -194,7 +194,7 @@ def test_transformed_catalogue_packing_respects_exclusions_and_quantity(tmp_path
             assert zmin == pytest.approx(0, abs=1e-5) and zmax <= 115 + 1e-5
 
 
-def test_source_exports_and_non_bracket_project_orientation_are_unchanged(tmp_path):
+def test_source_exports_and_project_orientation_contracts_are_unchanged(tmp_path):
     design = accessory_design(Accessory("vertical-tile-bracket", nx=2))
     for backend in (None, BAMBU):
         folder = tmp_path / ("core" if backend is None else "bambu")
@@ -219,7 +219,9 @@ def test_source_exports_and_non_bracket_project_orientation_are_unchanged(tmp_pa
     assert angled.recommended_print_rotation_x == -135
     assert angled.apply_orientation_to_bambu
     plate = accessory_design(Accessory("plate"))
-    assert not plate.apply_orientation_to_bambu and plate.bambu_size == plate.size
+    assert plate.recommended_print_rotation_x == 180
+    assert plate.apply_orientation_to_bambu
+    assert plate.bambu_size == pytest.approx(plate.size)
     ramp = accessory_design(Accessory("ramp", nx=3))
     assert not ramp.apply_orientation_to_bambu and ramp.bambu_size == ramp.size
     assert ramp.bambu_object_settings["support_type"] == "normal(auto)"
