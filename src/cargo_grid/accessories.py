@@ -79,6 +79,7 @@ SUPPORT_END_1_WINDOW_RIM_RADIUS_MM = 1.0
 SUPPORT_END_SLOPED_WINDOW_RIM_RADII_MM = {1: 0.5, 2: 1.5}
 BRACKET_LIP_RADIUS_MM = 1.0
 BRACKET_FREE_EDGE_RADIUS_MM = 2.0
+SHALLOW_BRACKET_TRANSITION_RADIUS_MM = 3.0
 BRACKET_TOP_EXTENSION_MM = {1: 3.0515422, 2: 2.921921}
 VERTICAL_STOP_RADIUS_MM = 2.0
 BAMBU_PRINT_ROTATIONS = {
@@ -524,7 +525,7 @@ def _rounded_original_bracket(spec: Accessory) -> Part:
     return Part(rounded_body.fuse(*floor_connectors, *panel_connectors).clean().solids())
 
 
-def _shallow_vertical_bracket(spec: Accessory, panel_rows: int) -> Part:
+def _rounded_shallow_bracket_body(spec: Accessory, panel_rows: int) -> Part:
     p = spec.interface.pitch
     w, d = spec.nx * p, spec.ny * p
     seat = d - BRACKET_INSET_MM
@@ -561,6 +562,13 @@ def _shallow_vertical_bracket(spec: Accessory, panel_rows: int) -> Part:
             and abs(bounds.max.Z - PANEL_BOTTOM_MM) < 1e-5
         ):
             continue
+        front_to_slope = (
+            abs(bounds.min.Y) < 1e-5
+            and abs(bounds.max.Y) < 1e-5
+            and abs(bounds.min.Z - intercept) < 1e-5
+            and abs(bounds.max.Z - intercept) < 1e-5
+            and bounds.size.X > w - 1
+        )
         bearing_lip = (
             abs(bounds.min.Z - PANEL_BOTTOM_MM) < 1e-5
             and abs(bounds.max.Z - PANEL_BOTTOM_MM) < 1e-5
@@ -571,13 +579,24 @@ def _shallow_vertical_bracket(spec: Accessory, panel_rows: int) -> Part:
             and bounds.max.Z <= PANEL_BOTTOM_MM + 1e-5
         )
         operation.Add(
-            BRACKET_LIP_RADIUS_MM if bearing_lip else BRACKET_FREE_EDGE_RADIUS_MM,
+            SHALLOW_BRACKET_TRANSITION_RADIUS_MM
+            if front_to_slope
+            else BRACKET_LIP_RADIUS_MM
+            if bearing_lip
+            else BRACKET_FREE_EDGE_RADIUS_MM,
             edge.wrapped,
         )
     operation.Build()
     if not operation.IsDone():
-        raise ValueError("shallow tile-bracket coupled R1 body fillet failed")
-    rounded_body = Part(Solid(operation.Shape()).wrapped)
+        raise ValueError("shallow tile-bracket coupled body fillet failed")
+    return Part(Solid(operation.Shape()).wrapped)
+
+
+def _shallow_vertical_bracket(spec: Accessory, panel_rows: int) -> Part:
+    p = spec.interface.pitch
+    seat = spec.ny * p - BRACKET_INSET_MM
+    rounded_body = _rounded_shallow_bracket_body(spec, panel_rows)
+    node = _panel_connector()
     mounted = _mounted_base(spec, root_radius=1, round_top=False)
     floor_connectors = []
     for x, y, _ in _mount_centers(spec):

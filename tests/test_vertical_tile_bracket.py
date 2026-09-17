@@ -241,7 +241,7 @@ def test_bracket_variants_and_reference_only_interface_policy():
 
 @pytest.mark.parametrize(
     "nx,expected_volume",
-    [(1, 281967.13199792017), (2, 564486.9288800508)],
+    [(1, 281966.44123081816), (2, 564485.5393485603)],
 )
 def test_shallow_brackets_round_free_body_and_preserve_mating_regions(
     nx, expected_volume, tmp_path
@@ -307,6 +307,28 @@ def test_shallow_brackets_round_free_body_and_preserve_mating_regions(
     assert restored.is_valid and len(restored.solids()) == 1
     volume_budget = max(1e-6, shape.area * Precision.Confusion_s())
     assert restored.volume == pytest.approx(shape.volume, abs=volume_budget)
+    transitions = [
+        face
+        for face in restored.faces()
+        if face.geom_type == GeomType.CYLINDER
+        and BRepAdaptor_Surface(face.wrapped).Cylinder().Radius() == pytest.approx(3)
+        and face.bounding_box().max.Y < 1
+        and face.bounding_box().min.Z > 19
+    ]
+    assert len(transitions) == 1
+    transition = transitions[0]
+    assert transition.bounding_box().min.X == pytest.approx(2)
+    assert transition.bounding_box().max.X == pytest.approx(60 * nx - 2)
+    assert min(edge.length for edge in transition.edges()) > 1
+    for edge in transition.edges():
+        adjacent = [
+            face
+            for face in restored.faces()
+            if any(candidate.is_same(edge) for candidate in face.edges())
+        ]
+        assert len(adjacent) == 2
+        normals = [face.normal_at(edge.center()) for face in adjacent]
+        assert normals[0].dot(normals[1]) == pytest.approx(1, abs=1e-9)
 
 
 @pytest.mark.parametrize("nx", [1, 2])
