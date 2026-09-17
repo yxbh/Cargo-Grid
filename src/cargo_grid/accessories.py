@@ -147,6 +147,8 @@ class Accessory:
             raise ValueError(
                 "ramp requires original roofed joints at 60 mm pitch, 13 mm height and zero fit offset"
             )
+        if self.family == "ramp" and self.height != 50:
+            raise ValueError("ramp rise is fixed at 13 mm; accessory height does not apply")
 
 
 def _box(x: float, y: float, w: float, d: float, h: float, z: float = 0) -> Part:
