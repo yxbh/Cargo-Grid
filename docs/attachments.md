@@ -14,7 +14,7 @@ Ramp names give width along the tile edge in 60 mm cells. Every ramp keeps the s
 
 Normal `vertical-stop` names give base X cells, base Y cells and H60/H120 shoulder height. They are filled CAD wedges with no wall holes, panel connectors or ledges. The slicer still chooses perimeters and infill.
 
-Original-style edge/corner bodies and rail outer bodies use R3. Plates and angled stops use R2. Brackets use R2 on thick free edges and R1 around the thin bearing lip; normal stops and ramps keep R2. Tile joints, rail joints, bracket bearing surfaces and X attachments keep their mating geometry.
+Original-style edge/corner bodies and straight rail bodies use R3. The acute rail ends use smaller complete rounds where required by fit and portable STEP checks. Plates and angled stops use R2. Brackets use R2 on thick free edges and R1 around the thin bearing lip; normal stops and ramps keep R2. Tile joints, rail joints, bracket bearing surfaces and X attachments keep their mating geometry.
 
 Bambu projects put original brackets on their diagonal rear face, shallow brackets on a broad side, normal stops on their broad rear face and angled stops on their rear face before packing. STEP, STL and core 3MF keep model orientation. Ramps, normal stops and shallow brackets request object-level normal Auto support. Remove all support from mating regions before assembly.
 
@@ -145,6 +145,6 @@ PYTHONPATH=src <workbench-python> tools/render_docs.py --workbench <workbench-ch
 
 Use the workbench's Python interpreter with Pillow already available; paths are supplied locally, not committed. In PowerShell, set `$env:PYTHONPATH='src'` before invoking that interpreter. The script checks geometry modules against the recorded commit, invokes STEP/inspection/render tools, then creates 5 overview PNGs and 56 family-scaled thumbnails. `--compose-only` reuses verified local STEP-derived renders; `--check` verifies the committed files and their one-to-one inventory mapping without Pillow. Intermediate STEP files and raw renders remain ignored. Layout is deterministic; raster bytes can depend on graphics/Pillow versions.
 
-Generator source revision: <code>0cc079ee<wbr>252b4599<wbr>30d03275<wbr>7fd16a28<wbr>833005e7</code>. Generator tree: <code>e3c37538<wbr>fd52c0d7<wbr>60869dad<wbr>70fafda7<wbr>403d3137</code>. Workbench revision: <code>c3f63ef8<wbr>d8604d3e<wbr>c7eeba40<wbr>a2290478<wbr>87c03d86</code>.
+Generator source revision: <code>c5321117<wbr>1c6830f0<wbr>5a10022e<wbr>829bc279<wbr>d91ea9d5</code>. Generator tree: <code>3cb3df7b<wbr>2e786d3e<wbr>55062198<wbr>9b477ee3<wbr>7184335a</code>. Workbench revision: <code>c3f63ef8<wbr>d8604d3e<wbr>c7eeba40<wbr>a2290478<wbr>87c03d86</code>.
 
 A successful render is not evidence of printability, physical fit, support release or third-party design rights.
