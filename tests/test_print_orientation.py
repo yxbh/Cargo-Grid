@@ -222,9 +222,9 @@ def test_cli_default_bracket_cells_and_orientation_aware_height(tmp_path):
                 "PETG",
                 "PETG",
                 "#789784",
-                "--nozzle",
+                "--nozzle-diameter-mm",
                 ".4",
-                "--layer-height",
+                "--layer-height-mm",
                 ".2",
                 "--no-stl",
                 "--output",
@@ -311,7 +311,7 @@ def test_native_roundtrip_keeps_all_changed_accessories_in_their_project_pose(tm
         ),
     ]
     source, target = tmp_path / "input.3mf", tmp_path / "native.3mf"
-    write_3mf(Job(designs, BuildVolume(250, 210, 115), "catalogue"), source, bambu=BAMBU)
+    write_3mf(Job(designs, BuildVolume(350, 320, 115), "catalogue"), source, bambu=BAMBU)
     _, before_plates, before = _project_facts(source)
     with (tmp_path / "native.log").open("w") as log:
         result = subprocess.run(

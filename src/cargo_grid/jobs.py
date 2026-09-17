@@ -8,6 +8,7 @@ from math import isfinite
 from build123d import Axis, Part
 
 from cargo_grid.layout import Layout
+from cargo_grid.packing import PrintPlacement
 from cargo_grid.parameters import BuildVolume, Tile, count, positive
 from cargo_grid.tiles import hole_placements, make_tile
 
@@ -65,11 +66,17 @@ class Job:
     omitted: list[dict] = field(default_factory=list)
     footprint: tuple[float, float] | None = None
     part_gap: float = 2
+    print_placements: list[PrintPlacement] | None = None
+    plate_names: dict[int, str] = field(default_factory=dict)
+    plate_settings: dict[int, dict[str, str]] = field(default_factory=dict)
+    placement_policy: dict = field(default_factory=dict)
 
     def __post_init__(self):
         if not self.designs:
             raise ValueError("a job needs at least one design")
         positive("part gap", self.part_gap, zero=True)
+        if self.print_placements is not None and len(self.print_placements) != len(self.designs):
+            raise ValueError("explicit print placements must match the design count")
 
 
 def tile_design(tile: Tile) -> Design:

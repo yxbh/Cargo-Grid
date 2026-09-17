@@ -64,6 +64,7 @@ def test_bracket_family_context_is_separate_from_the_part_inventory(gallery):
     ]
     assert len(gallery.documentation_shape("bracket-context-1x2").solids()) == 2
     assert len(gallery.documentation_shape("vertical-tile-bracket-1x2").solids()) == 1
+    assert len(gallery.documentation_shape("ramp-3").solids()) == 1
 
 
 def test_provenance_hashes_can_wrap_without_changing_their_text(gallery):

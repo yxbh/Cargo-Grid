@@ -11,14 +11,14 @@ from xml.etree import ElementTree as ET
 from xml.sax.saxutils import quoteattr
 from zipfile import ZIP_DEFLATED, ZipFile
 
-from build123d import Axis, Compound, export_step, import_step
+from build123d import Axis, Compound, PrecisionMode, export_step, import_step
 from OCP.Precision import Precision
 
 from cargo_grid._version import __version__
 from cargo_grid.accessories import BAMBU_OBJECT_SETTINGS, required_bambu_print_rotation
 from cargo_grid.jobs import Job
 from cargo_grid.meshes import checked_mesh, write_stl
-from cargo_grid.packing import pack_sizes
+from cargo_grid.packing import PrintPlacement, pack_sizes
 from cargo_grid.parameters import Interface, count, positive
 from cargo_grid.roof_support import RoofSupportSettings, roof_enforcers, validate_roof_job
 from cargo_grid.stacking import StackSettings, Volume, stack_volumes
@@ -58,14 +58,25 @@ class BambuSettings:
     nozzle: float
     layer_height: float
     roof_support: RoofSupportSettings | None = None
+    printer_settings_id: str | None = None
+    print_settings_id: str | None = None
+    bed_type: str | None = None
+    machine_nozzle_count: int = 1
 
     def __post_init__(self) -> None:
         from cargo_grid.parameters import positive
 
         positive("nozzle diameter", self.nozzle)
         positive("layer height", self.layer_height)
+        count("machine nozzle count", self.machine_nozzle_count)
         if not self.materials:
             raise ValueError("Bambu project requires explicit filament slots")
+        if (self.printer_settings_id is None) != (self.print_settings_id is None):
+            raise ValueError("printer and process profile IDs must be supplied together")
+        if self.printer_settings_id is not None and (
+            not self.printer_settings_id.strip() or not self.print_settings_id.strip()
+        ):
+            raise ValueError("printer and process profile IDs must not be empty")
         if self.roof_support is not None:
             if not isinstance(self.roof_support, RoofSupportSettings):
                 raise ValueError("roof_support must be RoofSupportSettings")
@@ -94,6 +105,35 @@ def _filament_mode(settings: BambuSettings) -> str:
     if settings.roof_support and settings.roof_support.nozzle_map is not None:
         return "Manual"
     return "Auto For Match"
+
+
+def _checked_step_roundtrip(shape, path: Path) -> tuple:
+    if not export_step(shape, path):
+        raise ValueError(f"STEP export failed: {path}")
+    restored = import_step(path)
+    precision_mode = "average"
+    if not restored.is_valid:
+        if not export_step(shape, path, precision_mode=PrecisionMode.LEAST):
+            raise ValueError(f"STEP fallback export failed: {path}")
+        restored = import_step(path)
+        precision_mode = "least"
+    volume_delta = abs(restored.volume - shape.volume)
+    volume_budget = max(1e-6, shape.area * Precision.Confusion_s())
+    bounds_delta = max(
+        abs(a - b)
+        for a, b in zip(
+            (*shape.bounding_box().min, *shape.bounding_box().max),
+            (*restored.bounding_box().min, *restored.bounding_box().max),
+        )
+    )
+    if (
+        not restored.is_valid
+        or len(restored.solids()) != 1
+        or volume_delta > volume_budget
+        or bounds_delta > 1e-5
+    ):
+        raise ValueError(f"STEP roundtrip failed: {path.stem}")
+    return restored, precision_mode, volume_delta, volume_budget, bounds_delta
 
 
 def _validate_request(job: Job, bambu: BambuSettings | None, stack: StackSettings | None) -> None:
@@ -170,6 +210,40 @@ def _validate_request(job: Job, bambu: BambuSettings | None, stack: StackSetting
         if stack:
             raise ValueError("roof supports and stacked separator jobs cannot be combined")
         validate_roof_job(job, bambu.roof_support, bambu.layer_height)
+
+
+def _explicit_placements(
+    placements: list[PrintPlacement],
+    sizes: list[tuple[float, float, float]],
+    build,
+    gap: float,
+) -> list[PrintPlacement]:
+    if len(placements) != len(sizes):
+        raise ValueError("explicit print placements must match packed batches")
+    occupied = {}
+    for index, (placement, size) in enumerate(zip(placements, sizes)):
+        if placement.rotation not in (0, 90) or placement.plate < 0:
+            raise ValueError("explicit placements require nonnegative plates and 0/90 rotations")
+        width, depth = size[:2] if placement.rotation == 0 else size[1::-1]
+        if (
+            placement.x < 0
+            or placement.y < 0
+            or placement.x + width > build.x + 1e-6
+            or placement.y + depth > build.y + 1e-6
+            or size[2] > build.z + 1e-6
+        ):
+            raise ValueError(f"explicit placement {index} exceeds the build envelope")
+        rectangles = occupied.setdefault(placement.plate, [])
+        if any(
+            placement.x < x + w + gap - 1e-6
+            and placement.x + width + gap > x + 1e-6
+            and placement.y < y + d + gap - 1e-6
+            and placement.y + depth + gap > y + 1e-6
+            for x, y, w, d in rectangles
+        ):
+            raise ValueError(f"explicit placement {index} overlaps another packed part")
+        rectangles.append((placement.x, placement.y, width, depth))
+    return placements
 
 
 def write_3mf(
@@ -253,7 +327,11 @@ def _write_3mf(
         )
         for _, volumes, _ in batches
     ]
-    placements = pack_sizes(sizes, job.build, gap=job.part_gap, pack=job.kind == "catalogue")
+    placements = (
+        _explicit_placements(job.print_placements, sizes, job.build, job.part_gap)
+        if job.print_placements is not None
+        else pack_sizes(sizes, job.build, gap=job.part_gap, pack=job.kind == "catalogue")
+    )
     plate_count = max(p.plate for p in placements) + 1
     if bambu and plate_count > 36:
         raise ValueError(
@@ -345,11 +423,22 @@ def _write_3mf(
             _metadata(
                 plate,
                 "plater_name",
-                f"catalogue_plate_{plate_index + 1}" if job.kind == "catalogue" else label,
+                job.plate_names.get(
+                    plate_index,
+                    f"catalogue_plate_{plate_index + 1}" if job.kind == "catalogue" else label,
+                ),
             )
             _metadata(plate, "locked", "false")
             if bambu:
-                _metadata(plate, "filament_map_mode", _filament_mode(bambu))
+                settings = job.plate_settings.get(plate_index, {})
+                _metadata(
+                    plate,
+                    "filament_map_mode",
+                    settings.get("filament_map_mode", _filament_mode(bambu)),
+                )
+                for key in ("filament_maps", "filament_volume_maps"):
+                    if key in settings:
+                        _metadata(plate, key, settings[key])
             if bambu and bambu.roof_support and bambu.roof_support.nozzle_map is not None:
                 _metadata(
                     plate, "filament_maps", " ".join(str(n) for n in bambu.roof_support.nozzle_map)
@@ -364,6 +453,7 @@ def _write_3mf(
                 "bounds_mm": size,
                 "volumes": [],
                 "items": [],
+                "settings": dict(job.plate_settings.get(plate_index, {})),
             }
         plate = configured_plates[plate_index]
         instance = ET.SubElement(plate, "model_instance")
@@ -464,8 +554,10 @@ def _write_3mf(
             archive.writestr("Metadata/model_settings.config", _bytes(config))
             settings = {
                 "version": "2.8.2.61",
-                "printer_settings_id": "Cargo-Grid explicit envelope (not calibrated)",
-                "print_settings_id": "Cargo-Grid diagnostic layout (not a print preset)",
+                "printer_settings_id": bambu.printer_settings_id
+                or "Cargo-Grid explicit envelope (not calibrated)",
+                "print_settings_id": bambu.print_settings_id
+                or "Cargo-Grid diagnostic layout (not a print preset)",
                 "printable_area": [
                     "0x0",
                     f"{job.build.x:g}x0",
@@ -473,7 +565,8 @@ def _write_3mf(
                     f"0x{job.build.y:g}",
                 ],
                 "printable_height": f"{job.build.z:g}",
-                "nozzle_diameter": [f"{bambu.nozzle:g}"] * (2 if bambu.roof_support else 1),
+                "nozzle_diameter": [f"{bambu.nozzle:g}"]
+                * max(bambu.machine_nozzle_count, 2 if bambu.roof_support else 1),
                 "layer_height": f"{bambu.layer_height:g}",
                 "filament_diameter": ["1.75"] * len(bambu.materials),
                 "filament_type": [m.kind for m in bambu.materials],
@@ -482,6 +575,8 @@ def _write_3mf(
                 "filament_is_support": ["0"] * len(bambu.materials),
                 "filament_map_mode": _filament_mode(bambu),
             }
+            if bambu.bed_type is not None:
+                settings["curr_bed_type"] = bambu.bed_type
             if bambu.roof_support:
                 settings.update(bambu.roof_support.native_settings())
                 settings["nozzle_volume_type"] = ["Standard", "Standard"]
@@ -495,7 +590,13 @@ def _write_3mf(
     return {
         "format": "bambu-project" if bambu else "core-geometry",
         "plates": plates,
-        "packing": "first-fit rectangles" if job.kind == "catalogue" else "one batch per plate",
+        "packing": (
+            "explicit validated placements"
+            if job.print_placements is not None
+            else "first-fit rectangles"
+            if job.kind == "catalogue"
+            else "one batch per plate"
+        ),
         "part_gap_mm": job.part_gap,
         "application_import_verified": False,
         "sliced": False,
@@ -581,7 +682,11 @@ def export_job(
                 width, depth, height = design.bambu_size
                 sizes.append((width, depth, n * height + (n - 1) * stack.gap if stack else height))
                 remaining -= n
-        preflight = pack_sizes(sizes, job.build, gap=job.part_gap, pack=job.kind == "catalogue")
+        preflight = (
+            _explicit_placements(job.print_placements, sizes, job.build, job.part_gap)
+            if job.print_placements is not None
+            else pack_sizes(sizes, job.build, gap=job.part_gap, pack=job.kind == "catalogue")
+        )
         plate_count = max(p.plate for p in preflight) + 1
         if plate_count > 36:
             raise ValueError(
@@ -592,27 +697,13 @@ def export_job(
     entries = []
     for design in job.designs:
         step = output / f"{design.name}.step"
-        if not export_step(design.shape, step):
-            raise ValueError(f"STEP export failed: {step}")
-        restored = import_step(step)
-        volume_delta = abs(restored.volume - design.shape.volume)
-        # First-order volume budget from OCCT's linear confusion tolerance and
-        # actual surface area, rather than a scale-dependent arbitrary mm3 cap.
-        volume_budget = max(1e-6, design.shape.area * Precision.Confusion_s())
-        bounds_delta = max(
-            abs(a - b)
-            for a, b in zip(
-                (*design.shape.bounding_box().min, *design.shape.bounding_box().max),
-                (*restored.bounding_box().min, *restored.bounding_box().max),
-            )
-        )
-        if (
-            not restored.is_valid
-            or len(restored.solids()) != 1
-            or volume_delta > volume_budget
-            or bounds_delta > 1e-5
-        ):
-            raise ValueError(f"STEP roundtrip failed: {design.name}")
+        (
+            restored,
+            step_precision_mode,
+            volume_delta,
+            volume_budget,
+            bounds_delta,
+        ) = _checked_step_roundtrip(design.shape, step)
         points, faces, mesh_report = checked_mesh(design.shape)
         if stl:
             write_stl(output / f"{design.name}.stl", points, faces)
@@ -658,6 +749,7 @@ def export_job(
                 "hole_placements": design.holes,
                 "volume_mm3": design.shape.volume,
                 "step_roundtrip": "passed",
+                "step_precision_mode": step_precision_mode,
                 "step_volume_delta_mm3": volume_delta,
                 "step_volume_budget_mm3": volume_budget,
                 "step_bounds_delta_mm": bounds_delta,
@@ -710,6 +802,7 @@ def export_job(
         "units": "millimeter",
         "build": asdict(job.build),
         "footprint_mm": job.footprint,
+        "placement_policy": job.placement_policy or None,
         "designs": entries,
         "omitted": job.omitted,
         "export": project,

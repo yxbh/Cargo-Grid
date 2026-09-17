@@ -16,7 +16,8 @@ from cargo_grid.accessories import (
     make_accessory,
 )
 from cargo_grid.jobs import Design, Job, tile_design
-from cargo_grid.parameters import BuildVolume, Interface, Tile
+from cargo_grid.packing import PrintPlacement, pack_sizes
+from cargo_grid.parameters import BuildVolume, Exclusion, Interface, Tile
 
 
 def tile_sizes(build: BuildVolume, interface: Interface = Interface()) -> list[tuple[int, int]]:
@@ -121,3 +122,133 @@ def catalogue_job(
     if not designs:
         raise ValueError("no supported designs fit the configured build envelope")
     return Job(designs, build, "catalogue", omitted=omitted)
+
+
+def h2d_dual_safe_catalogue_job(
+    *,
+    hole_diameter: float | None = None,
+    hole_scope: Literal["interior", "full"] = "interior",
+) -> Job:
+    interface = Interface()
+    physical_build = BuildVolume(350, 320, 325)
+    source = catalogue_job(
+        physical_build,
+        interface=interface,
+        hole_diameter=hole_diameter,
+        hole_scope=hole_scope,
+        orient_for_bambu=True,
+    )
+    if source.omitted:
+        raise ValueError("H2D dual-safe catalogue unexpectedly omitted standard designs")
+    exception = next(
+        design
+        for design in source.designs
+        if "family" not in design.parameters
+        and design.parameters["nx"] == 5
+        and design.parameters["ny"] == 5
+    )
+    common_designs = [design for design in source.designs if design is not exception]
+    groups = (
+        ("Tiles", {"tile"}),
+        ("Ramps", {"ramp"}),
+        ("Normal stops", {"vertical-stop"}),
+        ("Tile brackets", {"vertical-tile-bracket"}),
+        ("Angled stops", {"lock-45"}),
+        ("Attachment plates", {"plate"}),
+        ("Edges and corners", {"edge-x", "edge-y", "corner-in", "corner-out"}),
+        ("Rails and connectors", {"support", "support-bit", "support-end"}),
+    )
+    common_build = BuildVolume(
+        350,
+        320,
+        320,
+        margin=5,
+        exclusions=(
+            Exclusion(0, 0, 30, 320),
+            Exclusion(320, 0, 30, 320),
+        ),
+    )
+    designs = []
+    placements = []
+    plate_names = {}
+    plate_offset = 0
+    for title, families in groups:
+        members = [
+            design
+            for design in common_designs
+            if design.parameters.get("family", "tile") in families
+        ]
+        packed = pack_sizes(
+            [design.bambu_size for design in members],
+            common_build,
+            gap=10,
+            pack=True,
+        )
+        group_plate_count = max(placement.plate for placement in packed) + 1
+        for local_plate in range(group_plate_count):
+            plate_names[plate_offset + local_plate] = (
+                title if group_plate_count == 1 else f"{title} {local_plate + 1}"
+            )
+        designs.extend(members)
+        placements.extend(
+            PrintPlacement(
+                placement.plate + plate_offset,
+                placement.x,
+                placement.y,
+                placement.rotation,
+            )
+            for placement in packed
+        )
+        plate_offset += group_plate_count
+    if len(designs) != len(common_designs) or len({design.name for design in designs}) != len(
+        common_designs
+    ):
+        raise ValueError("H2D dual-safe family grouping is incomplete or duplicated")
+    exception_placement = pack_sizes(
+        [exception.bambu_size],
+        BuildVolume(325, 320, 320, margin=5),
+        gap=10,
+        pack=True,
+    )[0]
+    designs.append(exception)
+    placements.append(
+        PrintPlacement(
+            plate_offset,
+            exception_placement.x,
+            exception_placement.y,
+            exception_placement.rotation,
+        )
+    )
+    plate_names[plate_offset] = "5x5 TILE - SINGLE NOZZLE ONLY - LEFT"
+    plate_settings = {
+        plate_offset: {
+            "filament_map_mode": "Manual",
+            "filament_maps": "1",
+            "filament_volume_maps": "0",
+        }
+    }
+    job = Job(
+        designs,
+        physical_build,
+        "catalogue",
+        print_placements=placements,
+        plate_names=plate_names,
+        plate_settings=plate_settings,
+        placement_policy={
+            "name": "H2D dual-nozzle safe",
+            "common_reach_mm": {"min_x": 25, "max_x": 325, "min_y": 0, "max_y": 320, "max_z": 320},
+            "common_model_inset_mm": 5,
+            "minimum_model_gap_mm": 10,
+            "grouped_by_family": True,
+            "exception": {
+                "design": exception.name,
+                "plate": plate_offset + 1,
+                "reach": "left nozzle only: X 0..325, Y 0..320, Z <= 320",
+                "filament_slot": 1,
+            },
+        },
+    )
+    job.part_gap = 10
+    if plate_offset + 1 > 36:
+        raise ValueError("H2D dual-safe grouped catalogue exceeds the 36-plate limit")
+    return job

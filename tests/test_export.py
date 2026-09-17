@@ -14,6 +14,7 @@ from build123d import Box, import_step
 
 from cargo_grid.export import BambuSettings, Material, export_job, write_3mf
 from cargo_grid.jobs import Design, Job, tile_design
+from cargo_grid.packing import PrintPlacement
 from cargo_grid.parameters import BuildVolume, Exclusion, Tile
 from cargo_grid.stacking import StackSettings
 
@@ -200,12 +201,57 @@ def test_actual_rotated_bounds_respect_margin_and_exclusion(materials, tmp_path)
     assert zmax == pytest.approx(2)
 
 
+def test_explicit_placements_keep_plate_names_settings_and_reject_overlap(materials, tmp_path):
+    designs = [
+        Design("first", Box(20, 30, 2), {}),
+        Design("second", Box(20, 30, 2), {}),
+    ]
+    job = Job(
+        designs,
+        BuildVolume(100, 100, 20),
+        "catalogue",
+        print_placements=[
+            PrintPlacement(0, 5, 5, 0),
+            PrintPlacement(0, 35, 5, 0),
+        ],
+        plate_names={0: "Related parts"},
+        plate_settings={
+            0: {
+                "filament_map_mode": "Manual",
+                "filament_maps": "1",
+                "filament_volume_maps": "0",
+            }
+        },
+    )
+    result = write_3mf(job, tmp_path / "explicit.3mf", bambu=materials)
+    assert result["packing"] == "explicit validated placements"
+    assert result["plates"][0]["settings"]["filament_map_mode"] == "Manual"
+    with ZipFile(tmp_path / "explicit.3mf") as archive:
+        config = ET.fromstring(archive.read("Metadata/model_settings.config"))
+    plate = _metadata(config.find("plate"))
+    assert plate["plater_name"] == "Related parts"
+    assert plate["filament_map_mode"] == "Manual"
+    assert plate["filament_maps"] == "1"
+    overlapping = Job(
+        designs,
+        BuildVolume(100, 100, 20),
+        "catalogue",
+        print_placements=[
+            PrintPlacement(0, 5, 5, 0),
+            PrintPlacement(0, 10, 10, 0),
+        ],
+    )
+    with pytest.raises(ValueError, match="overlaps"):
+        write_3mf(overlapping, tmp_path / "overlap.3mf", bambu=materials)
+
+
 def test_job_exports_roundtripped_step_and_honest_manifest(box_job, tmp_path):
     directory = tmp_path / "new-job"
     manifest_path = export_job(box_job, directory)
     manifest = json.loads(manifest_path.read_text())
     assert manifest["designs"][0]["quantity"] == 3
     assert manifest["designs"][0]["step_roundtrip"] == "passed"
+    assert manifest["designs"][0]["step_precision_mode"] == "average"
     assert manifest["export"]["format"] == "core-geometry"
     assert not manifest["physical_fit_verified"]
     restored = import_step(directory / "diagnostic_block.step")
@@ -217,6 +263,23 @@ def test_job_exports_roundtripped_step_and_honest_manifest(box_job, tmp_path):
     with pytest.raises(ValueError, match="not empty"):
         export_job(box_job, directory)
     assert manifest_path.read_bytes() == before
+
+
+def test_invalid_default_step_reimport_uses_strict_precision_fallback(tmp_path):
+    design = tile_design(Tile(4, 3, hole_diameter=10, hole_scope="full"))
+    manifest = json.loads(
+        export_job(
+            Job([design], BuildVolume(300, 250, 20), "part"),
+            tmp_path / "full-hole",
+            stl=False,
+        ).read_text()
+    )
+    record = manifest["designs"][0]
+    restored = import_step(tmp_path / "full-hole" / f"{design.name}.step")
+    assert restored.is_valid and len(restored.solids()) == 1
+    assert record["step_precision_mode"] in {"average", "least"}
+    assert record["step_volume_delta_mm3"] <= record["step_volume_budget_mm3"]
+    assert record["step_bounds_delta_mm"] <= 1e-5
 
 
 @pytest.mark.parametrize(

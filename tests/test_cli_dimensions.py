@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 from build123d import import_step
 
-from cargo_grid.cli import main, parser
+from cargo_grid.cli import LEGACY_OPTION_REPLACEMENTS, main, parser
 
 OPTIONS = ("--build-width-mm", "--build-depth-mm", "--build-height-mm")
 COMPLETE = [OPTIONS[0], "150", OPTIONS[1], "150", OPTIONS[2], "50"]
@@ -18,7 +18,7 @@ COMPLETE = [OPTIONS[0], "150", OPTIONS[1], "150", OPTIONS[2], "50"]
 def test_missing_build_axes_are_named_in_errors(command, supplied, tmp_path, capsys):
     args = [command, "--output", str(tmp_path / "job")]
     if command == "layout":
-        args += ["--footprint", "120", "60"]
+        args += ["--layout-width-mm", "120", "--layout-depth-mm", "60"]
     for index in supplied:
         args += [OPTIONS[index], "150"]
     with pytest.raises(SystemExit) as error:
@@ -80,8 +80,8 @@ def test_help_explains_dimensions_and_multivalue_order(command, capsys):
         "front-back",
         "maximum print height",
         "no default",
-        "X_MM Y_MM Z_MM",
-        "WIDTH_MM DEPTH_MM",
+        "--build-reserve-width-mm",
+        "X_MM Y_MM WIDTH_MM DEPTH_MM",
     ):
         assert explanation in normalized
     assert not re.search(r"--build(?:[ =,]|$)", text)
@@ -94,10 +94,11 @@ def test_named_dimensions_generate_the_same_two_by_one_contract(tmp_path):
             [
                 "part",
                 *COMPLETE,
-                "--cells",
+                "--width-cells",
                 "2",
+                "--depth-cells",
                 "1",
-                "--quantity",
+                "--copy-count",
                 "2",
                 "--no-stl",
                 "--output",
@@ -115,6 +116,96 @@ def test_named_dimensions_generate_the_same_two_by_one_contract(tmp_path):
     shape = import_step(output / f"{design['name']}.step")
     assert shape.is_valid and len(shape.solids()) == 1 and shape.volume > 0
     assert tuple(shape.bounding_box().size) == pytest.approx((126, 66, 13), abs=1e-5)
+
+
+@pytest.mark.parametrize(
+    "legacy,replacement",
+    [
+        ("--cells", "--width-cells COUNT --depth-cells COUNT"),
+        ("--margin", "--build-margin-mm MM"),
+        ("--pitch", "--grid-pitch-mm MM"),
+        ("--height", "--tile-height-mm MM"),
+        ("--quantity", "--copy-count COUNT"),
+        ("--footprint", "--layout-width-mm MM --layout-depth-mm MM"),
+    ],
+)
+def test_removed_parameter_names_give_actionable_migrations(legacy, replacement, tmp_path, capsys):
+    command = "layout" if legacy == "--footprint" else "part"
+    values = ["120", "60"] if legacy in {"--cells", "--footprint"} else ["1"]
+    with pytest.raises(SystemExit) as error:
+        main(
+            [
+                command,
+                *COMPLETE,
+                legacy,
+                *values,
+                "--output",
+                str(tmp_path / "job"),
+            ]
+        )
+    message = " ".join(capsys.readouterr().err.split())
+    assert error.value.code == 2
+    assert f"unrecognized option {legacy}" in message
+    assert replacement in message
+
+
+@pytest.mark.parametrize("legacy,replacement", LEGACY_OPTION_REPLACEMENTS.items())
+def test_every_removed_option_has_an_actionable_migration(legacy, replacement, capsys):
+    with pytest.raises(SystemExit) as error:
+        parser().parse_args(["part", legacy])
+    message = " ".join(capsys.readouterr().err.split())
+    assert error.value.code == 2
+    assert f"unrecognized option {legacy}" in message
+    assert replacement in message
+
+
+def test_partial_two_axis_dimensions_name_the_missing_count(tmp_path, capsys):
+    for supplied, missing in (
+        ("--width-cells", "--depth-cells"),
+        ("--depth-cells", "--width-cells"),
+    ):
+        with pytest.raises(SystemExit) as error:
+            main(
+                [
+                    "part",
+                    *COMPLETE,
+                    supplied,
+                    "2",
+                    "--output",
+                    str(tmp_path / supplied.removeprefix("--")),
+                ]
+            )
+        assert error.value.code == 2
+        assert missing in capsys.readouterr().err
+
+
+@pytest.mark.parametrize(
+    "family,option",
+    [
+        ("ramp", "--depth-cells"),
+        ("edge-x", "--width-cells"),
+        ("corner-in", "--length-cells"),
+        ("plate", "--stop-height-mm"),
+        ("tile", "--variant-number"),
+        ("support", "--connector-length-mm"),
+    ],
+)
+def test_family_specific_dimensions_reject_irrelevant_flags(family, option, tmp_path, capsys):
+    with pytest.raises(SystemExit) as error:
+        main(
+            [
+                "part",
+                *COMPLETE,
+                "--family",
+                family,
+                option,
+                "1",
+                "--output",
+                str(tmp_path / family),
+            ]
+        )
+    assert error.value.code == 2
+    assert option in capsys.readouterr().err
 
 
 def test_no_stale_build_triples_in_maintained_commands():

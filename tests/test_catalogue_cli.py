@@ -37,7 +37,7 @@ def test_accessory_families_finite_and_complete():
     "extra",
     [
         ["--holes"],
-        ["--hole-diameter", "10"],
+        ["--hole-diameter-mm", "10"],
         ["--stack-count", "2"],
         ["--bambu"],
         ["--material", "Unknown", "PETG", "#ffffff"],

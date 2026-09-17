@@ -129,9 +129,8 @@ def test_cli_and_api_use_plain_width_cells_and_fixed_run(tmp_path):
                 "part",
                 "--family",
                 "ramp",
-                "--cells",
+                "--width-cells",
                 "3",
-                "1",
                 "--build-width-mm",
                 "350",
                 "--build-depth-mm",
@@ -200,15 +199,13 @@ def test_bambu_ramp_scopes_normal_auto_without_changing_orientation_or_other_obj
         )
 
 
-def test_ramp_ignores_unrelated_accessory_height_but_rejects_unsupported_interfaces():
-    spec = Accessory("ramp", nx=2)
-    assert make_accessory(replace(spec, height=120)).volume == pytest.approx(
-        make_accessory(spec).volume
-    )
+def test_ramp_rejects_irrelevant_height_and_unsupported_interfaces():
     with pytest.raises(ValueError, match="original roofed joints"):
         Accessory("ramp", interface=Interface(pitch=65))
     with pytest.raises(ValueError, match="original roofed joints"):
         Accessory("ramp", interface=Interface(joint_style="full-height"))
+    with pytest.raises(ValueError, match="height does not apply"):
+        Accessory("ramp", height=120)
     with pytest.raises(ValueError, match="ramp uses nx"):
         Accessory("ramp", ny=2)
 

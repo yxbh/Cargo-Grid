@@ -156,24 +156,24 @@ def test_cli_implicit_critical_and_explicit_full(tmp_path, nozzle_map):
         "PLA",
         "PLA",
         "#DDDDDD",
-        "--nozzle",
+        "--nozzle-diameter-mm",
         ".4",
-        "--layer-height",
+        "--layer-height-mm",
         ".2",
         "--roof-support",
-        "--roof-top-gap",
+        "--roof-top-gap-mm",
         ".2",
-        "--roof-interface-layers",
+        "--roof-interface-layer-count",
         "2",
-        "--roof-interface-spacing",
+        "--roof-interface-spacing-mm",
         "0",
     ]
     if nozzle_map:
-        base += ["--roof-nozzles", *map(str, nozzle_map)]
+        base += ["--roof-nozzle-slots", *map(str, nozzle_map)]
     for coverage in ("critical", "full"):
         command = base + ["--output", str(tmp_path / coverage)]
         if coverage == "full":
-            command += ["--roof-coverage", "full", "--roof-foot-expansion", "0"]
+            command += ["--roof-coverage", "full", "--roof-foot-expansion-mm", "0"]
         assert main(command) == 0
         report = json.loads((tmp_path / coverage / "manifest.json").read_text())
         assert report["export"]["roof_support"]["settings"]["coverage"] == coverage

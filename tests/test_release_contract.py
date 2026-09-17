@@ -153,9 +153,9 @@ def test_auto_stack_invalid_gap_is_a_cli_error_not_traceback(tmp_path, capsys, g
                 "--output",
                 str(tmp_path / "job"),
                 "--bambu",
-                "--nozzle",
+                "--nozzle-diameter-mm",
                 ".4",
-                "--layer-height",
+                "--layer-height-mm",
                 ".2",
                 "--material",
                 "PETG",
@@ -167,11 +167,11 @@ def test_auto_stack_invalid_gap_is_a_cli_error_not_traceback(tmp_path, capsys, g
                 "#dddddd",
                 "--stack-count",
                 "auto",
-                "--stack-gap",
+                "--stack-gap-mm",
                 gap,
-                "--interface-thickness",
+                "--stack-interface-thickness-mm",
                 ".2",
-                "--material-roles",
+                "--stack-material-slots",
                 "1",
                 "1",
                 "2",
@@ -186,7 +186,15 @@ def test_reference_report_refuses_existing_path(tmp_path, capsys):
     output = tmp_path / "reference-report.json"
     output.write_text("preserve me")
     with pytest.raises(SystemExit) as error:
-        main(["compare-reference", str(tmp_path / "not-supplied.3mf"), "--output", str(output)])
+        main(
+            [
+                "compare-reference",
+                "--reference-file",
+                str(tmp_path / "not-supplied.3mf"),
+                "--output",
+                str(output),
+            ]
+        )
     assert error.value.code == 2 and "already exists" in capsys.readouterr().err
     assert output.read_text() == "preserve me"
 

@@ -243,7 +243,18 @@ def test_source_exports_keep_model_datum_and_apply_pose_only_to_bambu(tmp_path):
 def test_cli_defaults_to_2x1_h60_and_preserves_explicit_height(tmp_path):
     for name, extra, expected in (
         ("default", [], (2, 1, 60)),
-        ("explicit", ["--cells", "1", "2", "--accessory-height", "120"], (1, 2, 120)),
+        (
+            "explicit",
+            [
+                "--width-cells",
+                "1",
+                "--depth-cells",
+                "2",
+                "--stop-height-mm",
+                "120",
+            ],
+            (1, 2, 120),
+        ),
     ):
         output = tmp_path / name
         assert (
