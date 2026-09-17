@@ -103,8 +103,8 @@ def test_support_r1_preserves_central_full_height_dovetails(spec, tmp_path):
     )
 
 
-@pytest.mark.parametrize("n,expected", [(1, 64461.9715167621), (2, 196631.726183597)])
-def test_full_depth_angled_webs_notch_removal_and_r1_cap(n, expected, tmp_path):
+@pytest.mark.parametrize("n,expected", [(1, 123711.10861061758), (2, 475485.9800915248)])
+def test_filled_angled_stops_protect_connectors_and_round_free_edges(n, expected, tmp_path):
     spec = Accessory("lock-45", nx=n, ny=n)
     shape = make_accessory(spec)
     # Converge integration separately from the existing CAD construction-error contract.
@@ -122,15 +122,17 @@ def test_full_depth_angled_webs_notch_removal_and_r1_cap(n, expected, tmp_path):
         "surface_area_mm2": shape.area,
         "existing_export_volume_budget_mm3": volume_budget,
     }
-    base = _mounted_base(spec, root_radius=1)
-    region = Solid.make_box(n * 60, n * 60, 16.1).moved(Location((0, 0, -13)))
-    assert volume(Part(base.intersect(region).solids()).cut(shape)) < 1e-5
-    assert volume(Part(shape.intersect(region).solids()).cut(base)) < 1e-5
-    assert shape.is_inside(Vector(3, 60 * (n - 1) + 10, 47.5))
-    assert shape.is_inside(Vector(n * 60 - 3, 60 * (n - 1) + 10, 47.5))
-    assert shape.is_inside(Vector(5.99, n * 30, 20))
-    assert not shape.is_inside(Vector(6.01, n * 30, 20))
-    # The unaltered wall is6mm horizontally, hence6/sqrt(2) normal to its45deg plane.
+    base = _mounted_base(spec, root_radius=1, round_top=False)
+    for x, y, _ in accessory_datums(spec)["mount_centers"]:
+        region = Solid.make_box(48, 48, 13.2).moved(Location((x - 24, y - 24, -13)))
+        expected_base = Part(base.intersect(region).solids())
+        actual = Part(shape.intersect(region).solids())
+        assert volume(expected_base.cut(actual)) + volume(actual.cut(expected_base)) < 1e-7
+    assert shape.is_inside(Vector(n * 30, n * 30, 20))
+    cargo_y = n * 60 - (10 - 4.1)
+    assert shape.is_inside(Vector(n * 30, cargo_y - 3, 10))
+    assert not shape.is_inside(Vector(n * 30, n * 60 - 5.8, 10))
+    # The retained cargo envelope is6mm horizontally, hence6/sqrt(2) normal to its45deg plane.
     assert 6 / sqrt(2) == pytest.approx(4.242640687)
     path = tmp_path / "angled.step"
     assert export_step(shape, path)
@@ -139,6 +141,6 @@ def test_full_depth_angled_webs_notch_removal_and_r1_cap(n, expected, tmp_path):
     assert any(
         face.geom_type == GeomType.CYLINDER
         and BRepAdaptor_Surface(face.wrapped).Cylinder().Radius() == pytest.approx(1)
-        and face.bounding_box().max.Z > 49.9
+        and face.bounding_box().max.Z > 49
         for face in restored.faces()
     )

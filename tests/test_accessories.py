@@ -160,14 +160,14 @@ def test_plug_shoulder_registration_preserves_shared_plug():
     assert accessory_datums(spec)["plug_tip_z"] == -12.8
 
 
-def test_lock_wall_angle_above_base():
+def test_filled_angled_stop_retains_inclined_cargo_face():
     part = make_accessory(Accessory("lock-45"))
     for height in (10, 30, 45):
         lean = height - 4.1
         y = 60 - lean
         assert part.is_inside(Vector(30, y - 3, height))
         assert not part.is_inside(Vector(30, y + 0.1, height))
-        assert not part.is_inside(Vector(30, y - 6.1, height))
+        assert part.is_inside(Vector(30, y - 6.1, height))
 
 
 def test_support_connections_are_full_height_and_not_tile_joins():

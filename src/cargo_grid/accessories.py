@@ -59,8 +59,6 @@ BRACKET_INSET_MM = 13.0
 BRACKET_BACKING_MM = 4.1
 BRACKET_ENVELOPE_MARGIN_MM = 0.1
 STOP_WALL_MM = 6.0
-STOP_WEB_MM = 6.0
-STOP_CAP_RADIUS_MM = 1.0
 EDGE_TOP_RADIUS_MM = 2.0
 SUPPORT_TOP_RADIUS_MM = 1.0
 BRACKET_LIP_RADIUS_MM = 1.0
@@ -274,15 +272,8 @@ def _cross_prism(
     points: list[tuple[float, float]],
     width: float,
     x: float = 0,
-    *,
-    cap_z: float | None = None,
 ) -> Part:
     face = Face(Wire.make_polygon([(x, y, z) for y, z in points], close=True))
-    if cap_z is not None:
-        corners = [v for v in face.vertices() if abs(v.Z - cap_z) < 1e-5]
-        if len(corners) != 2:
-            raise ValueError("expected two exposed stop-cap profile corners")
-        face = face.fillet_2d(STOP_CAP_RADIUS_MM, corners)
     return Part(Solid.extrude(face, (width, 0, 0)).wrapped)
 
 
@@ -304,32 +295,32 @@ def _mounted_base(spec: Accessory, *, root_radius: float, round_top: bool = True
     return part.fillet(root_radius, roots)
 
 
-def _mounted(spec: Accessory) -> Part:
-    part = _mounted_base(spec, root_radius=2 if spec.family == "plate" else 1)
-    if spec.family == "plate":
-        return part.clean()
+def _filled_angled_stop(spec: Accessory) -> Part:
     w, d = spec.nx * spec.interface.pitch, spec.ny * spec.interface.pitch
     lean = spec.height - BASE_HEIGHT_MM
     top_front = d - lean - STOP_WALL_MM
-    wall = [
-        (d - STOP_WALL_MM, BASE_HEIGHT_MM - 1),
-        (d, BASE_HEIGHT_MM - 1),
+    profile = [
+        (0, 0),
+        (d, 0),
         (d, BASE_HEIGHT_MM),
         (d - lean, spec.height),
         (top_front, spec.height),
-        (d - STOP_WALL_MM, BASE_HEIGHT_MM),
-    ]
-    web = [
         (0, BASE_HEIGHT_MM - 1),
-        (d, BASE_HEIGHT_MM - 1),
-        (d, BASE_HEIGHT_MM),
-        (d - lean, spec.height),
-        (top_front, spec.height),
     ]
-    part = part.fuse(_cross_prism(wall, w, cap_z=spec.height))
-    for x in (0, w - STOP_WEB_MM):
-        part = part.fuse(_cross_prism(web, STOP_WEB_MM, x, cap_z=spec.height))
-    return part.clean()
+    envelope = _cross_prism(profile, w)
+    operation = BRepFilletAPI_MakeFillet(envelope.wrapped)
+    for edge in envelope.edges():
+        operation.Add(1.0, edge.wrapped)
+    operation.Build()
+    if not operation.IsDone():
+        raise ValueError("filled angled-stop R1 envelope failed")
+    rounded = Part(Solid(operation.Shape()).wrapped)
+    mounted = _mounted_base(spec, root_radius=1, round_top=False)
+    connectors = []
+    for x, y, _ in _mount_centers(spec):
+        region = Solid.make_box(48, 48, 13.2).moved(Location((x - 24, y - 24, -13)))
+        connectors.extend(mounted.intersect(region).solids())
+    return Part(rounded.fuse(*connectors).clean().solids())
 
 
 @lru_cache(maxsize=1)
@@ -726,8 +717,10 @@ def make_accessory(spec: Accessory) -> Part:
         part = _vertical_stop(spec)
     elif spec.family == "ramp":
         part = _ramp(spec)
-    elif spec.family in ("plate", "lock-45"):
-        part = _mounted(spec)
+    elif spec.family == "plate":
+        part = _mounted_base(spec, root_radius=2).clean()
+    elif spec.family == "lock-45":
+        part = _filled_angled_stop(spec)
     elif spec.family.startswith("support"):
         part = _support(spec)
     else:
