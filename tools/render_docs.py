@@ -24,7 +24,7 @@ from cargo_grid.catalogue import BRACKET_DISPLAY_NAMES, accessory_variants
 ROOT = Path(__file__).resolve().parents[1]
 BUILD = BuildVolume(350, 320, 325)
 WORKBENCH_REVISION = "c3f63ef8d8604d3ec7eeba40a229047887c03d86"
-GEOMETRY_REVISION = "c53211171c6830f05a10022e829bc279d91ea9d5"
+GEOMETRY_REVISION = "d0011cc056f6b4e2d6aa0f292b57b2e1fc1c4a4b"
 GEOMETRY_FILES = (
     "parameters.py",
     "interfaces.py",
