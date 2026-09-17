@@ -102,6 +102,8 @@ uv run cargo-grid part --family vertical-tile-bracket --width-cells 1 --depth-ce
 
 This exports the bracket only. Generate its 1x1 floor tile and 1x2 wall tile separately. Brackets require the standard 60 mm pitch, 13 mm tile height and zero fit offset.
 
+The accepted wall posts remove the wide root flare, inset the straight stem profile by 0.08 mm and keep the final 2 mm rounded tip unchanged. The wall tile can face either way. The original underside-outward placement remains the default; for its top face outward, rotate the wall tile Z=180 degrees and then X=-90 degrees before placing it on the same post centers. Use the same orientation for every adjoining wall tile because top-outward placement reverses left/right joining handedness. CAD checks preserve the seated top-outward arrangement, but the unchanged tip still has a small nominal interference during a straight insertion sweep. Physical fit is pending the user's test print.
+
 Bambu projects place the original three brackets on their retangented diagonal rear face (about X=133–134 degrees, depending on depth). The shallow brackets use Y=-90 degrees with a broad side down and request normal Auto support on those objects. In both checked H2D PETG profiles, shallow-bracket support touched the floor and wall X mating regions. Those regions are exposed in the side-down pose, but the support must be removed completely before checking fit.
 
 ## Normal and angled cargo stops

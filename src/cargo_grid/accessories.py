@@ -81,6 +81,10 @@ BRACKET_LIP_RADIUS_MM = 1.0
 BRACKET_FREE_EDGE_RADIUS_MM = 2.0
 SHALLOW_BRACKET_TRANSITION_RADIUS_MM = 3.0
 BRACKET_TOP_EXTENSION_MM = {1: 3.0515422, 2: 2.921921}
+PANEL_STEM_PROFILE_INSET_MM = 0.08
+PANEL_TIP_TRANSITION_START_MM = 10.7
+PANEL_TIP_START_MM = 10.8
+PANEL_ROOT_OVERLAP_MM = 2.0
 VERTICAL_STOP_RADIUS_MM = 2.0
 BAMBU_PRINT_ROTATIONS = {
     "vertical-tile-bracket": 135.0,
@@ -413,10 +417,38 @@ def _filled_angled_stop(spec: Accessory) -> Part:
 
 
 @lru_cache(maxsize=1)
-def _panel_connector() -> Part:
+def _legacy_panel_connector() -> Part:
     plate = _mounted_base(Accessory("plate"), root_radius=2)
     domain = prism(x_profile(offset=5), 18).moved(Location((30, 30, -13)))
     return Part(plate.intersect(domain).solids())
+
+
+@lru_cache(maxsize=1)
+def _bidirectional_panel_post() -> Part:
+    narrow_profile = x_profile(plug=True, offset=-PANEL_STEM_PROFILE_INSET_MM)
+    stem = prism(
+        narrow_profile,
+        PANEL_TIP_TRANSITION_START_MM + PANEL_ROOT_OVERLAP_MM,
+    ).moved(Location((0, 0, -PANEL_ROOT_OVERLAP_MM)))
+    transition = Part(
+        Solid.make_loft(
+            [
+                narrow_profile.outer_wire().moved(Location((0, 0, PANEL_TIP_TRANSITION_START_MM))),
+                x_profile(plug=True).outer_wire().moved(Location((0, 0, PANEL_TIP_START_MM))),
+            ]
+        ).wrapped
+    )
+    tip_region = Solid.make_box(100, 100, 2.1).moved(Location((-50, -50, PANEL_TIP_START_MM)))
+    exact_tip = Part(make_plug().intersect(tip_region).solids())
+    result = Part(stem.fuse(transition, exact_tip).clean().solids())
+    if not result.is_valid or len(result.solids()) != 1:
+        raise ValueError("bidirectional panel post is invalid")
+    return result
+
+
+@lru_cache(maxsize=1)
+def _panel_connector() -> Part:
+    return _bidirectional_panel_post().rotate(Axis.X, 180).moved(Location((30, 30, 0)))
 
 
 def _vertical_bracket(spec: Accessory, *, round_lip: bool = True) -> Part:
@@ -430,10 +462,11 @@ def _vertical_bracket(spec: Accessory, *, round_lip: bool = True) -> Part:
     seat = d - BRACKET_INSET_MM
     base = _mounted_base(spec, root_radius=1, round_top=False)
     node = _panel_connector()
+    envelope = _legacy_panel_connector()
     # Cover the highest rear backing corner, retaining the exact45-degree bed plane.
     intercept = (
         PANEL_BOTTOM_MM
-        + node.bounding_box().max.Y
+        + envelope.bounding_box().max.Y
         + BRACKET_BACKING_MM
         + BRACKET_INSET_MM
         - p
@@ -465,9 +498,10 @@ def _rounded_original_bracket(spec: Accessory) -> Part:
     width, depth = spec.nx * p, spec.ny * p
     seat = depth - BRACKET_INSET_MM
     node = _panel_connector()
+    envelope = _legacy_panel_connector()
     intercept = (
         PANEL_BOTTOM_MM
-        + node.bounding_box().max.Y
+        + envelope.bounding_box().max.Y
         + BRACKET_BACKING_MM
         + BRACKET_INSET_MM
         - p
@@ -529,10 +563,10 @@ def _rounded_shallow_bracket_body(spec: Accessory, panel_rows: int) -> Part:
     p = spec.interface.pitch
     w, d = spec.nx * p, spec.ny * p
     seat = d - BRACKET_INSET_MM
-    node = _panel_connector()
+    envelope = _legacy_panel_connector()
     intercept = (
         PANEL_BOTTOM_MM
-        + node.bounding_box().max.Y
+        + envelope.bounding_box().max.Y
         + BRACKET_BACKING_MM
         + BRACKET_INSET_MM
         - p
@@ -999,6 +1033,14 @@ def accessory_datums(spec: Accessory) -> dict:
                 "nominal_bearing_gap": 0,
                 "panel_inset": BRACKET_INSET_MM,
                 "outward_tile_face": "underside",
+                "supported_outward_tile_faces": ("underside", "top"),
+                "top_outward_tile_rotation_degrees": {"z": 180, "x": -90},
+                "panel_stem_profile_inset": PANEL_STEM_PROFILE_INSET_MM,
+                "panel_tip_transition": (
+                    PANEL_TIP_TRANSITION_START_MM,
+                    PANEL_TIP_START_MM,
+                ),
+                "bidirectional_physical_fit_verified": False,
                 "backing": "solid; backed interior round holes are blind",
             }
         result = {

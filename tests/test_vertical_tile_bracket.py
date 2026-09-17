@@ -24,6 +24,7 @@ from cargo_grid.accessories import (
     VERTICAL_BRACKET_CELLS,
     VERTICAL_BRACKET_CONFIGS,
     Accessory,
+    _bidirectional_panel_post,
     _mounted_base,
     _panel_connector,
     _vertical_bracket,
@@ -32,7 +33,7 @@ from cargo_grid.accessories import (
 )
 from cargo_grid.catalogue import accessory_design, accessory_variants
 from cargo_grid.cli import main
-from cargo_grid.interfaces import make_plug
+from cargo_grid.interfaces import make_plug, x_profile
 from cargo_grid.tiles import hole_placements
 
 
@@ -77,6 +78,11 @@ def test_bracket_solid_datums_and_actual_step_roundtrip(nx, ny, tmp_path):
     assert datums["panel_bottom_z"] == datums["bearing_z"] == 6.1
     assert datums["nominal_bearing_gap"] == 0
     assert datums["outward_tile_face"] == "underside"
+    assert datums["supported_outward_tile_faces"] == ("underside", "top")
+    assert datums["top_outward_tile_rotation_degrees"] == {"z": 180, "x": -90}
+    assert datums["panel_stem_profile_inset"] == 0.08
+    assert datums["panel_tip_transition"] == (10.7, 10.8)
+    assert not datums["bidirectional_physical_fit_verified"]
     path = tmp_path / f"bracket_{nx}x{ny}.step"
     assert export_step(part, path)
     restored = import_step(path)
@@ -89,9 +95,9 @@ def test_bracket_solid_datums_and_actual_step_roundtrip(nx, ny, tmp_path):
 @pytest.mark.parametrize(
     "nx,ny,expected",
     [
-        (1, 2, 562574.57070031),
-        (2, 1, 339514.7072775045),
-        (2, 2, 1125861.2804091852),
+        (1, 2, 561925.8254538283),
+        (2, 1, 338865.96203102154),
+        (2, 2, 1124563.7899143),
     ],
 )
 def test_bracket_volume_fixture_and_mixed_free_edge_radii(nx, ny, expected):
@@ -118,7 +124,7 @@ def test_bracket_volume_fixture_and_mixed_free_edge_radii(nx, ny, expected):
 @pytest.mark.parametrize("nx,ny", [(2, 1), (2, 2)])
 def test_approved_unrounded_core_metrics(nx, ny):
     part = _vertical_bracket(Accessory("vertical-tile-bracket", nx=nx, ny=ny), round_lip=False)
-    expected = {1: 332072.7861841645, 2: 1108591.5247334896}
+    expected = {1: 331424.04093559954, 2: 1107294.0342363608}
     assert part.volume == pytest.approx(expected[ny], abs=1e-5)
 
 
@@ -141,8 +147,50 @@ def test_original_lower_base_and_both_plug_sets_are_retained(nx, ny):
         plug = make_plug().rotate(Axis.X, 180).moved(Location((x, y, z)))
         assert volume(plug.cut(part)) < 1e-5
     for point in accessory_datums(spec)["panel_plug_centers"]:
-        plug = make_plug().rotate(Axis.X, -90).moved(Location(point))
+        plug = _bidirectional_panel_post().rotate(Axis.X, -90).moved(Location(point))
         assert volume(plug.cut(part)) < 1e-5
+
+
+def test_accepted_bidirectional_panel_post_preserves_tip_and_nominal_interference():
+    post = _bidirectional_panel_post()
+    exact = make_plug()
+    tip_region = Solid.make_box(100, 100, 2.1).moved(Location((-50, -50, 10.8)))
+    assert (
+        difference(
+            Part(post.intersect(tip_region).solids()),
+            Part(exact.intersect(tip_region).solids()),
+        )
+        < 1e-7
+    )
+    assert all(
+        face.bounding_box().min.Z >= 10.8 - 1e-5
+        for face in post.faces()
+        if face.geom_type == GeomType.TORUS
+    )
+    socket = x_profile()
+    chosen = x_profile(plug=True, offset=-0.08)
+    prior = x_profile(plug=True, offset=-0.075)
+    assert sum(face.area for face in chosen.cut(socket).faces()) < 1e-9
+    assert sum(face.area for face in prior.cut(socket).faces()) == pytest.approx(
+        0.12236687691122836,
+        abs=1e-8,
+    )
+
+    spec = Accessory("vertical-tile-bracket", nx=1, ny=1, panel_height_cells=2)
+    bracket = make_accessory(spec)
+    underside_outward = make_tile(Tile(1, 2)).rotate(Axis.X, 90).moved(Location((0, 60, 6.1)))
+    top_outward = (
+        make_tile(Tile(1, 2)).rotate(Axis.Z, 180).rotate(Axis.X, -90).moved(Location((60, 47, 6.1)))
+    )
+    assert volume(bracket.intersect(underside_outward)) == pytest.approx(
+        5.439166120503271,
+        abs=1e-6,
+    )
+    assert volume(bracket.intersect(top_outward)) < 1e-7
+    assert volume(bracket.intersect(top_outward.moved(Location((0, 4, 0))))) == pytest.approx(
+        5.4391660871705465,
+        abs=1e-6,
+    )
 
 
 @pytest.mark.parametrize("nx,ny", VERTICAL_BRACKET_CELLS)
@@ -241,7 +289,7 @@ def test_bracket_variants_and_reference_only_interface_policy():
 
 @pytest.mark.parametrize(
     "nx,expected_volume",
-    [(1, 281966.44123081816), (2, 564485.5393485603)],
+    [(1, 281317.69598481583), (2, 563188.0488542926)],
 )
 def test_shallow_brackets_round_free_body_and_preserve_mating_regions(
     nx, expected_volume, tmp_path
@@ -266,6 +314,7 @@ def test_shallow_brackets_round_free_body_and_preserve_mating_regions(
     assert len(datums["panel_plug_centers"]) == nx * 2
     assert datums["panel_seat_y"] == 47
     assert datums["panel_plug_tip_y"] == pytest.approx(59.8)
+    assert datums["supported_outward_tile_faces"] == ("underside", "top")
 
     base = _mounted_base(spec, root_radius=1, round_top=False)
     floor_region = Solid.make_box(nx * 60, 60, 13).moved(Location((0, 0, -13)))
