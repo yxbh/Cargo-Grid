@@ -13,6 +13,7 @@ from cargo_grid import Interface
 from cargo_grid.accessories import (
     Accessory,
     _apply_joins,
+    _downward_plug,
     _edge_plan,
     _mounted_base,
     _support,
@@ -103,7 +104,7 @@ def test_support_r1_preserves_central_full_height_dovetails(spec, tmp_path):
     )
 
 
-@pytest.mark.parametrize("n,expected", [(1, 123711.10861061758), (2, 475485.9800915248)])
+@pytest.mark.parametrize("n,expected", [(1, 123369.26344133946), (2, 474943.3630807313)])
 def test_filled_angled_stops_protect_connectors_and_round_free_edges(n, expected, tmp_path):
     spec = Accessory("lock-45", nx=n, ny=n)
     shape = make_accessory(spec)
@@ -140,7 +141,35 @@ def test_filled_angled_stops_protect_connectors_and_round_free_edges(n, expected
     assert restored.is_valid and len(restored.solids()) == 1
     assert any(
         face.geom_type == GeomType.CYLINDER
-        and BRepAdaptor_Surface(face.wrapped).Cylinder().Radius() == pytest.approx(1)
+        and BRepAdaptor_Surface(face.wrapped).Cylinder().Radius() == pytest.approx(2)
         and face.bounding_box().max.Z > 49
         for face in restored.faces()
+    )
+
+
+@pytest.mark.parametrize(
+    "nx,ny,expected",
+    [
+        (1, 1, 32894.977551393225),
+        (1, 2, 65999.33687214005),
+        (2, 2, 132414.07327677213),
+    ],
+)
+def test_attachment_plates_round_the_whole_free_body_and_keep_x_plugs(nx, ny, expected):
+    spec = Accessory("plate", nx=nx, ny=ny)
+    shape = make_accessory(spec)
+    assert shape.volume == pytest.approx(expected, abs=1e-6)
+    old_base = _mounted_base(spec, root_radius=2)
+    mating_region = Solid.make_box(nx * 60, ny * 60, 13).moved(Location((0, 0, -13)))
+    before = Part(old_base.intersect(mating_region).solids())
+    after = Part(shape.intersect(mating_region).solids())
+    assert volume(before.cut(after)) + volume(after.cut(before)) < 1e-7
+    for center in accessory_datums(spec)["mount_centers"]:
+        plug = _downward_plug().moved(Location(center))
+        assert volume(plug.cut(shape)) < 1e-7
+    assert any(
+        face.geom_type == GeomType.CYLINDER
+        and BRepAdaptor_Surface(face.wrapped).Cylinder().Radius() == pytest.approx(2)
+        and face.bounding_box().min.Z >= -1e-5
+        for face in shape.faces()
     )

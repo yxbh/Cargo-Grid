@@ -316,6 +316,29 @@ def _mounted_base(spec: Accessory, *, root_radius: float, round_top: bool = True
     return part.fillet(root_radius, roots)
 
 
+def _plate(spec: Accessory) -> Part:
+    width, depth = spec.nx * spec.interface.pitch, spec.ny * spec.interface.pitch
+    body = _box(0, 0, width, depth, BASE_HEIGHT_MM)
+    operation = BRepFilletAPI_MakeFillet(body.wrapped)
+    for edge in body.edges():
+        operation.Add(2.0, edge.wrapped)
+    operation.Build()
+    if not operation.IsDone():
+        raise ValueError("attachment plate coupled R2 body fillet failed")
+    part = Part(Solid(operation.Shape()).wrapped)
+    centers = _mount_centers(spec)
+    for center in centers:
+        part = part.fuse(_downward_plug().moved(Location(center)))
+    roots = [
+        edge
+        for edge in horizontal_edges(part, 0)
+        if any(
+            abs(edge.center().X - x) < 23 and abs(edge.center().Y - y) < 23 for x, y, _ in centers
+        )
+    ]
+    return part.fillet(2, roots).clean()
+
+
 def _filled_angled_stop(spec: Accessory) -> Part:
     w, d = spec.nx * spec.interface.pitch, spec.ny * spec.interface.pitch
     lean = spec.height - BASE_HEIGHT_MM
@@ -331,10 +354,10 @@ def _filled_angled_stop(spec: Accessory) -> Part:
     envelope = _cross_prism(profile, w)
     operation = BRepFilletAPI_MakeFillet(envelope.wrapped)
     for edge in envelope.edges():
-        operation.Add(1.0, edge.wrapped)
+        operation.Add(2.0, edge.wrapped)
     operation.Build()
     if not operation.IsDone():
-        raise ValueError("filled angled-stop R1 envelope failed")
+        raise ValueError("filled angled-stop R2 envelope failed")
     rounded = Part(Solid(operation.Shape()).wrapped)
     mounted = _mounted_base(spec, root_radius=1, round_top=False)
     connectors = []
@@ -829,7 +852,7 @@ def make_accessory(spec: Accessory) -> Part:
     elif spec.family == "ramp":
         part = _ramp(spec)
     elif spec.family == "plate":
-        part = _mounted_base(spec, root_radius=2).clean()
+        part = _plate(spec)
     elif spec.family == "lock-45":
         part = _filled_angled_stop(spec)
     elif spec.family.startswith("support"):
