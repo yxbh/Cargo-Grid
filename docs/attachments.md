@@ -145,6 +145,6 @@ PYTHONPATH=src <workbench-python> tools/render_docs.py --workbench <workbench-ch
 
 Use the workbench's Python interpreter with Pillow already available; paths are supplied locally, not committed. In PowerShell, set `$env:PYTHONPATH='src'` before invoking that interpreter. The script checks geometry modules against the recorded commit, invokes STEP/inspection/render tools, then creates 6 overview PNGs and 56 family-scaled thumbnails. `--compose-only` reuses verified local STEP-derived renders; `--check` verifies the committed files and their one-to-one inventory mapping without Pillow. Intermediate STEP files and raw renders remain ignored. Layout is deterministic; raster bytes can depend on graphics/Pillow versions.
 
-Generator source revision: <code>feb0fd36<wbr>6a12b9ba<wbr>df04561a<wbr>2d213b20<wbr>3fd6c077</code>. Generator tree: <code>68e28e1e<wbr>7c3b2666<wbr>97226a2d<wbr>9c962c99<wbr>98fa210e</code>. Workbench revision: <code>c3f63ef8<wbr>d8604d3e<wbr>c7eeba40<wbr>a2290478<wbr>87c03d86</code>.
+Generator source revision: <code>0787bac0<wbr>67942b04<wbr>a2df49cd<wbr>d01c556d<wbr>a69f1ba2</code>. Generator tree: <code>1fe1f513<wbr>ddd6ead4<wbr>c7f4ff13<wbr>7dd177ed<wbr>2d7792c9</code>. Workbench revision: <code>c3f63ef8<wbr>d8604d3e<wbr>c7eeba40<wbr>a2290478<wbr>87c03d86</code>.
 
 A successful render is not evidence of printability, physical fit, support release or third-party design rights.
