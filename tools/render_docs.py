@@ -381,12 +381,7 @@ def render_items(workbench: Path, work: Path, only: set[str] | None) -> dict:
     environment["PYTHONPATH"] = os.pathsep.join((str(ROOT), str(ROOT / "src")))
     for subdir in ("source", "steps", "renders", "facts", "logs"):
         (work / subdir).mkdir(parents=True, exist_ok=True)
-    items = (
-        hero_items()
-        + interface_scale_items()
-        + inventory()
-        + bracket_assembly_items()
-    )
+    items = hero_items() + interface_scale_items() + inventory() + bracket_assembly_items()
     if only and not only <= {item.key for item in items}:
         raise ValueError("Unknown --only item")
     for item in items:
