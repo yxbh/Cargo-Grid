@@ -24,7 +24,7 @@ from cargo_grid.catalogue import BRACKET_DISPLAY_NAMES, accessory_variants
 ROOT = Path(__file__).resolve().parents[1]
 BUILD = BuildVolume(350, 320, 325)
 WORKBENCH_REVISION = "c3f63ef8d8604d3ec7eeba40a229047887c03d86"
-GEOMETRY_REVISION = "d0011cc056f6b4e2d6aa0f292b57b2e1fc1c4a4b"
+GEOMETRY_REVISION = "5d5ec922fab9b519d6f037d0e444619f3ca59460"
 GEOMETRY_FILES = (
     "parameters.py",
     "interfaces.py",
@@ -63,7 +63,7 @@ FAMILIES = {
     ),
     "vertical-tile-bracket": (
         "Vertical tile brackets",
-        "A filled mixed-R1/R2 wedge carrying a separate ordinary tile vertically. Three original variants match floor depth to wall height; two shallow variants keep one floor row under a two-row wall.",
+        "A filled wedge carrying a separate ordinary tile vertically. Three original variants match floor depth to wall height; two shallow variants keep one floor row under a two-row wall and add R3 at the exposed front-to-slope transition.",
     ),
     "vertical-stop": (
         "Normal full-solid stops",
@@ -668,7 +668,7 @@ def compose_all(work: Path, provenance: dict) -> None:
         "",
         "Normal `vertical-stop` names give base X cells, base Y cells and H60/H120 shoulder height. They are filled CAD wedges with no wall holes, panel connectors or ledges. The slicer still chooses perimeters and infill.",
         "",
-        "Original-style edge/corner bodies and straight rail bodies use R3. The acute rail ends use smaller complete rounds where required by fit and portable STEP checks. Plates and angled stops use R2. Brackets use R2 on thick free edges and R1 around the thin bearing lip; normal stops and ramps keep R2. Tile joints, rail joints, bracket bearing surfaces and X attachments keep their mating geometry.",
+        "Original-style edge/corner bodies and straight rail bodies use R3. The acute rail ends use smaller complete rounds where required by fit and portable STEP checks. Plates and angled stops use R2. Brackets use R2 on thick free edges and R1 around the thin bearing lip, with a targeted R3 shallow front-to-slope transition; normal stops and ramps keep R2. Tile joints, rail joints, bracket bearing surfaces and X attachments keep their mating geometry.",
         "",
         "Bambu projects put original brackets on their diagonal rear face, shallow brackets on a broad side, normal stops on their broad rear face and angled stops on their rear face before packing. STEP, STL and core 3MF keep model orientation. Ramps, normal stops and shallow brackets request object-level normal Auto support. Remove all support from mating regions before assembly.",
         "",
