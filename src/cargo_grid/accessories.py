@@ -77,7 +77,11 @@ BRACKET_LIP_RADIUS_MM = 1.0
 BRACKET_FREE_EDGE_RADIUS_MM = 2.0
 BRACKET_TOP_EXTENSION_MM = {1: 3.0515422, 2: 2.921921}
 VERTICAL_STOP_RADIUS_MM = 2.0
-BAMBU_PRINT_ROTATIONS = {"vertical-tile-bracket": 135.0, "lock-45": -135.0}
+BAMBU_PRINT_ROTATIONS = {
+    "vertical-tile-bracket": 135.0,
+    "lock-45": -135.0,
+    "plate": 180.0,
+}
 BAMBU_OBJECT_SETTINGS = {
     "ramp": {"enable_support": "1", "support_type": "normal(auto)"},
     "vertical-stop": {"enable_support": "1", "support_type": "normal(auto)"},

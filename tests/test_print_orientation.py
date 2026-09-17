@@ -56,6 +56,7 @@ BAMBU = BambuSettings((Material("Diagnostic PETG", "PETG", "#789784"),), 0.4, 0.
         ),
         ("lock-45", 1, 1, 50, -135),
         ("lock-45", 2, 2, 50, -135),
+        ("plate", 1, 1, 50, 180),
     ],
 )
 def test_bambu_mesh_has_broad_bed_contact_and_recorded_transform(
