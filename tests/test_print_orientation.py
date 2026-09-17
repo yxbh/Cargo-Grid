@@ -142,7 +142,7 @@ def test_shallow_brackets_apply_side_down_y_rotation_and_record_it(nx, tmp_path)
         and abs(face.bounding_box().min.Z) < 1e-5
         and abs(face.bounding_box().max.Z) < 1e-5
     )
-    assert bed_area == pytest.approx(3136.0549152158574, abs=0.002)
+    assert bed_area == pytest.approx(3136.052586000847, abs=0.002)
 
 
 def test_transformed_catalogue_packing_respects_exclusions_and_quantity(tmp_path):

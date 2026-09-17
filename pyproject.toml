@@ -20,8 +20,8 @@ classifiers = [
 dependencies = ["build123d>=0.11,<0.12", "numpy>=2,<3", "scipy>=1.14,<2"]
 
 [project.urls]
-Repository = "https://github.com/yxbh/Cargo-Grid"
-Issues = "https://github.com/yxbh/Cargo-Grid/issues"
+Repository = "https://github.com/yxbh/CargoGrid"
+Issues = "https://github.com/yxbh/CargoGrid/issues"
 
 [tool.hatch.version]
 path = "src/cargo_grid/_version.py"
