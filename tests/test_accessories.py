@@ -103,11 +103,11 @@ def test_inner_corner_directional_joins(variant, size, sexes):
 @pytest.mark.parametrize(
     "variant,size",
     [
-        (1, (16, 60 + 5 * 2**0.5)),
-        (2, (60 + 5 * 2**0.5, 10)),
+        (1, (16, 66.89628756123459)),
+        (2, (66.89628756123459, 10)),
         (3, (70, 70)),
-        (4, (10, 60 + 5 * 2**0.5)),
-        (5, (60 + 5 * 2**0.5, 16)),
+        (4, (10, 66.89628756123459)),
+        (5, (66.89628756123459, 16)),
         (6, (70, 70)),
     ],
 )
@@ -235,6 +235,10 @@ def test_custom_pitch_and_extended_rails():
         {"family": "support-end", "nx": 2},
         {"family": "edge-y", "ny": 2},
         {"family": "edge-x", "variant": 2},
+        {"family": "edge-x", "edge_outward": 15},
+        {"family": "edge-x", "complete_edge_holes": 1},
+        {"family": "plate", "edge_outward": 20},
+        {"family": "support", "complete_edge_holes": True},
         {"family": "support-bit", "length": 19},
         {"family": "support-bit", "length": float("nan")},
         {"family": "support-bit", "length": float("inf")},

@@ -30,7 +30,8 @@ from cargo_grid.interfaces import (
     tile_join_tool,
     x_profile,
 )
-from cargo_grid.parameters import Interface, count, positive
+from cargo_grid.parameters import DEFAULT_HOLE_DIAMETER_MM, Interface, Tile, count, positive
+from cargo_grid.tiles import hole_placements
 
 FAMILIES = (
     "edge-x",
@@ -70,7 +71,8 @@ BRACKET_ENVELOPE_MARGIN_MM = 0.1
 STOP_WALL_MM = 6.0
 EDGE_TOP_RADIUS_MM = 2.0
 EDGE_BODY_RADIUS_MM = 3.0
-EDGE_MITER_RETANGENT_MM = 4.82962
+EDGE_OUTWARD_OPTIONS_MM = (10.0, 20.0, 30.0)
+EDGE_FAMILIES = ("edge-x", "edge-y", "corner-in", "corner-out")
 SUPPORT_TOP_RADIUS_MM = 1.0
 SUPPORT_BODY_RADIUS_MM = 3.0
 SUPPORT_WINDOW_RADIUS_MM = 2.0
@@ -118,6 +120,9 @@ class Accessory:
     ``variant`` selects corner and support-end types. Interface unit size scales
     tile-facing local-plane geometry; tile thickness independently controls
     insertion depth. Comfort radii and the separate support-rail join stay in mm.
+    ``edge_outward`` is the total horizontal projection of an edge or corner.
+    ``complete_edge_holes`` continues accepted tile-boundary hole sites through
+    perimeter parts using the fixed nominal 10 mm tile-hole diameter.
     """
 
     family: str
@@ -129,6 +134,8 @@ class Accessory:
     interface: Interface = Interface()
     panel_height_cells: int | None = None
     ramp_join: Literal["female", "male"] = "female"
+    edge_outward: float = 10.0
+    complete_edge_holes: bool = False
 
     def __post_init__(self) -> None:
         if self.family == "lock-90":
@@ -196,6 +203,23 @@ class Accessory:
             raise ValueError("ramp requires original roofed tile-edge joints")
         if self.family == "ramp" and self.height != 50:
             raise ValueError("ramp rise follows tile thickness; accessory height does not apply")
+        if self.family in EDGE_FAMILIES:
+            if self.edge_outward not in EDGE_OUTWARD_OPTIONS_MM:
+                raise ValueError("edge outward projection must be 10, 20 or 30 mm")
+            if not isinstance(self.complete_edge_holes, bool):
+                raise ValueError("complete edge holes must be a boolean")
+            if self.complete_edge_holes and not edge_hole_completion_supported(
+                self.family,
+                self.nx,
+                self.variant,
+                self.interface,
+            ):
+                raise ValueError(
+                    "no nominal 10 mm full-pattern boundary holes fit this interface; "
+                    "disable edge-hole completion or use a larger unit size"
+                )
+        elif self.edge_outward != 10.0 or self.complete_edge_holes:
+            raise ValueError(f"edge options do not apply to {self.family}")
 
 
 def _box(x: float, y: float, w: float, d: float, h: float, z: float = 0) -> Part:
@@ -242,17 +266,18 @@ def _edge_plan(
     free_miter_extension: float = 0,
 ) -> tuple[Face, list[dict]]:
     p = spec.interface.pitch
+    outward = spec.edge_outward
     if spec.family in ("edge-x", "edge-y"):
         male = spec.family == "edge-x"
-        return rectangle(0, -10 if male else 0, spec.nx * p, 10), [
+        return rectangle(0, -outward if male else 0, spec.nx * p, outward), [
             _join((i + 0.5) * p, 0, 0, male, interface=spec.interface) for i in range(spec.nx)
         ]
     if spec.family == "corner-in":
         # Square internal elbows replace the source's curved non-mating web.
         v = spec.variant
         right, top = v in (2, 3), v in (1, 2)
-        vertical = rectangle(p - 10 if right else 0, 0, 10, p)
-        horizontal = rectangle(0, p - 10 if top else 0, p, 10)
+        vertical = rectangle(p - outward if right else 0, 0, outward, p)
+        horizontal = rectangle(0, p - outward if top else 0, p, outward)
         face = Face(vertical.fuse(horizontal).faces()[0].wrapped)
         return face, [
             _join(p if right else 0, p / 2, -90, right, interface=spec.interface),
@@ -266,9 +291,9 @@ def _edge_plan(
                     (0, p),
                     (p, p),
                     (p, 0),
-                    (p + 10, 0),
-                    (p + 10, p + 10),
-                    (0, p + 10),
+                    (p + outward, 0),
+                    (p + outward, p + outward),
+                    (0, p + outward),
                 ]
             )
             joins = [
@@ -278,12 +303,12 @@ def _edge_plan(
         else:
             face = _polygon(
                 [
-                    (-10, -10),
-                    (p, -10),
+                    (-outward, -outward),
+                    (p, -outward),
                     (p, 0),
                     (0, 0),
                     (0, p),
-                    (-10, p),
+                    (-outward, p),
                 ]
             )
             joins = [
@@ -291,15 +316,15 @@ def _edge_plan(
                 _join(p / 2, 0, 0, True, interface=spec.interface),
             ]
         return face, joins
-    extension = 5 * sqrt(2)
+    extension = outward / sqrt(2)
     rounded_extension = extension + free_miter_extension
     male = v in (1, 5)
     # Preserve the diagonal butt datum, using a straight bevel outside it.
     if v in (2, 5):
         if v == 5:
             points = [
-                (0, -10),
-                (p, -10),
+                (0, -outward),
+                (p, -outward),
                 (p + rounded_extension, -extension),
                 (p, 0),
                 (0, 0),
@@ -309,27 +334,95 @@ def _edge_plan(
                 (-rounded_extension, extension),
                 (0, 0),
                 (p, 0),
-                (p, 10),
-                (0, 10),
+                (p, outward),
+                (0, outward),
             ]
         return _polygon(points), [_join(p / 2, 0, 0, male, interface=spec.interface)]
     if v == 1:
         points = [
-            (-10, 0),
+            (-outward, 0),
             (0, 0),
             (0, p),
             (-extension, p + rounded_extension),
-            (-10, p),
+            (-outward, p),
         ]
     else:
         points = [
             (0, 0),
             (extension, -rounded_extension),
-            (10, 0),
-            (10, p),
+            (outward, 0),
+            (outward, p),
             (0, p),
         ]
     return _polygon(points), [_join(0, p / 2, -90, male, interface=spec.interface)]
+
+
+def _edge_hole_centers_for(
+    family: str,
+    nx: int,
+    variant: int,
+    interface: Interface,
+) -> list[tuple[float, float]]:
+    if family not in EDGE_FAMILIES:
+        raise ValueError(f"edge-hole completion does not apply to {family}")
+    span = nx if family in ("edge-x", "edge-y") else 1
+    sites = hole_placements(
+        Tile(
+            nx=span,
+            ny=1,
+            interface=interface,
+            hole_diameter=DEFAULT_HOLE_DIAMETER_MM,
+            hole_scope="full",
+        )
+    )
+    boundary = [(site.x, site.y) for site in sites if site.accepted and abs(site.y) < 1e-8]
+    if family in ("edge-x", "edge-y"):
+        return boundary
+    _, joins = _edge_plan(
+        Accessory(
+            family,
+            nx=nx,
+            variant=variant,
+            interface=interface,
+        )
+    )
+    centers = {
+        (x, join["position"][1]) if join["angle"] == 0 else (join["position"][0], x)
+        for join in joins
+        for x, _ in boundary
+    }
+    return sorted(centers)
+
+
+def edge_hole_completion_supported(
+    family: str,
+    nx: int = 1,
+    variant: int = 1,
+    interface: Interface = Interface(),
+) -> bool:
+    """Whether at least one matching nominal 10 mm boundary site is accepted."""
+    return bool(_edge_hole_centers_for(family, nx, variant, interface))
+
+
+def _edge_hole_centers(spec: Accessory) -> list[tuple[float, float]]:
+    return _edge_hole_centers_for(
+        spec.family,
+        spec.nx,
+        spec.variant,
+        spec.interface,
+    )
+
+
+def _cut_completed_edge_holes(part: Part, spec: Accessory) -> Part:
+    if not spec.complete_edge_holes:
+        return part
+    cutters = [
+        Solid.make_cylinder(DEFAULT_HOLE_DIAMETER_MM / 2, spec.interface.height + 2).moved(
+            Location((x, y, -1))
+        )
+        for x, y in _edge_hole_centers(spec)
+    ]
+    return part.cut(*cutters).clean() if cutters else part
 
 
 def _join_solid(join: dict, *, interface: Interface = Interface()) -> Part:
@@ -1060,23 +1153,24 @@ def _ramp(spec: Accessory, *, cut_joins: bool = True) -> Part:
 
 def _free_top_rims(spec: Accessory) -> list[tuple[str, float]]:
     p = spec.interface.pitch
+    outward = spec.edge_outward
     if spec.family == "edge-x":
-        return [("Y", -10)]
+        return [("Y", -outward)]
     if spec.family == "edge-y":
-        return [("Y", 10)]
+        return [("Y", outward)]
     if spec.family == "corner-in":
         return [
-            ("X", p - 10 if spec.variant in (2, 3) else 10),
-            ("Y", p - 10 if spec.variant in (1, 2) else 10),
+            ("X", p - outward if spec.variant in (2, 3) else outward),
+            ("Y", p - outward if spec.variant in (1, 2) else outward),
         ]
     if spec.family == "corner-out":
         return {
-            1: [("X", -10)],
-            2: [("Y", 10)],
-            3: [("X", p + 10), ("Y", p + 10)],
-            4: [("X", 10)],
-            5: [("Y", -10)],
-            6: [("X", -10), ("Y", -10)],
+            1: [("X", -outward)],
+            2: [("Y", outward)],
+            3: [("X", p + outward), ("Y", p + outward)],
+            4: [("X", outward)],
+            5: [("Y", -outward)],
+            6: [("X", -outward), ("Y", -outward)],
         }[spec.variant]
     return [("X", -22.5), ("X", 22.5)]
 
@@ -1098,6 +1192,42 @@ def _round_free_top(part: Part, spec: Accessory) -> Part:
     if not edges:
         raise ValueError(f"{spec.family}: no non-mating top rim edges found")
     return part.fillet(SUPPORT_TOP_RADIUS_MM if support else EDGE_TOP_RADIUS_MM, edges)
+
+
+def _rounded_original_corner_out_half_body(spec: Accessory, half_face: Face) -> Part:
+    p = spec.interface.pitch
+    partner_variant, partner_offset = {
+        1: (2, (0, p, 0)),
+        2: (1, (0, -p, 0)),
+        4: (5, (-p, 0, 0)),
+        5: (4, (p, 0, 0)),
+    }[spec.variant]
+    partner_face, _ = _edge_plan(
+        Accessory(
+            "corner-out",
+            variant=partner_variant,
+            interface=spec.interface,
+            edge_outward=spec.edge_outward,
+            complete_edge_holes=spec.complete_edge_holes,
+        )
+    )
+    partner_face = partner_face.moved(Location(partner_offset))
+    pair_faces = half_face.fuse(partner_face).faces()
+    if len(pair_faces) != 1:
+        raise ValueError("corner-out: half-pair plan did not form one face")
+    pair_body = prism(Face(pair_faces[0].wrapped), spec.interface.height)
+    operation = BRepFilletAPI_MakeFillet(pair_body.wrapped)
+    for edge in pair_body.edges():
+        operation.Add(EDGE_BODY_RADIUS_MM, edge.wrapped)
+    operation.Build()
+    if not operation.IsDone():
+        raise ValueError("corner-out: coupled half-pair R3 body fillet failed")
+    rounded_pair = Part(Solid(operation.Shape()).wrapped)
+    trim = prism(half_face, spec.interface.height + 2).moved(Location((0, 0, -1)))
+    body = Part(rounded_pair.intersect(trim).solids()).clean()
+    if not body.is_valid or len(body.solids()) != 1 or body.volume <= 0:
+        raise ValueError("corner-out: half-pair split produced invalid body")
+    return body
 
 
 def _support_plan(spec: Accessory) -> tuple[float, list[dict]]:
@@ -1335,7 +1465,16 @@ def accessory_datums(spec: Accessory) -> dict:
         join["open_through_top"] = (
             join["sex"] == "female" and spec.interface.joint_style == "full-height"
         )
-    return {"underside_z": 0, "top_z": spec.interface.height, "mount_centers": [], "joins": joins}
+    return {
+        "underside_z": 0,
+        "top_z": spec.interface.height,
+        "mount_centers": [],
+        "joins": joins,
+        "edge_outward": spec.edge_outward,
+        "complete_edge_holes": spec.complete_edge_holes,
+        "edge_hole_diameter": (DEFAULT_HOLE_DIAMETER_MM if spec.complete_edge_holes else None),
+        "edge_hole_centers": _edge_hole_centers(spec) if spec.complete_edge_holes else [],
+    }
 
 
 def make_accessory(spec: Accessory) -> Part:
@@ -1355,16 +1494,7 @@ def make_accessory(spec: Accessory) -> Part:
     elif spec.family.startswith("support"):
         part = _support(spec)
     else:
-        face, joins = _edge_plan(
-            spec,
-            free_miter_extension=(
-                EDGE_MITER_RETANGENT_MM
-                if spec.interface.joint_style == "original"
-                and spec.family == "corner-out"
-                and spec.variant in (1, 2, 4, 5)
-                else 0
-            ),
-        )
+        face, joins = _edge_plan(spec)
         if spec.interface.joint_style == "full-height":
             males, females = [], []
             for join in joins:
@@ -1384,20 +1514,21 @@ def make_accessory(spec: Accessory) -> Part:
                 interface_blend_radius=spec.interface.tile_join_blend_radius,
             )
         else:
-            body = prism(face, spec.interface.height)
-            operation = BRepFilletAPI_MakeFillet(body.wrapped)
-            for edge in body.edges():
-                operation.Add(EDGE_BODY_RADIUS_MM, edge.wrapped)
-            operation.Build()
-            if not operation.IsDone():
-                raise ValueError(f"{spec.family}: coupled R3 body fillet failed")
-            part = _apply_joins(
-                Part(Solid(operation.Shape()).wrapped),
-                joins,
-                interface=spec.interface,
-            )
+            if spec.family == "corner-out" and spec.variant in (1, 2, 4, 5):
+                body = _rounded_original_corner_out_half_body(spec, face)
+            else:
+                body = prism(face, spec.interface.height)
+                operation = BRepFilletAPI_MakeFillet(body.wrapped)
+                for edge in body.edges():
+                    operation.Add(EDGE_BODY_RADIUS_MM, edge.wrapped)
+                operation.Build()
+                if not operation.IsDone():
+                    raise ValueError(f"{spec.family}: coupled R3 body fillet failed")
+                body = Part(Solid(operation.Shape()).wrapped)
+            part = _apply_joins(body, joins, interface=spec.interface)
         if spec.interface.joint_style == "full-height":
             part = part.fillet(1, horizontal_edges(part, 0))
+        part = _cut_completed_edge_holes(part, spec)
     suffix = (
         (
             f"base{spec.nx}x{spec.ny}_wall{spec.nx}x{spec.panel_height_cells}"
@@ -1416,6 +1547,11 @@ def make_accessory(spec: Accessory) -> Part:
         part.label += "_male"
     if spec.family.startswith("lock-") or spec.family == "vertical-stop":
         part.label += f"_h{spec.height:g}"
+    if spec.family in EDGE_FAMILIES:
+        if spec.edge_outward != 10:
+            part.label += f"_out{spec.edge_outward:g}mm"
+        if spec.complete_edge_holes:
+            part.label += "_complete-holes"
     part.label += f"_{spec.interface.joint_style}"
     if not part.is_valid or len(part.solids()) != 1 or part.volume <= 0:
         raise ValueError(f"{part.label}: invalid or disconnected geometry")

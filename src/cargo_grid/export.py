@@ -27,7 +27,7 @@ from cargo_grid.accessories import (
 from cargo_grid.jobs import Job
 from cargo_grid.meshes import checked_mesh, write_stl
 from cargo_grid.packing import PrintPlacement, pack_sizes
-from cargo_grid.parameters import Interface, count, positive
+from cargo_grid.parameters import DEFAULT_HOLE_DIAMETER_MM, Interface, count, positive
 from cargo_grid.roof_support import RoofSupportSettings, roof_enforcers, validate_roof_job
 from cargo_grid.stacking import StackSettings, Volume, stack_volumes
 
@@ -821,6 +821,14 @@ def export_job(
             )
             if family != "tile":
                 compatibility["geometry_warning"] = None
+            if family in ("edge-x", "edge-y", "corner-in", "corner-out"):
+                compatibility["edge_outward_mm"] = design.parameters.get("edge_outward", 10.0)
+                compatibility["complete_edge_holes"] = design.parameters.get(
+                    "complete_edge_holes", False
+                )
+                compatibility["edge_hole_diameter_mm"] = (
+                    DEFAULT_HOLE_DIAMETER_MM if compatibility["complete_edge_holes"] else None
+                )
             if not compatibility["x_attachment_interface_present"]:
                 compatibility["original_x_attachment_dimensions"] = None
                 compatibility["attachment_seating_note"] = (

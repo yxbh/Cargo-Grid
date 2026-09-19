@@ -28,6 +28,12 @@ The full 10 mm round-hole pattern is the default. `full` scope uses half-unit gr
 
 Neither enabling holes nor producing one valid solid establishes strength or bridge quality. Check the intended hole centres, retained webs and actual slicer paths for the chosen configuration.
 
+### Perimeter edge projections and completed holes
+
+`edge-x`, `edge-y`, `corner-in` and `corner-out` keep their established mating datums while their non-mating body can project 10, 20 or 30 mm outward. The plain 10 mm form remains the API and CLI default. Original-style perimeter bodies keep their coupled R3 comfort treatment; the shared tile-edge joint profiles are applied separately and remain unchanged.
+
+Optional edge-hole completion uses the same full-pattern placement test as a matching tile, then cuts a fixed 10 mm cylinder only from the accessory material at accepted boundary sites. A tile edge supplies one half of the opening and the accessory supplies the other; at an ordinary tile corner, adjacent perimeter material supplies the remaining quarter sections. It does not add an exterior row of holes, fill an existing opening or scale the diameter with unit size. If a custom interface rejects every matching boundary site, the request is rejected rather than changing the hole or drilling through a protected region.
+
 ## Non-printing roof modifiers
 
 Roof support is off by default and only works with original-style tile `part` and `layout` jobs. It targets the downward-facing ceilings over retained west and south female pockets. Male edges aren't targeted, and a tile with no eligible female roof is rejected.
@@ -126,7 +132,7 @@ Manifests record the generator version, resolved parameters, compatibility notes
 
 Bambu single-part and catalogue exports rotate attachment plates X=180 degrees body-down, original vertical tile brackets by their retangented rear-face-down X angle, shallow brackets Y=-90 degrees (broad side down), normal stops by their per-design broad-rear-face-down angle and angled stops X=-135 degrees (back face down) before bounds checks and packing. STEP/STL and core 3MF retain model orientation. Recommendations include per-artifact applied flags; Bambu plate items include the exact source-to-project transform, composed with their in-plane packing rotation and translation. Normal-stop and shallow-bracket items carry object-scoped `enable_support=1` and `support_type=normal(auto)` without changing global tile/original-bracket support behavior. The pose is already baked into the Bambu mesh and must not be applied twice. API catalogue callers use `orient_for_bambu=True` for the matching eligibility calculation. Roof-support and stack workflows keep their existing orientation and cannot be combined with independently oriented models.
 
-The H2D dual-safe catalogue is a standard 60/13 machine-specific plan, not a generic build rectangle. Common plates use X25..325, Y0..320 and Z<=320, add a 5 mm model inset and keep model bounds at least 10 mm apart. The 306x306 mm 5x5 tile gets its own left-nozzle-only plate because it doesn't fit the 300 mm common width. Slot 1 is mapped left there; common plates keep automatic Convenience Mode. Packing checks model bounds only, so inspect support, brim and tower paths after slicing.
+The H2D dual-safe catalogue is a standard 60/13 machine-specific plan, not a generic build rectangle. Common plates use X25..325, Y0..320 and Z<=320, add a 5 mm model inset and keep model bounds at least 10 mm apart. Perimeter parts share one of six groups based only on 10/20/30 mm outward projection and plain/completed-hole mode; the packer uses two numbered plates for each group without changing individual part names. The 306x306 mm 5x5 tile gets its own left-nozzle-only plate because it doesn't fit the 300 mm common width. Slot 1 is mapped left there; common plates keep automatic Convenience Mode. Packing checks model bounds only, so inspect support, brim and tower paths after slicing.
 
 Catalogue fit checks measure each generated candidate in the requested source or Bambu pose once. The H2D planner reuses those precise sizes while grouping and packing the same unchanged designs. Sizes are tied to design identity, not names, and live only for that request; later calls measure again so changed shapes or poses cannot reuse stale bounds.
 
