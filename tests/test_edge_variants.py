@@ -1,4 +1,5 @@
 import json
+from copy import deepcopy
 from dataclasses import replace
 from functools import lru_cache
 from math import cos, pi, sin, sqrt
@@ -15,23 +16,39 @@ from cargo_grid.export import _checked_step_roundtrip
 from cargo_grid.meshes import checked_mesh
 from cargo_grid.tiles import hole_placements
 
+_POINT_CLASSIFIER_TOLERANCE = 1e-6
 
-@lru_cache(maxsize=None)
-def _accessory_shape(spec):
+
+@lru_cache(maxsize=128)
+def _accessory_template(spec):
     return make_accessory(spec)
 
 
-@lru_cache(maxsize=None)
-def _tile_shape(tile):
+def _accessory_shape(spec):
+    return deepcopy(_accessory_template(spec))
+
+
+@lru_cache(maxsize=16)
+def _tile_template(tile):
     return make_tile(tile)
+
+
+def _tile_shape(tile):
+    return deepcopy(_tile_template(tile))
 
 
 def _assembly_contains(shapes_and_bounds, point):
     return any(
-        bounds.min.X <= point.X <= bounds.max.X
-        and bounds.min.Y <= point.Y <= bounds.max.Y
-        and bounds.min.Z <= point.Z <= bounds.max.Z
-        and shape.is_inside(point)
+        bounds.min.X - _POINT_CLASSIFIER_TOLERANCE
+        <= point.X
+        <= bounds.max.X + _POINT_CLASSIFIER_TOLERANCE
+        and bounds.min.Y - _POINT_CLASSIFIER_TOLERANCE
+        <= point.Y
+        <= bounds.max.Y + _POINT_CLASSIFIER_TOLERANCE
+        and bounds.min.Z - _POINT_CLASSIFIER_TOLERANCE
+        <= point.Z
+        <= bounds.max.Z + _POINT_CLASSIFIER_TOLERANCE
+        and shape.is_inside(point, _POINT_CLASSIFIER_TOLERANCE)
         for shape, bounds in shapes_and_bounds
     )
 
@@ -126,6 +143,39 @@ def _assert_completed_circle(shapes, center, height, minimum_ring_samples=62):
             )
             >= minimum_ring_samples
         )
+
+
+def test_cached_geometry_templates_are_isolated_from_consumers():
+    accessory_spec = Accessory(
+        "corner-out",
+        variant=3,
+        edge_outward=30,
+        complete_edge_holes=True,
+    )
+    tile_spec = Tile(2, 1)
+    for template, first, second in (
+        (
+            _accessory_template(accessory_spec),
+            _accessory_shape(accessory_spec),
+            _accessory_shape(accessory_spec),
+        ),
+        (_tile_template(tile_spec), _tile_shape(tile_spec), _tile_shape(tile_spec)),
+    ):
+        template_bounds = (*template.bounding_box().min, *template.bounding_box().max)
+        template_location = template.location
+        first_bounds = (*first.bounding_box().min, *first.bounding_box().max)
+        first_location = first.location
+        assert not first.wrapped.IsSame(template.wrapped)
+        assert not second.wrapped.IsSame(template.wrapped)
+        assert not first.wrapped.IsSame(second.wrapped)
+        placed = first.moved(Location((120, 30, 4))).rotate(Axis.Z, 90)
+        assert placed.location != first_location
+        assert (*first.bounding_box().min, *first.bounding_box().max) == pytest.approx(first_bounds)
+        assert first.location == first_location
+        assert (*template.bounding_box().min, *template.bounding_box().max) == pytest.approx(
+            template_bounds
+        )
+        assert template.location == template_location
 
 
 @pytest.mark.parametrize("family", ["edge-x", "edge-y"])
