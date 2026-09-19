@@ -14,7 +14,7 @@ and lightening apertures are independently constructed, not reference contours.
 
 from dataclasses import dataclass
 from functools import lru_cache
-from math import atan, degrees, sqrt
+from math import atan, degrees, sqrt, tan
 from typing import Literal
 
 from build123d import Axis, Face, GeomType, Location, Part, Solid, Wire
@@ -61,6 +61,8 @@ RAMP_RUN_MM = 50.0
 RAMP_CARRIER_RUN_MM = 10.0
 RAMP_PROFILE_TIP_Y_MM = 65.224331674
 RAMP_FREE_EDGE_RADIUS_MM = 2.0
+RAMP_SHELF_RADIUS_MM = 32.0
+RAMP_MINIMUM_FLAT_SHELF_MM = 2.0
 BASE_HEIGHT_MM = 4.1
 PANEL_BOTTOM_MM = 6.1
 BRACKET_BACKING_MM = 4.1
@@ -975,6 +977,14 @@ def _ramp_profile_tip_y(tile_thickness: float) -> float:
     return (low + high) / 2
 
 
+def _ramp_shelf_radius(tile_thickness: float) -> float:
+    angle = atan(tile_thickness / (_ramp_profile_tip_y(tile_thickness) - RAMP_CARRIER_RUN_MM))
+    return min(
+        RAMP_SHELF_RADIUS_MM,
+        (RAMP_CARRIER_RUN_MM - RAMP_MINIMUM_FLAT_SHELF_MM) / tan(angle / 2),
+    )
+
+
 def _ramp(spec: Accessory, *, cut_joins: bool = True) -> Part:
     width = spec.nx * spec.interface.pitch
     raw_tip = _ramp_profile_tip_y(spec.interface.height)
@@ -989,11 +999,20 @@ def _ramp(spec: Accessory, *, cut_joins: bool = True) -> Part:
             close=True,
         )
     )
-    # Resolve these two arcs in section: the 3D fillet builder can treat a
+    # Resolve these arcs in section: the 3D fillet builder can treat a
     # shallow shelf/slope angle as tangent and silently leave the crease.
     profile = profile.fillet_2d(
+        _ramp_shelf_radius(spec.interface.height),
+        [
+            vertex
+            for vertex in profile.vertices()
+            if abs(vertex.Y - RAMP_CARRIER_RUN_MM) < 1e-7
+            and abs(vertex.Z - spec.interface.height) < 1e-7
+        ],
+    )
+    profile = profile.fillet_2d(
         RAMP_FREE_EDGE_RADIUS_MM,
-        [vertex for vertex in profile.vertices() if vertex.Y > 0],
+        [max(profile.vertices(), key=lambda vertex: vertex.Y)],
     )
     blank = Part(Solid.extrude(profile, (width, 0, 0)).wrapped)
     operation = BRepFilletAPI_MakeFillet(blank.wrapped)
@@ -1258,6 +1277,8 @@ def accessory_datums(spec: Accessory) -> dict:
             "underside_z": 0,
             "top_z": spec.interface.height,
             "finished_run": RAMP_RUN_MM,
+            "shelf_radius": _ramp_shelf_radius(spec.interface.height),
+            "minimum_flat_shelf": RAMP_MINIMUM_FLAT_SHELF_MM,
             "ramp_join": spec.ramp_join,
             "tab_projection": spec.interface.male_join_depth if male else 0,
             "overall_depth": RAMP_RUN_MM + (spec.interface.male_join_depth if male else 0),

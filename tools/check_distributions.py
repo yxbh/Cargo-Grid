@@ -54,6 +54,7 @@ DOCUMENTATION_IMAGES = {
         for height in (60, 120)
     ),
     *(f"docs/images/attachments/ramp-{cells}.png" for cells in range(1, 6)),
+    *(f"docs/images/attachments/ramp-male-{cells}.png" for cells in range(1, 6)),
 }
 FORBIDDEN_SUFFIXES = {
     ".step",

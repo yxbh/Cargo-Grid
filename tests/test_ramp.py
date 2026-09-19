@@ -15,9 +15,13 @@ from cargo_grid import BuildVolume, Interface, Tile, make_tile
 from cargo_grid.accessories import (
     RAMP_CARRIER_RUN_MM,
     RAMP_FREE_EDGE_RADIUS_MM,
+    RAMP_MINIMUM_FLAT_SHELF_MM,
     RAMP_RUN_MM,
+    RAMP_SHELF_RADIUS_MM,
     Accessory,
     _ramp,
+    _ramp_profile_tip_y,
+    _ramp_shelf_radius,
     accessory_datums,
     make_accessory,
 )
@@ -49,7 +53,8 @@ def test_ramp_width_run_rise_rounding_step_and_mesh(cells, ramp_join, tmp_path):
         for face in shape.faces()
         if face.geom_type == GeomType.CYLINDER
     ]
-    assert sum(radius == pytest.approx(RAMP_FREE_EDGE_RADIUS_MM) for radius in radii) == 8
+    assert sum(radius == pytest.approx(RAMP_FREE_EDGE_RADIUS_MM) for radius in radii) == 7
+    assert sum(radius == pytest.approx(RAMP_SHELF_RADIUS_MM) for radius in radii) == 1
     path = tmp_path / f"ramp-{ramp_join}-{cells}.step"
     restored, _, _, _, _ = _checked_step_roundtrip(shape, path)
     budget = max(1e-6, shape.area * Precision.Confusion_s())
@@ -131,7 +136,8 @@ def test_male_ramp_repeats_exact_shared_tabs_and_mates_both_female_tile_sides(ce
 
 @pytest.mark.parametrize("ramp_join", ["female", "male"])
 @pytest.mark.parametrize(
-    "unit,thickness,fit", [(30, 6, 0), (30, 13, -0.2), (60, 8, 0.2), (90, 18, 0)]
+    "unit,thickness,fit",
+    [(30, 6, 0), (30, 13, -0.2), (60, 8, 0.2), (90, 18, 0), (60, 60, 0)],
 )
 def test_scaled_ramps_match_real_tiles_keep_run_and_export(
     ramp_join, unit, thickness, fit, tmp_path
@@ -191,14 +197,16 @@ def test_scaled_ramps_match_real_tiles_keep_run_and_export(
 
 @pytest.mark.parametrize("ramp_join", ["female", "male"])
 @pytest.mark.parametrize(
-    "cells,unit,thickness", [(1, 60, 13), (5, 60, 13), (2, 30, 6), (2, 90, 18)]
+    "cells,unit,thickness",
+    [(1, 60, 13), (5, 60, 13), (2, 30, 6), (2, 90, 18), (1, 60, 60)],
 )
-def test_finished_shelf_slope_round_is_r2_and_tangent_across_its_width(
+def test_finished_shelf_slope_round_has_broad_radius_and_is_tangent_across_its_width(
     ramp_join, cells, unit, thickness
 ):
     shape = make_accessory(
         Accessory("ramp", nx=cells, interface=Interface(unit, thickness), ramp_join=ramp_join)
     )
+    radius = _ramp_shelf_radius(thickness)
     transitions = []
     for face in shape.faces():
         if face.geom_type != GeomType.CYLINDER:
@@ -207,17 +215,23 @@ def test_finished_shelf_slope_round_is_r2_and_tangent_across_its_width(
         cylinder = adaptor.Cylinder()
         if (
             abs(cylinder.Axis().Direction().X()) > 1 - 1e-9
-            and abs(cylinder.Location().Z() - (thickness - 2)) < 1e-7
+            and abs(cylinder.Location().Z() - (thickness - radius)) < 1e-7
             and 0 < cylinder.Location().Y() < RAMP_CARRIER_RUN_MM
         ):
             transitions.append((face, adaptor))
     assert len(transitions) == 1
     blend, adaptor = transitions[0]
-    assert adaptor.Cylinder().Radius() == pytest.approx(2, abs=1e-9)
+    assert adaptor.Cylinder().Radius() == pytest.approx(radius, abs=1e-9)
+    assert adaptor.Cylinder().Location().Y() >= RAMP_MINIMUM_FLAT_SHELF_MM - 1e-7
     if thickness == 13:
         assert adaptor.LastUParameter() - adaptor.FirstUParameter() == pytest.approx(
-            atan(13 / (65.224331674 - 10)), abs=1e-9
+            atan(13 / (_ramp_profile_tip_y(13) - 10)), abs=1e-9
         )
+        assert radius == 32
+        assert adaptor.Cylinder().Location().Y() == pytest.approx(6.284326079358225, abs=1e-7)
+    elif thickness == 60:
+        assert radius == pytest.approx(15.330127687723184, abs=1e-7)
+        assert adaptor.Cylinder().Location().Y() == pytest.approx(2, abs=1e-7)
     for x in (2.01, cells * unit / 2, cells * unit - 2.01):
         axis = adaptor.Cylinder().Axis()
         along_axis = (x - axis.Location().X()) / axis.Direction().X()
@@ -246,10 +260,25 @@ def test_adjacent_ramps_meet_without_overlap_and_multi_cell_part_avoids_internal
     assert volume(two.intersect(plane)) > 0
 
 
-def test_one_cell_production_shape_retains_approved_volume_fixture():
+def test_one_cell_production_shape_has_broad_shelf_volume_fixture():
     production = make_accessory(Accessory("ramp"))
     budget = max(1e-6, production.area * Precision.Confusion_s())
-    assert abs(production.volume - 25632.431011391003) <= budget
+    assert abs(production.volume - 25600.803310757157) <= budget
+
+
+@pytest.mark.parametrize("ramp_join", ["female", "male"])
+def test_broad_shelf_preserves_high_joining_rim_and_standard_pocket_roof(ramp_join):
+    shape = make_accessory(Accessory("ramp", ramp_join=ramp_join))
+    rim = Edge.make_line((2, 0, 13), (58, 0, 13))
+    assert sum(edge.length for edge in shape.intersect(rim).edges()) == pytest.approx(56, abs=1e-7)
+    if ramp_join == "female":
+        for x in (20, 30, 40):
+            for y in (1, 3, 5):
+                ray = Edge.make_line((x, y, 10), (x, y, 14))
+                roof = shape.intersect(ray).edges()
+                assert len(roof) == 1
+                assert roof[0].bounding_box().min.Z == pytest.approx(10.2, abs=1e-7)
+                assert roof[0].bounding_box().max.Z == pytest.approx(13, abs=1e-7)
 
 
 def test_catalogue_includes_every_ramp_width_that_fits_selected_envelope():
@@ -381,3 +410,5 @@ def test_approved_shape_constants_are_explicit():
     assert RAMP_RUN_MM == 50
     assert RAMP_CARRIER_RUN_MM == 10
     assert RAMP_FREE_EDGE_RADIUS_MM == 2
+    assert RAMP_SHELF_RADIUS_MM == 32
+    assert RAMP_MINIMUM_FLAT_SHELF_MM == 2

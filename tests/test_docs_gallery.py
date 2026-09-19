@@ -25,7 +25,11 @@ def gallery():
 def test_gallery_covers_every_bounded_catalogue_variant_once(gallery):
     items = gallery.inventory()
     assert [item.spec for item in items] == accessory_variants(gallery.BUILD)
-    assert len(items) == len({item.key for item in items}) == 56
+    assert len(items) == len({item.key for item in items}) == 61
+    assert {item.key for item in items if item.spec.family == "ramp"} == {
+        *(f"ramp-{width}" for width in range(1, 6)),
+        *(f"ramp-male-{width}" for width in range(1, 6)),
+    }
     rendered = [
         item.key for family in gallery.FAMILIES for item in items if item.spec.family == family
     ]
@@ -48,12 +52,22 @@ def test_thumbnail_manifest_has_unique_rows_and_family_scale(gallery):
     assert manifest["workbench_commit"] == gallery.WORKBENCH_REVISION
     entries = manifest["items"]
     for field in ("file", "key", "public_name", "alt", "sha256"):
-        assert len({entry[field] for entry in entries}) == 56
+        assert len({entry[field] for entry in entries}) == 61
     for family in gallery.FAMILIES:
         rows = [entry for entry in entries if entry["family"] == family]
         assert len({entry["pixels_per_mm"] for entry in rows}) == 1
     assert all(entry["dimensions"] == [480, 300] for entry in entries)
     assert "docs/attachments.md" in (ROOT / "README.md").read_text()
+    ramps = [entry for entry in entries if entry["family"] == "ramp"]
+    assert len(ramps) == 10
+    assert all("provenance" in entry for entry in ramps)
+    ramp_overview = next(
+        entry for entry in manifest["overview_images"] if entry["file"] == "images/ramps.png"
+    )
+    assert set(ramp_overview["items"]) == {entry["key"] for entry in ramps}
+    assert all(entry["provenance"] == ramp_overview["provenance"] for entry in ramps)
+    assert ramps[0]["provenance"]["generator_commit"] != manifest["geometry_commit"]
+    assert "not a full-gallery" in manifest["provenance_scope"]
 
 
 def test_bracket_family_context_is_separate_from_the_part_inventory(gallery):
@@ -68,6 +82,9 @@ def test_bracket_family_context_is_separate_from_the_part_inventory(gallery):
     assert len(gallery.documentation_shape("vertical-tile-bracket-1x2").solids()) == 1
     assert len(gallery.documentation_shape("vertical-tile-bracket-base2x1-wall2x2").solids()) == 1
     assert len(gallery.documentation_shape("ramp-3").solids()) == 1
+    male = gallery.documentation_shape("ramp-male-3")
+    assert len(male.solids()) == 1
+    assert tuple(male.bounding_box().size) == pytest.approx((180, 56, 13), abs=1e-5)
 
 
 def test_provenance_hashes_can_wrap_without_changing_their_text(gallery):
@@ -123,3 +140,103 @@ def test_only_named_docs_images_are_distribution_exceptions(gallery):
     for name in ("docs/images/unapproved.png", "outputs/render.png", "docs/images/hero.step"):
         with pytest.raises(ValueError):
             module.check_path(name)
+
+
+def test_gallery_parameters_do_not_add_new_defaults_to_unrelated_provenance(gallery):
+    from cargo_grid.accessories import Accessory
+
+    assert "ramp_join" not in gallery.item_parameters(Accessory("plate"))
+    assert "ramp_join" not in gallery.item_parameters(Accessory("ramp"))
+    assert gallery.item_parameters(Accessory("ramp", ramp_join="male"))["ramp_join"] == "male"
+
+
+def test_incremental_ramp_composition_retains_unrelated_assets_and_provenance(
+    gallery, tmp_path, monkeypatch
+):
+    import copy
+    import shutil
+
+    shutil.copytree(ROOT / "docs/images", tmp_path / "docs/images")
+    path = tmp_path / "docs/images/attachments/manifest.json"
+    baseline = json.loads(path.read_text())
+    retained = {
+        entry["file"]: (tmp_path / "docs" / entry["file"]).read_bytes()
+        for entry in [*baseline["items"], *baseline["overview_images"]]
+        if entry.get("family") != "ramp" and entry["file"] != "images/ramps.png"
+    }
+    provenance = {
+        "generator_commit": "1" * 40,
+        "generator_tree": "2" * 40,
+        "workbench_commit": "3" * 40,
+        "recipe_sha256": "4" * 64,
+    }
+    calls = []
+    monkeypatch.setattr(gallery, "ROOT", tmp_path)
+    monkeypatch.setattr(gallery, "verify_geometry_source", lambda revision: calls.append(revision))
+    monkeypatch.setattr(gallery, "verify_assets", lambda: {})
+
+    def thumbnails(work, supplied, *, families, write_manifest):
+        assert supplied == provenance and families == {"ramp"} and not write_manifest
+        rows = []
+        for item in gallery.inventory():
+            if item.spec.family != "ramp":
+                continue
+            entry = copy.deepcopy(
+                next(row for row in baseline["items"] if row["key"] == f"ramp-{item.spec.nx}")
+            )
+            entry.update(
+                key=item.key,
+                parameters=gallery.item_parameters(item.spec),
+                file=f"images/attachments/{item.key}.png",
+                provenance=provenance,
+            )
+            rows.append(entry)
+        return rows
+
+    def overview(work, items, filename, title, columns):
+        assert filename == "ramps.png" and columns == 3
+        assert len(items) == 10 and all(item.spec.family == "ramp" for item in items)
+        return {"file": "docs/images/ramps.png", "items": [item.key for item in items]}
+
+    monkeypatch.setattr(gallery, "thumbnail_entries", thumbnails)
+    monkeypatch.setattr(gallery, "composite", overview)
+    work = tmp_path / "outputs/ramp-update"
+    work.mkdir(parents=True)
+    gallery.compose_ramps(work, provenance)
+    assert calls == [provenance["generator_commit"]]
+    updated = json.loads(path.read_text())
+    for key in (
+        "geometry_commit",
+        "workbench_commit",
+        "catalogue_build_mm",
+        "camera",
+        "source_render_recipe_sha256",
+    ):
+        assert updated[key] == baseline[key]
+    assert [row for row in updated["items"] if row["family"] != "ramp"] == [
+        row for row in baseline["items"] if row["family"] != "ramp"
+    ]
+    assert [row for row in updated["overview_images"] if row["file"] != "images/ramps.png"] == [
+        row for row in baseline["overview_images"] if row["file"] != "images/ramps.png"
+    ]
+    assert all((tmp_path / "docs" / name).read_bytes() == data for name, data in retained.items())
+    report = json.loads((work / "render-report.json").read_text())
+    assert len(report["updated_keys"]) == 10
+    assert len(report["sheets"]) == 1
+    assert (
+        "does not describe a new full-gallery render"
+        in (tmp_path / "docs/attachments.md").read_text()
+    )
+
+
+def test_incremental_ramp_composition_rejects_changed_retained_picture(
+    gallery, tmp_path, monkeypatch
+):
+    import shutil
+
+    shutil.copytree(ROOT / "docs/images", tmp_path / "docs/images")
+    (tmp_path / "docs/images/hero.png").write_bytes(b"changed")
+    monkeypatch.setattr(gallery, "ROOT", tmp_path)
+    monkeypatch.setattr(gallery, "verify_geometry_source", lambda revision: None)
+    with pytest.raises(ValueError, match="Retained image hash mismatch"):
+        gallery.compose_ramps(tmp_path, {"generator_commit": "1" * 40})
