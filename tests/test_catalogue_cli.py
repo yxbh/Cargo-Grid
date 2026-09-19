@@ -2,7 +2,8 @@ import json
 
 import pytest
 
-from cargo_grid.catalogue import accessory_variants, tile_sizes
+from cargo_grid.accessories import Accessory
+from cargo_grid.catalogue import accessory_design, accessory_variants, tile_sizes
 from cargo_grid.cli import main
 from cargo_grid.parameters import BuildVolume
 
@@ -18,7 +19,10 @@ def test_complete_ordered_tile_family():
 
 def test_accessory_families_finite_and_complete():
     variants = accessory_variants(BuildVolume(246, 246, 120))
-    assert len(variants) == 52
+    assert len(variants) == 56
+    assert {(v.nx, v.ramp_join) for v in variants if v.family == "ramp"} == {
+        (width, join) for width in range(1, 5) for join in ("female", "male")
+    }
     assert {v.family for v in variants} == {
         "edge-x",
         "edge-y",
@@ -33,6 +37,20 @@ def test_accessory_families_finite_and_complete():
         "lock-45",
         "plate",
     }
+
+
+def test_ramp_design_identity_preserves_legacy_female_and_non_ramp_names():
+    female = accessory_design(Accessory("ramp", nx=3))
+    explicit_female = accessory_design(Accessory("ramp", nx=3, ramp_join="female"))
+    male = accessory_design(Accessory("ramp", nx=3, ramp_join="male"))
+    plate = accessory_design(Accessory("plate"))
+    assert female.name == explicit_female.name == "ramp_3x1_v1_original_d01b948fe4"
+    assert female.parameters == explicit_female.parameters
+    assert "ramp_join" not in female.parameters
+    assert "ramp_join" not in plate.parameters
+    assert plate.name == "plate_1x1_v1_original_d7790348d5"
+    assert male.name.startswith("ramp_3x1_male_v1_original_")
+    assert male.parameters == {**female.parameters, "ramp_join": "male"}
 
 
 @pytest.mark.parametrize(

@@ -109,7 +109,7 @@ def _part_dimensions(args) -> tuple[int, int]:
             raise ValueError(
                 f"{invalid} does not apply to ramp; use only --width-cells along the tile edge because its front-to-back run is fixed at 50 mm"
             )
-        return width or 1, 1
+        return 1 if width is None else width, 1
     if family in linear:
         if width is not None or depth is not None:
             invalid = "--width-cells" if width is not None else "--depth-cells"
@@ -504,6 +504,11 @@ def parser() -> argparse.ArgumentParser:
                 help="one design's Y depth in grid cells; for a bracket, floor-base rows only",
             )
             p.add_argument(
+                "--ramp-join",
+                choices=("female", "male"),
+                help="ramp tile-edge joint: female pockets (default) or male tabs; ramp only",
+            )
+            p.add_argument(
                 "--panel-height-cells",
                 type=int,
                 metavar="COUNT",
@@ -649,6 +654,7 @@ def main(argv: list[str] | None = None) -> int:
                 {"vertical-tile-bracket"},
                 None,
             )
+            ramp_join = _part_option(args, "ramp_join", {"ramp"}, "female")
             if args.family == "tile":
                 design = tile_design(
                     Tile(*cells, interface, hole_diameter, hole_scope=args.hole_scope)
@@ -663,6 +669,7 @@ def main(argv: list[str] | None = None) -> int:
                         stop_height,
                         interface,
                         panel_height_cells=panel_height,
+                        ramp_join=ramp_join,
                     )
                 )
             design.quantity = args.copy_count

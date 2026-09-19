@@ -7,7 +7,6 @@ from math import floor
 from typing import Literal
 
 from cargo_grid.accessories import (
-    BAMBU_OBJECT_SETTINGS,
     VERTICAL_BRACKET_CONFIGS,
     VERTICAL_STOP_CELLS,
     VERTICAL_STOP_HEIGHTS_MM,
@@ -15,6 +14,7 @@ from cargo_grid.accessories import (
     bambu_print_rotation,
     bambu_print_rotation_y,
     make_accessory,
+    required_bambu_object_settings,
 )
 from cargo_grid.jobs import Design, Job, tile_design
 from cargo_grid.packing import PrintPlacement, pack_sizes
@@ -72,7 +72,11 @@ def accessory_variants(build: BuildVolume, interface: Interface = Interface()) -
         for x, base_y, panel_z in VERTICAL_BRACKET_CONFIGS
     )
     if interface.joint_style == "original":
-        result.extend(Accessory("ramp", nx=n, interface=interface) for n in range(1, nmax + 1))
+        result.extend(
+            Accessory("ramp", nx=n, interface=interface, ramp_join=join)
+            for join in ("female", "male")
+            for n in range(1, nmax + 1)
+        )
     result.extend(
         Accessory("vertical-stop", nx=x, ny=y, height=height, interface=interface)
         for x, y in VERTICAL_STOP_CELLS
@@ -91,6 +95,8 @@ def accessory_variants(build: BuildVolume, interface: Interface = Interface()) -
 
 def accessory_design(spec: Accessory) -> Design:
     parameters = asdict(spec)
+    if spec.family != "ramp" or spec.ramp_join == "female":
+        del parameters["ramp_join"]
     if parameters["panel_height_cells"] is None:
         del parameters["panel_height_cells"]
     token = sha256(json.dumps(parameters, sort_keys=True).encode()).hexdigest()[:10]
@@ -101,14 +107,12 @@ def accessory_design(spec: Accessory) -> Design:
         if spec.family == "vertical-tile-bracket" and spec.panel_height_cells is not None
         else f"{spec.nx}x{spec.ny}"
     )
-    name = f"{spec.family}_{dimensions}_v{spec.variant}_{spec.interface.joint_style}_{token}"
+    join_suffix = "_male" if spec.family == "ramp" and spec.ramp_join == "male" else ""
+    name = f"{spec.family}_{dimensions}{join_suffix}_v{spec.variant}_{spec.interface.joint_style}_{token}"
     shape = make_accessory(spec)
     shape.label = name
     rotation = bambu_print_rotation(spec)
     rotation_y = bambu_print_rotation_y(spec)
-    object_settings = dict(BAMBU_OBJECT_SETTINGS.get(spec.family, {}))
-    if spec.family == "vertical-tile-bracket" and spec.panel_height_cells is not None:
-        object_settings = {"enable_support": "1", "support_type": "normal(auto)"}
     return Design(
         name,
         shape,
@@ -121,7 +125,7 @@ def accessory_design(spec: Accessory) -> Design:
         recommended_print_rotation_x=rotation,
         recommended_print_rotation_y=rotation_y,
         apply_orientation_to_bambu=rotation is not None or rotation_y is not None,
-        bambu_object_settings=object_settings,
+        bambu_object_settings=dict(required_bambu_object_settings(parameters)),
     )
 
 
@@ -185,17 +189,19 @@ def h2d_dual_safe_catalogue_job(
     )
     common_designs = [design for design in source.designs if design is not exception]
     groups = (
-        ("Tiles", {"tile"}),
-        ("Ramps", {"ramp"}),
-        ("Normal stops", {"vertical-stop"}),
+        ("Tiles", {"tile"}, None),
+        ("Female ramps", {"ramp"}, "female"),
+        ("Male ramps", {"ramp"}, "male"),
+        ("Normal stops", {"vertical-stop"}, None),
         (
             "Tile brackets - deep and shallow",
             {"vertical-tile-bracket"},
+            None,
         ),
-        ("Angled stops", {"lock-45"}),
-        ("Attachment plates", {"plate"}),
-        ("Edges and corners", {"edge-x", "edge-y", "corner-in", "corner-out"}),
-        ("Rails and connectors", {"support", "support-bit", "support-end"}),
+        ("Angled stops", {"lock-45"}, None),
+        ("Attachment plates", {"plate"}, None),
+        ("Edges and corners", {"edge-x", "edge-y", "corner-in", "corner-out"}, None),
+        ("Rails and connectors", {"support", "support-bit", "support-end"}, None),
     )
     common_build = BuildVolume(
         350,
@@ -211,11 +217,12 @@ def h2d_dual_safe_catalogue_job(
     placements = []
     plate_names = {}
     plate_offset = 0
-    for title, families in groups:
+    for title, families, ramp_join in groups:
         members = [
             design
             for design in common_designs
             if design.parameters.get("family", "tile") in families
+            and (ramp_join is None or design.parameters.get("ramp_join", "female") == ramp_join)
         ]
         packed = pack_sizes(
             [design.bambu_size for design in members],

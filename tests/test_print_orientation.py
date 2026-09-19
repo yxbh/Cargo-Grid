@@ -225,6 +225,37 @@ def test_source_exports_and_project_orientation_contracts_are_unchanged(tmp_path
     ramp = accessory_design(Accessory("ramp", nx=3))
     assert not ramp.apply_orientation_to_bambu and ramp.bambu_size == ramp.size
     assert ramp.bambu_object_settings["support_type"] == "normal(auto)"
+    male_ramp = accessory_design(Accessory("ramp", nx=3, ramp_join="male"))
+    assert not male_ramp.apply_orientation_to_bambu
+    assert male_ramp.bambu_size == male_ramp.size
+    assert male_ramp.bambu_size == pytest.approx((180, 56, 13), abs=1e-5)
+    assert not male_ramp.bambu_object_settings
+
+
+@pytest.mark.parametrize("join", ["female", "male"])
+def test_ramp_project_keeps_source_underside_and_join_specific_support(join, tmp_path):
+    design = accessory_design(Accessory("ramp", nx=3, ramp_join=join))
+    path = tmp_path / "ramp.3mf"
+    result = write_3mf(Job([design], BuildVolume(350, 320, 325), "part"), path, bambu=BAMBU)
+    item = result["plates"][0]["items"][0]
+    assert item["size_mm"] == pytest.approx((180, 56 if join == "male" else 50, 13), abs=1e-5)
+    assert ("object_settings" in item) == (join == "female")
+    assert design.shape.bounding_box().min.Z == pytest.approx(0, abs=1e-5)
+    with ZipFile(path) as archive:
+        config = ET.fromstring(archive.read("Metadata/model_settings.config"))
+    metadata = {
+        entry.get("key"): entry.get("value") for entry in config.find("object").findall("metadata")
+    }
+    if join == "female":
+        assert metadata["enable_support"] == "1"
+        assert metadata["support_type"] == "normal(auto)"
+    else:
+        assert "enable_support" not in metadata and "support_type" not in metadata
+    _, _, meshes = _project_facts(path)
+    bounds = meshes[0][-1]
+    assert bounds[4] == pytest.approx(0, abs=1e-5)
+    assert bounds[5] == pytest.approx(13, abs=1e-5)
+    assert bounds[3] - bounds[2] == pytest.approx(56 if join == "male" else 50, abs=0.02)
 
 
 @pytest.mark.parametrize("n", [1, 2])

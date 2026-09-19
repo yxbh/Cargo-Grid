@@ -56,7 +56,7 @@ SHEETS = (
 FAMILIES = {
     "ramp": (
         "Floor ramps",
-        "A floor-to-mat transition with a 50 mm run. Its width and original female pocket follow unit size; its rise follows tile thickness. Bambu projects enable Auto support for the pocket roofs.",
+        "A floor-to-mat transition with a 50 mm body run and broad R32 shelf blend, capped for thicker custom ramps. Side/nose rounds stay R2. Width and tile-edge joints follow unit size; rise follows tile thickness.",
     ),
     "plate": (
         "Attachment plates",
@@ -120,7 +120,7 @@ def inventory() -> list[Item]:
         if spec.family in ("edge-x", "edge-y", "support"):
             suffix, detail = str(spec.nx), f"{spec.nx} cell" + ("s" if spec.nx != 1 else "")
         elif spec.family == "ramp":
-            suffix = str(spec.nx)
+            suffix = f"male-{spec.nx}" if spec.ramp_join == "male" else str(spec.nx)
             detail = f"{spec.nx} cell width / 50 mm run"
         elif spec.family == "support-bit":
             suffix, detail = f"{spec.length:g}mm", f"{spec.length:g} mm length"
@@ -142,8 +142,24 @@ def inventory() -> list[Item]:
             suffix, detail = f"{spec.nx}x{spec.ny}", f"{spec.nx} x {spec.ny}"
             if spec.family.startswith("lock-"):
                 detail += f" / H {spec.height:g} mm"
-        items.append(Item(f"{spec.family}-{suffix}", spec.family, detail, spec))
+        title = f"{spec.ramp_join} ramp" if spec.family == "ramp" else spec.family
+        items.append(Item(f"{spec.family}-{suffix}", title, detail, spec))
     return items
+
+
+def item_parameters(spec: Accessory) -> dict:
+    parameters = asdict(spec)
+    if spec.ramp_join == "female":
+        del parameters["ramp_join"]
+    return parameters
+
+
+def item_description(item: Item) -> str:
+    if item.spec.family == "ramp":
+        if item.spec.ramp_join == "male":
+            return "A 50 mm slope with original male tile-edge tabs, not X plugs. Tabs add 6 mm beyond the slope at standard unit size. Place against a female south or west tile edge. Bambu projects leave object support off."
+        return "A 50 mm slope with original female tile-edge pockets. Receives a north male tile edge and extends in positive Y. Bambu projects enable Auto support for the pocket roofs; remove it before assembly."
+    return FAMILIES[item.spec.family][1]
 
 
 def hero_items() -> list[Item]:
@@ -326,7 +342,7 @@ def verify_assets() -> dict:
         path = ROOT / "docs" / entry["file"]
         if entry["file"] != f"images/attachments/{item.key}.png" or entry[
             "parameters"
-        ] != json.loads(json.dumps(asdict(item.spec))):
+        ] != json.loads(json.dumps(item_parameters(item.spec))):
             raise ValueError(f"Thumbnail identity mismatch: {item.key}")
         if png_size(path) != THUMBNAIL_SIZE or path.stat().st_size > 70_000:
             raise ValueError(f"Thumbnail dimensions/size out of budget: {item.key}")
@@ -363,17 +379,26 @@ def run(command, log: Path, environment: dict) -> None:
         raise RuntimeError(f"Documentation tool failed; inspect {log.relative_to(ROOT)}")
 
 
-def render_items(workbench: Path, work: Path, only: set[str] | None) -> dict:
+def render_items(
+    workbench: Path,
+    work: Path,
+    only: set[str] | None,
+    *,
+    geometry_revision: str = GEOMETRY_REVISION,
+    workbench_revision: str = WORKBENCH_REVISION,
+) -> dict:
     revision = subprocess.check_output(
         ["git", "-C", str(workbench), "rev-parse", "HEAD"], text=True
     ).strip()
-    if revision != WORKBENCH_REVISION:
-        raise ValueError(f"Use the documented workbench revision {WORKBENCH_REVISION}")
-    verify_geometry_source()
+    if revision != workbench_revision:
+        raise ValueError(f"Use the requested workbench revision {workbench_revision}")
+    verify_geometry_source(geometry_revision)
     source_tree = subprocess.check_output(
-        ["git", "rev-parse", f"{GEOMETRY_REVISION}:src/cargo_grid"], cwd=ROOT, text=True
+        ["git", "rev-parse", f"{geometry_revision}:src/cargo_grid"], cwd=ROOT, text=True
     ).strip()
-    source_commit = GEOMETRY_REVISION
+    source_commit = subprocess.check_output(
+        ["git", "rev-parse", f"{geometry_revision}^{{commit}}"], cwd=ROOT, text=True
+    ).strip()
     recipe_hash = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
     python = workbench / ".venv" / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
     tools = workbench / ".agents/skills/cad/scripts"
@@ -478,6 +503,7 @@ def render_items(workbench: Path, work: Path, only: set[str] | None) -> dict:
         raise ValueError(
             "Workbench revision changed during rendering; do not publish mixed-revision assets"
         )
+    verify_geometry_source(geometry_revision)
     return {
         "generator_commit": source_commit,
         "generator_tree": source_tree,
@@ -486,28 +512,32 @@ def render_items(workbench: Path, work: Path, only: set[str] | None) -> dict:
     }
 
 
-def verify_geometry_source() -> None:
+def verify_geometry_source(geometry_revision: str = GEOMETRY_REVISION) -> None:
     for name in GEOMETRY_FILES:
         relative = f"src/cargo_grid/{name}"
         committed = subprocess.check_output(
-            ["git", "show", f"{GEOMETRY_REVISION}:{relative}"], cwd=ROOT
+            ["git", "show", f"{geometry_revision}:{relative}"], cwd=ROOT
         )
         if committed != (ROOT / relative).read_bytes():
-            raise ValueError(f"Documentation geometry differs from {GEOMETRY_REVISION}: {relative}")
+            raise ValueError(f"Documentation geometry differs from {geometry_revision}: {relative}")
 
 
-def thumbnail_entries(work: Path, provenance: dict) -> list[dict]:
+def thumbnail_entries(
+    work: Path,
+    provenance: dict,
+    *,
+    families: set[str] | None = None,
+    write_manifest: bool = True,
+) -> list[dict]:
     from PIL import Image
 
-    if (
-        provenance["generator_commit"] != GEOMETRY_REVISION
-        or provenance["workbench_commit"] != WORKBENCH_REVISION
-    ):
-        raise ValueError("Cached renders have unexpected geometry/workbench provenance")
+    verify_geometry_source(provenance["generator_commit"])
     target = ROOT / "docs/images/attachments"
     target.mkdir(parents=True, exist_ok=True)
     entries = []
     for family in FAMILIES:
+        if families is not None and family not in families:
+            continue
         items = [item for item in inventory() if item.spec.family == family]
         facts = {
             item.key: json.loads((work / "facts" / f"{item.key}.json").read_text())
@@ -523,7 +553,12 @@ def thumbnail_entries(work: Path, provenance: dict) -> list[dict]:
             if (
                 not fact["valid"]
                 or fact["solids"] != 1
-                or fact["cache"]["source_tree"] != provenance["generator_tree"]
+                or fact["cache"]
+                != {
+                    "source_tree": provenance["generator_tree"],
+                    "workbench": provenance["workbench_commit"],
+                    "recipe": provenance["recipe_sha256"],
+                }
             ):
                 raise ValueError(f"Unverified render geometry: {item.key}")
             source = work / "renders" / f"{item.key}.png"
@@ -557,22 +592,25 @@ def thumbnail_entries(work: Path, provenance: dict) -> list[dict]:
                     "key": item.key,
                     "family": family,
                     "public_name": fact["public_name"],
-                    "parameters": asdict(item.spec),
+                    "parameters": item_parameters(item.spec),
                     "size_mm": fact["size_mm"],
                     "file": path.relative_to(ROOT / "docs").as_posix(),
                     "alt": f"{item.title}, {item.detail}, original joints: isometric STEP-derived render",
-                    "description": FAMILIES[family][1],
+                    "description": item_description(item),
                     "dimensions": list(THUMBNAIL_SIZE),
                     "pixels_per_mm": scale,
                     "bytes": path.stat().st_size,
                     "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
                     "source_render_sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
                     "source_step_sha256": step_sha,
+                    "provenance": provenance,
                 }
             )
+    if not write_manifest:
+        return entries
     manifest = {
-        "geometry_commit": GEOMETRY_REVISION,
-        "workbench_commit": WORKBENCH_REVISION,
+        "geometry_commit": provenance["generator_commit"],
+        "workbench_commit": provenance["workbench_commit"],
         "catalogue_build_mm": {"width_x": 350, "depth_y": 320, "height_z": 325},
         "camera": CAMERA,
         "scale": "Common physical scale within each family; families differ.",
@@ -583,6 +621,7 @@ def thumbnail_entries(work: Path, provenance: dict) -> list[dict]:
                 "dimensions": list(png_size(ROOT / "docs/images" / name)),
                 "bytes": (ROOT / "docs/images" / name).stat().st_size,
                 "sha256": hashlib.sha256((ROOT / "docs/images" / name).read_bytes()).hexdigest(),
+                "provenance": provenance,
             }
             for name in IMAGE_NAMES
         ],
@@ -655,7 +694,7 @@ def composite(
 
 
 def compose_all(work: Path, provenance: dict) -> None:
-    verify_geometry_source()
+    verify_geometry_source(provenance["generator_commit"])
     items = inventory()
     sheets = [composite(work, hero_items(), "hero.png", "", 2, hero=True)]
     sheets.append(
@@ -698,6 +737,29 @@ def compose_all(work: Path, provenance: dict) -> None:
         )
     )
     thumbnails = thumbnail_entries(work, provenance)
+    write_gallery(thumbnails, provenance)
+    report = {
+        **provenance,
+        "composition_recipe_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+        "build_mm": [350, 320, 325],
+        "attachment_count": len(items),
+        "variants": [
+            {
+                "key": item.key,
+                "parameters": item_parameters(item.spec),
+                **json.loads((work / "facts" / f"{item.key}.json").read_text()),
+            }
+            for item in items
+        ],
+        "sheets": sheets,
+        "assets": verify_assets(),
+    }
+    (work / "render-report.json").write_text(json.dumps(report, indent=2) + "\n")
+    print(json.dumps(report["assets"], indent=2))
+
+
+def write_gallery(thumbnails: list[dict], provenance: dict, *, incremental: bool = False) -> None:
+    items = inventory()
     lines = [
         "# Standard accessory gallery",
         "",
@@ -711,13 +773,13 @@ def compose_all(work: Path, provenance: dict) -> None:
         "",
         "The individual thumbnails show the bracket alone. The [family view](images/vertical-tile-brackets.png) adds separate floor and wall tiles to show assembly; those tiles are not included in the bracket export. Deep examples show the default underside-outward wall orientation, while shallow examples show the accepted top-outward orientation. Use one orientation consistently across adjoining wall tiles because top-outward placement reverses left/right joining handedness. Holes covered by the solid backing are blind while assembled.",
         "",
-        "Ramp names give width along the tile edge in unit cells. Every ramp keeps the same physical 50 mm run; width, rise and one original female pocket per cell follow its unit/thickness interface. The gallery shows standard 60/13 examples. The ramp receives a tile's north male edge and extends in positive Y. Full-height ramp joints are not available.",
+        "Ramp names give width along the tile edge in unit cells. Every ramp keeps a 50 mm slope run; width, rise and one original tile-edge joint per cell follow its unit/thickness interface. Female is the default: it receives a north male tile edge and extends in positive Y. Male tabs fit female south or west tile edges after placement rotation; these are tile-edge joints, not X plugs. At standard 60/13 settings, male tabs project another 6 mm beyond the slope, so overall depth is 56 mm. Full-height ramp joints are not available.",
         "",
         "Normal `vertical-stop` names give base X units, base Y units and the physical H60/H120 shoulder height. They are filled CAD wedges with no wall holes, panel connectors or ledges. The slicer still chooses perimeters and infill.",
         "",
-        "Original edge/corner bodies and straight rail bodies use R3. Rail ends use smaller rounds where the shape or STEP export needs them. Plates, ramps and stops use R2. Brackets use R3 at the thick front-to-slope transition, R2 on other thick edges and R1 around the thin bearing lip. Mating surfaces keep their own geometry.",
+        "Original edge/corner bodies and straight rail bodies use R3. Rail ends use smaller rounds where the shape or STEP export needs them. Plates and stops use R2. Ramps have R2 sides/noses and a broad R32 shelf blend, capped to retain 2 mm of flat shelf on thicker custom parts. Brackets use R3 at the thick front-to-slope transition, R2 on other thick edges and R1 around the thin bearing lip. Mating surfaces keep their own geometry.",
         "",
-        "Before packing, Bambu projects put plates broad-face-down at X=180, original brackets on their diagonal rear face, shallow brackets side-down at Y=-90, normal stops on their broad rear face and angled stops back-down at X=-135. STEP, STL and core 3MF keep source orientation. Ramps, normal stops and shallow brackets turn on Auto support for that object. Remove support from mating areas before assembly.",
+        "Before packing, Bambu projects put plates broad-face-down at X=180, original brackets on their diagonal rear face, shallow brackets side-down at Y=-90, normal stops on their broad rear face and angled stops back-down at X=-135. STEP, STL and core 3MF keep source orientation. Female ramps, normal stops and shallow brackets turn on Auto support for that object; male ramps leave it off. Remove support from mating areas before assembly. Physical fit and support removal still need checking on a print.",
         "",
     ]
     for family, (heading, _) in FAMILIES.items():
@@ -742,35 +804,86 @@ def compose_all(work: Path, provenance: dict) -> None:
         "Use a CAD-Pilot checkout at the recorded workbench revision with its render dependencies installed. Cargo-Grid doesn't add them as runtime dependencies. From this repository root, run:",
         "",
         "```sh",
-        "PYTHONPATH=src <workbench-python> tools/render_docs.py --workbench <workbench-checkout>",
+        "PYTHONPATH=src <workbench-python> tools/render_docs.py --workbench <workbench-checkout> --geometry-revision <committed-generator-revision> --workbench-revision <recorded-workbench-revision>",
         "```",
         "",
-        f"Use the workbench's Python interpreter with Pillow already available; paths are supplied locally, not committed. In PowerShell, set `$env:PYTHONPATH='src'` before invoking that interpreter. The script checks geometry modules against the recorded commit, invokes STEP/inspection/render tools, then creates {len(IMAGE_NAMES)} overview PNGs and {len(items)} family-scaled thumbnails. `--compose-only` reuses verified local STEP-derived renders; `--check` verifies the committed files and their one-to-one inventory mapping without Pillow. Intermediate STEP files and raw renders remain ignored. Layout is deterministic; raster bytes can depend on graphics/Pillow versions.",
+        f"Use the workbench's Python interpreter with Pillow already available; paths are supplied locally, not committed. In PowerShell, set `$env:PYTHONPATH='src'` before invoking that interpreter. A full run checks geometry modules against the recorded commit, invokes STEP/inspection/render tools, then creates {len(IMAGE_NAMES)} overview PNGs and {len(items)} family-scaled thumbnails. `--compose-only` reuses verified local STEP-derived renders; `--check` verifies the committed files and their one-to-one inventory mapping without Pillow. Intermediate STEP files and raw renders remain ignored. Layout is deterministic; raster bytes can depend on graphics/Pillow versions.",
         "",
-        f"Generator source revision: {revision_tag(provenance['generator_commit'])}. Generator tree: {revision_tag(provenance['generator_tree'])}. Workbench revision: {revision_tag(provenance['workbench_commit'])}.",
+        "For a ramp-only update, add `--update-ramps --geometry-revision <committed-generator-revision> --workbench-revision <recorded-workbench-revision>`. This renders all ten ramps and recomposes only the ramp overview. Other pictures and their original provenance stay unchanged; no earlier render cache is needed.",
+        "",
+        (
+            "The manifest's top-level provenance belongs to the retained baseline images. Regenerated ramp thumbnails and the ramp overview each carry their own provenance; it does not describe a new full-gallery render. "
+            if incremental
+            else ""
+        )
+        + f"{'Ramp update' if incremental else 'Generator'} source revision: {revision_tag(provenance['generator_commit'])}. Generator tree: {revision_tag(provenance['generator_tree'])}. Workbench revision: {revision_tag(provenance['workbench_commit'])}.",
         "",
         "A clean render checks the picture and source inventory; it doesn't prove print quality or fit.",
         "",
     ]
     (ROOT / "docs/attachments.md").write_text("\n".join(lines))
+
+
+def compose_ramps(work: Path, provenance: dict) -> None:
+    """Replace only the complete ramp family, preserving all other rendered evidence."""
+    verify_geometry_source(provenance["generator_commit"])
+    path = ROOT / "docs/images/attachments/manifest.json"
+    manifest = json.loads(path.read_text())
+    retained = [entry for entry in manifest["items"] if entry["family"] != "ramp"]
+    expected = {item.key for item in inventory() if item.spec.family != "ramp"}
+    if len(retained) != len(expected) or {entry["key"] for entry in retained} != expected:
+        raise ValueError("Retained thumbnails do not match the non-ramp inventory")
+    kept_overviews = [
+        entry for entry in manifest["overview_images"] if entry["file"] != "images/ramps.png"
+    ]
+    if len(kept_overviews) != len(IMAGE_NAMES) - 1 or {
+        entry["file"] for entry in kept_overviews
+    } != {f"images/{name}" for name in IMAGE_NAMES if name != "ramps.png"}:
+        raise ValueError("Retained overviews do not match the non-ramp image set")
+    for entry in [*retained, *kept_overviews]:
+        asset = ROOT / "docs" / entry["file"]
+        if hashlib.sha256(asset.read_bytes()).hexdigest() != entry["sha256"]:
+            raise ValueError(f"Retained image hash mismatch: {entry['file']}")
+    ramps = thumbnail_entries(work, provenance, families={"ramp"}, write_manifest=False)
+    sheet = composite(
+        work,
+        [item for item in inventory() if item.spec.family == "ramp"],
+        "ramps.png",
+        "Floor-to-mat ramps: female pockets and male tabs",
+        3,
+    )
+    overview = ROOT / "docs/images/ramps.png"
+    replacement = {
+        "file": "images/ramps.png",
+        "dimensions": list(png_size(overview)),
+        "bytes": overview.stat().st_size,
+        "sha256": hashlib.sha256(overview.read_bytes()).hexdigest(),
+        "provenance": provenance,
+        "items": sheet["items"],
+    }
+    manifest["items"] = [
+        entry for family in FAMILIES for entry in [*retained, *ramps] if entry["family"] == family
+    ]
+    manifest["overview_images"] = [
+        replacement if entry["file"] == "images/ramps.png" else entry
+        for entry in manifest["overview_images"]
+    ]
+    manifest["provenance_scope"] = (
+        "Top-level revisions describe retained baseline images; per-image provenance overrides "
+        "them for regenerated assets. This is not a full-gallery rerender."
+    )
+    path.write_text(json.dumps(manifest, indent=2) + "\n")
+    write_gallery(manifest["items"], provenance, incremental=True)
     report = {
         **provenance,
+        "scope": "ramp thumbnails and ramp overview only",
         "composition_recipe_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
-        "build_mm": [350, 320, 325],
-        "attachment_count": len(items),
-        "variants": [
-            {
-                "key": item.key,
-                "parameters": asdict(item.spec),
-                **json.loads((work / "facts" / f"{item.key}.json").read_text()),
-            }
-            for item in items
-        ],
-        "sheets": sheets,
+        "sheets": [sheet],
+        "updated_keys": [entry["key"] for entry in ramps],
         "assets": verify_assets(),
     }
     (work / "render-report.json").write_text(json.dumps(report, indent=2) + "\n")
-    print(json.dumps(report["assets"], indent=2))
+    print(json.dumps(report["updated_keys"], indent=2))
 
 
 def main() -> None:
@@ -783,23 +896,50 @@ def main() -> None:
         help="render only the named items without composing the complete gallery",
     )
     parser.add_argument("--compose-only", action="store_true")
+    parser.add_argument(
+        "--update-ramps",
+        action="store_true",
+        help="render and compose only the ten ramp thumbnails and ramp overview",
+    )
+    parser.add_argument("--geometry-revision", default=GEOMETRY_REVISION)
+    parser.add_argument("--workbench-revision", default=WORKBENCH_REVISION)
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
     if args.check:
         print(json.dumps(verify_assets(), indent=2))
         return
+    if args.update_ramps and args.only:
+        parser.error("--update-ramps already selects the complete ramp family; omit --only")
     if args.workbench is None:
         parser.error("--workbench is required for rendering")
     work = (ROOT / args.work_dir).resolve()
     work.relative_to(ROOT)
     if args.compose_only:
         provenance = json.loads((work / "provenance.json").read_text())
+        if (
+            provenance["generator_commit"] != args.geometry_revision
+            or provenance["workbench_commit"] != args.workbench_revision
+        ):
+            parser.error("Cached renders do not match the requested source/tool revisions")
     else:
+        only = (
+            {item.key for item in inventory() if item.spec.family == "ramp"}
+            if args.update_ramps
+            else set(args.only)
+            if args.only
+            else None
+        )
         provenance = render_items(
-            args.workbench.resolve(), work, set(args.only) if args.only else None
+            args.workbench.resolve(),
+            work,
+            only,
+            geometry_revision=args.geometry_revision,
+            workbench_revision=args.workbench_revision,
         )
         (work / "provenance.json").write_text(json.dumps(provenance, indent=2) + "\n")
-    if not args.only:
+    if args.update_ramps:
+        compose_ramps(work, provenance)
+    elif not args.only:
         compose_all(work, provenance)
 
 

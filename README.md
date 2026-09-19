@@ -52,7 +52,7 @@ uv run cargo-grid layout --build-width-mm 150 --build-depth-mm 150 --build-heigh
 
 ## Browse and generate accessories
 
-At the standard 60/13 settings, the documented 350x320x325 mm build envelope fits 56 accessories: ramps, attachment plates, five vertical tile brackets, eight normal stops, two angled stops, edge/corner pieces and separate support rails/connectors. A different unit size or build envelope can change what fits.
+At the standard 60/13 settings, the documented 350x320x325 mm build envelope fits 61 accessories: female and male ramps, attachment plates, five vertical tile brackets, eight normal stops, two angled stops, edge/corner pieces and separate support rails/connectors. A different unit size or build envelope can change what fits.
 
 ![Three plates, five tile brackets, eight normal stops and two angled stops that use the X attachment interface.](docs/images/x-attachments.png)
 
@@ -76,7 +76,7 @@ The manifest lists anything omitted because it did not fit.
 
 ## Make the full H2D catalogue
 
-This standard-only command creates the documented H2D project: 25 tile sizes with the full 10 mm hole pattern and all 56 accessories on 24 plates. It requires 60 mm units, 13 mm thickness and zero fit offset.
+This standard-only command creates the documented H2D project: 25 tile sizes with the full 10 mm hole pattern and all 61 accessories. It packs actual part bounds onto named, family-grouped plates; the manifest records the plate count. It requires 60 mm units, 13 mm thickness and zero fit offset.
 
 ```sh
 uv run cargo-grid catalogue --h2d-dual-safe --build-width-mm 350 --build-depth-mm 320 --build-height-mm 325 --bambu --material "Bambu PETG Basic @BBL H2D 0.8 nozzle" PETG "#637b70" --nozzle-diameter-mm 0.8 --layer-height-mm 0.32 --no-stl --output outputs/full-catalogue
@@ -132,15 +132,22 @@ The two `lock-45` angled stops are also filled wedges. Their free body edges are
 
 ## Floor ramps
 
-`ramp` makes a floor-to-mat transition whose rise follows tile thickness. Its run stays fixed at 50 mm; width grows in the selected unit size, and each unit repeats one matching original roofed female tile-edge pocket.
+`ramp` makes a floor-to-mat transition whose rise follows tile thickness. Its slope run stays fixed at 50 mm; `--width-cells` sets its width in whole unit cells. Each cell has one original tile-edge joint: female pockets by default, or male tabs with `--ramp-join male`. These are the same joining shapes used on tile edges, not X attachment plugs.
 
-![Five ramps from one to five cells wide.](docs/images/ramps.png)
+![Female and male ramps from one to five cells wide.](docs/images/ramps.png)
 
 ```sh
 uv run cargo-grid part --family ramp --width-cells 3 --build-width-mm 350 --build-depth-mm 320 --build-height-mm 325 --bambu --material "Model PETG" PETG "#637b70" --nozzle-diameter-mm 0.4 --layer-height-mm 0.2 --output outputs/ramp
+uv run cargo-grid part --family ramp --width-cells 3 --ramp-join male --build-width-mm 350 --build-depth-mm 320 --build-height-mm 325 --output outputs/male-ramp
 ```
 
-The ramp receives a tile's north male edge and extends away in positive Y. Custom unit size/thickness work with matching original roofed interfaces; full-height ramp joints remain unsupported. Normal Auto support is limited to the exposed female-pocket roofs and must be removed before assembly.
+The default female ramp receives a tile's north male edge and extends away in positive Y. The male ramp fits a tile's female south or west edge: rotate it 180 degrees around Z for the south edge, or 90 degrees around Z for the west edge, then move its tall boundary against that tile edge. Rotation changes placement, not joining sex.
+
+Male tabs project beyond the 50 mm slope by one tenth of the unit size. At standard 60/13 settings, a three-cell male ramp measures 180 x 56 x 13 mm overall; its slope still runs 50 mm. Both versions keep the underside at Z=0. Custom unit size and thickness work with matching original roofed interfaces; full-height ramp joints remain unsupported.
+
+The high shelf flows into the slope through a broad R32 curve. At standard thickness this leaves about 6.28 mm of flat shelf without changing the joining rim or pocket roof. Thicker custom ramps use a smaller radius when needed to keep at least 2 mm of flat shelf; side and nose rounds stay R2.
+
+Bambu projects request normal Auto support for female-pocket roofs and leave male-ramp object support off. The male tabs start as separate first-layer islands before joining the body, so inspect their bed contact and adhesion. Remove any support from mating surfaces before assembly. Printed fit and load suitability still need a physical check.
 
 ## Support the underside joint bridges
 

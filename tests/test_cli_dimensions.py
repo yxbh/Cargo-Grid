@@ -217,3 +217,98 @@ def test_no_stale_build_triples_in_maintained_commands():
     files += list((root / "docs").glob("*.md")) + list((root / "examples").glob("*.py"))
     for path in files:
         assert not re.search(r"--build(?:[ =,`\"']|$)", path.read_text()), path
+
+
+@pytest.mark.parametrize("join", [None, "female", "male"])
+def test_ramp_join_cli_keeps_width_and_slope_run_separate(join, tmp_path):
+    output = tmp_path / "ramp"
+    flags = [] if join is None else ["--ramp-join", join]
+    assert (
+        main(
+            [
+                "part",
+                *COMPLETE,
+                "--family",
+                "ramp",
+                "--width-cells",
+                "2",
+                *flags,
+                "--no-stl",
+                "--output",
+                str(output),
+            ]
+        )
+        == 0
+    )
+    design = json.loads((output / "manifest.json").read_text())["designs"][0]
+    assert design["parameters"].get("ramp_join", "female") == (join or "female")
+    if join != "male":
+        assert "ramp_join" not in design["parameters"]
+    shape = import_step(output / f"{design['name']}.step")
+    assert shape.is_valid and len(shape.solids()) == 1 and shape.volume > 0
+    bounds = shape.bounding_box()
+    assert tuple(bounds.size) == pytest.approx((120, 56 if join == "male" else 50, 13), abs=1e-5)
+    assert bounds.min.Z == pytest.approx(0, abs=1e-5)
+    assert bounds.min.Y == pytest.approx(-6 if join == "male" else 0, abs=1e-5)
+
+
+@pytest.mark.parametrize("family", ["tile", "plate", "edge-x", "vertical-tile-bracket"])
+@pytest.mark.parametrize("join", ["female", "male"])
+def test_ramp_join_rejects_other_part_families(family, join, tmp_path, capsys):
+    with pytest.raises(SystemExit) as error:
+        main(
+            [
+                "part",
+                *COMPLETE,
+                "--family",
+                family,
+                "--ramp-join",
+                join,
+                "--output",
+                str(tmp_path / "invalid"),
+            ]
+        )
+    assert error.value.code == 2
+    assert f"--ramp-join does not apply to {family}" in capsys.readouterr().err
+    assert not (tmp_path / "invalid").exists()
+
+
+@pytest.mark.parametrize("width", ["0", "-1", "1.5"])
+def test_ramp_width_requires_positive_whole_cells(width, tmp_path):
+    with pytest.raises(SystemExit) as error:
+        main(
+            [
+                "part",
+                *COMPLETE,
+                "--family",
+                "ramp",
+                "--ramp-join",
+                "male",
+                "--width-cells",
+                width,
+                "--output",
+                str(tmp_path / "invalid"),
+            ]
+        )
+    assert error.value.code == 2
+    assert not (tmp_path / "invalid").exists()
+
+
+@pytest.mark.parametrize("command", ["layout", "catalogue"])
+def test_ramp_join_is_not_a_catalogue_or_layout_option(command, tmp_path, capsys):
+    extra = ["--layout-width-mm", "60", "--layout-depth-mm", "60"] if command == "layout" else []
+    with pytest.raises(SystemExit) as error:
+        main(
+            [
+                command,
+                *COMPLETE,
+                *extra,
+                "--ramp-join",
+                "male",
+                "--output",
+                str(tmp_path / "invalid"),
+            ]
+        )
+    assert error.value.code == 2
+    assert "unrecognized arguments: --ramp-join male" in capsys.readouterr().err
+    assert not (tmp_path / "invalid").exists()
