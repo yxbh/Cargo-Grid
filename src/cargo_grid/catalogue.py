@@ -277,31 +277,11 @@ def h2d_dual_safe_catalogue_job(
             and (ramp_join is None or design.parameters.get("ramp_join", "female") == ramp_join)
         ]
 
-    def perimeter_traits(design: Design) -> tuple[float, bool, str, str]:
+    def perimeter_traits(design: Design) -> tuple[float, bool]:
         parameters = design.parameters
-        family = parameters["family"]
         outward = parameters.get("edge_outward", 10.0)
         complete = parameters.get("complete_edge_holes", False)
-        spec = Accessory(
-            family,
-            nx=parameters["nx"],
-            variant=parameters["variant"],
-            edge_outward=outward,
-            complete_edge_holes=complete,
-        )
-        sexes = sorted(join["sex"] for join in accessory_datums(spec)["joins"])
-        kind = "edges" if family in {"edge-x", "edge-y"} else "corners"
-        if kind == "edges":
-            if len(set(sexes)) != 1:
-                raise ValueError(f"straight edge has mixed connector sexes: {design.name}")
-            connector = sexes[0]
-        elif len(sexes) == 1:
-            connector = sexes[0]
-        elif sexes[0] == sexes[1]:
-            connector = f"all-{sexes[0]}"
-        else:
-            connector = "male-female"
-        return outward, complete, connector, kind
+        return outward, complete
 
     groups = [
         ("Tiles", family_members({"tile"})),
@@ -319,22 +299,11 @@ def h2d_dual_safe_catalogue_job(
     for outward in EDGE_OUTWARD_OPTIONS_MM:
         for complete in (False, True):
             mode = "complete holes" if complete else "plain"
-            for connector in ("female", "male"):
-                traits = (outward, complete, connector, "edges")
-                members = [
-                    design for design in perimeter_designs if perimeter_traits(design) == traits
-                ]
-                if not members:
-                    raise ValueError(f"H2D edge group unexpectedly empty: {traits}")
-                groups.append((f"{outward:g}mm {connector} edges - {mode}", members))
-            for connector in ("female", "male", "all-female", "male-female", "all-male"):
-                traits = (outward, complete, connector, "corners")
-                members = [
-                    design for design in perimeter_designs if perimeter_traits(design) == traits
-                ]
-                if not members:
-                    raise ValueError(f"H2D corner group unexpectedly empty: {traits}")
-                groups.append((f"{outward:g}mm {connector} corners - {mode}", members))
+            traits = (outward, complete)
+            members = [design for design in perimeter_designs if perimeter_traits(design) == traits]
+            if not members:
+                raise ValueError(f"H2D perimeter group unexpectedly empty: {traits}")
+            groups.append((f"{outward:g}mm edges and corners - {mode}", members))
     groups.append(
         (
             "Rails and connectors",
@@ -418,7 +387,7 @@ def h2d_dual_safe_catalogue_job(
             "common_model_inset_mm": 5,
             "minimum_model_gap_mm": 10,
             "grouped_by_family": True,
-            "perimeter_grouping": "outward width, boundary-hole mode and actual connector sexes",
+            "perimeter_grouping": "outward width and boundary-hole mode",
             "exception": {
                 "design": exception.name,
                 "plate": plate_offset + 1,
