@@ -18,6 +18,8 @@ from OCP.Precision import Precision
 
 from cargo_grid._version import __version__
 from cargo_grid.accessories import (
+    Accessory,
+    accessory_datums,
     required_bambu_object_settings,
     required_bambu_print_rotation,
     required_bambu_print_rotation_y,
@@ -845,6 +847,15 @@ def export_job(
                 "compatibility": compatibility,
             }
         )
+        if design.parameters.get("family") == "ramp":
+            entries[-1]["mating_datums"] = accessory_datums(
+                Accessory(
+                    **{
+                        **design.parameters,
+                        "interface": Interface(**interface_data),
+                    }
+                )
+            )
         if (
             design.recommended_print_rotation_x is not None
             or design.recommended_print_rotation_y is not None

@@ -15,6 +15,7 @@ and lightening apertures are independently constructed, not reference contours.
 from dataclasses import dataclass
 from functools import lru_cache
 from math import atan, degrees, sqrt
+from typing import Literal
 
 from build123d import Axis, Face, GeomType, Location, Part, Solid, Wire
 from OCP.BRepFilletAPI import BRepFilletAPI_MakeFillet
@@ -110,7 +111,8 @@ class Accessory:
     Vertical stops use explicit 1x2, 2x1 or 2x2 mounting cells and an explicit
     60 or 120 mm height. They are filled cargo wedges without wall holes.
     Ramps use ``nx`` cells along a tile edge. Their approved finished run is
-    fixed at 50 mm and ``ny`` remains one.
+    fixed at 50 mm and ``ny`` remains one. ``ramp_join`` defaults to female;
+    male tabs project beyond the run toward negative Y.
     ``variant`` selects corner and support-end types. Interface unit size scales
     tile-facing local-plane geometry; tile thickness independently controls
     insertion depth. Comfort radii and the separate support-rail join stay in mm.
@@ -124,6 +126,7 @@ class Accessory:
     height: float = 50
     interface: Interface = Interface()
     panel_height_cells: int | None = None
+    ramp_join: Literal["female", "male"] = "female"
 
     def __post_init__(self) -> None:
         if self.family == "lock-90":
@@ -140,6 +143,10 @@ class Accessory:
         positive("height", self.height)
         if not isinstance(self.interface, Interface):
             raise ValueError("interface must be an Interface")
+        if self.ramp_join not in ("female", "male"):
+            raise ValueError("ramp join must be female or male")
+        if self.family != "ramp" and self.ramp_join != "female":
+            raise ValueError(f"ramp join does not apply to {self.family}")
         variants = {"corner-in": 4, "corner-out": 6, "support-end": 4}
         if self.variant > variants.get(self.family, 1):
             raise ValueError(f"invalid variant for {self.family}")
@@ -828,6 +835,8 @@ def required_bambu_print_rotation_y(parameters: dict) -> float | None:
 
 
 def required_bambu_object_settings(parameters: dict) -> dict[str, str]:
+    if parameters.get("family") == "ramp" and parameters.get("ramp_join") == "male":
+        return {}
     if (
         parameters.get("family") == "vertical-tile-bracket"
         and parameters.get("panel_height_cells") is not None
@@ -980,6 +989,12 @@ def _ramp(spec: Accessory, *, cut_joins: bool = True) -> Part:
             close=True,
         )
     )
+    # Resolve these two arcs in section: the 3D fillet builder can treat a
+    # shallow shelf/slope angle as tangent and silently leave the crease.
+    profile = profile.fillet_2d(
+        RAMP_FREE_EDGE_RADIUS_MM,
+        [vertex for vertex in profile.vertices() if vertex.Y > 0],
+    )
     blank = Part(Solid.extrude(profile, (width, 0, 0)).wrapped)
     operation = BRepFilletAPI_MakeFillet(blank.wrapped)
     free_edges = 0
@@ -990,26 +1005,35 @@ def _ramp(spec: Accessory, *, cut_joins: bool = True) -> Part:
         if back and abs(bounds.min.Z) < 1e-6 and abs(bounds.max.Z) < 1e-6 and bounds.size.X > 10:
             operation.Add(1.0, edge.wrapped)
             protected_rounds += 1
-        elif not back:
+        elif not back and bounds.size.X < 1e-6:
             operation.Add(RAMP_FREE_EDGE_RADIUS_MM, edge.wrapped)
             free_edges += 1
     operation.Build()
-    if not operation.IsDone() or free_edges != 8 or protected_rounds != 1:
+    if not operation.IsDone() or free_edges != 10 or protected_rounds != 1:
         raise ValueError(
             f"ramp edge rounding changed: {free_edges} free / {protected_rounds} protected"
         )
     part = Part(Solid(operation.Shape()).wrapped)
     if not cut_joins:
         return part
-    cutters = [
+    joins = [
         tile_join_tool(
             spec.interface,
-            depth=spec.interface.female_join_depth,
-            male=False,
-        ).moved(Location(((cell + 0.5) * spec.interface.pitch, 0, 0)))
+            male=spec.ramp_join == "male",
+        )
+        .rotate(Axis.Z, 180 if spec.ramp_join == "male" else 0)
+        .moved(Location(((cell + 0.5) * spec.interface.pitch, 0, 0)))
         for cell in range(spec.nx)
     ]
-    result = part.cut(*cutters).clean()
+    if spec.ramp_join == "male":
+        # Only the outward half of the stock tool is a tab. Its construction
+        # wall must not flatten the fixed ramp slope at large unit sizes.
+        depth = spec.interface.male_join_depth
+        outside = _box(0, -depth, width, depth, spec.interface.height)
+        tabs = [Part(join.intersect(outside).solids()) for join in joins]
+        result = part.fuse(*tabs).clean()
+    else:
+        result = part.cut(*joins).clean()
     if abs(result.bounding_box().max.Y - RAMP_RUN_MM) > 1e-5:
         raise ValueError("ramp finished run changed")
     return result
@@ -1229,25 +1253,35 @@ def accessory_datums(spec: Accessory) -> dict:
             )
         return result
     if spec.family == "ramp":
+        male = spec.ramp_join == "male"
         return {
             "underside_z": 0,
             "top_z": spec.interface.height,
             "finished_run": RAMP_RUN_MM,
+            "ramp_join": spec.ramp_join,
+            "tab_projection": spec.interface.male_join_depth if male else 0,
+            "overall_depth": RAMP_RUN_MM + (spec.interface.male_join_depth if male else 0),
             "width_cells": spec.nx,
             "ramp_direction": "positive Y away from the tile",
-            "mating_tile_edge": "north male edge at Y=0",
+            "mating_tile_edge": (
+                "south female edge after Z=180 rotation; west female edge after Z=90 rotation"
+                if male
+                else "north male edge at Y=0"
+            ),
             "mount_centers": [],
             "joins": [
                 {
                     **_join(
                         (cell + 0.5) * spec.interface.pitch,
                         0,
-                        0,
-                        False,
+                        180 if male else 0,
+                        male,
                         interface=spec.interface,
                     ),
                     "joint_style": spec.interface.joint_style,
-                    "height": spec.interface.female_opening_height,
+                    "height": (
+                        spec.interface.male_height if male else spec.interface.female_opening_height
+                    ),
                     "open_through_top": spec.interface.joint_style == "full-height",
                 }
                 for cell in range(spec.nx)
@@ -1357,6 +1391,8 @@ def make_accessory(spec: Accessory) -> Part:
         else str(spec.nx)
     )
     part.label = f"{spec.family}_{suffix}"
+    if spec.family == "ramp" and spec.ramp_join == "male":
+        part.label += "_male"
     if spec.family.startswith("lock-") or spec.family == "vertical-stop":
         part.label += f"_h{spec.height:g}"
     part.label += f"_{spec.interface.joint_style}"
