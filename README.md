@@ -84,19 +84,17 @@ The manifest lists anything omitted because it did not fit.
 
 ## Make the full H2D catalogue
 
-This standard-only command creates the documented H2D catalogue: 25 tile sizes with the full 10 mm hole pattern and all 161 accessories on 65 named, family-grouped plates. It requires 60 mm units, 13 mm thickness and zero fit offset.
+This standard-only command creates the documented H2D project: 25 tile sizes with the full 10 mm hole pattern and all 161 accessories on 65 named, family-grouped plates. It requires 60 mm units, 13 mm thickness and zero fit offset.
 
 ```sh
 uv run cargo-grid catalogue --h2d-dual-safe --build-width-mm 350 --build-depth-mm 320 --build-height-mm 325 --bambu --material "Bambu PETG Basic @BBL H2D 0.8 nozzle" PETG "#637b70" --nozzle-diameter-mm 0.8 --layer-height-mm 0.32 --no-stl --output outputs/full-catalogue
 ```
 
-The output contains two standalone Bambu projects because Bambu Studio accepts at most 36 plates in one project. Open `outputs/full-catalogue/plates-01-to-36/job.3mf` for visible catalogue plates 1-36 and `outputs/full-catalogue/plates-37-to-65/job.3mf` for visible catalogue plates 37-65. Each subdirectory has its own ordinary export manifest, and the top-level `manifest.json` records both paths and their global one-based plate ranges.
-
-Common plates keep model bounds inside the H2D shared reach (X=25..325, Y=0..320, Z<=320), add another 5 mm model inset and leave at least 10 mm between model bounds. The 306x306 mm 5x5 tile needs the wider left-nozzle area, so it remains global visible plate 65, which is project 2 visible plate 29. That isolated plate maps slot 1 to the left nozzle; other plates use automatic `Auto For Match`. These are model bounds; check support, brim and tower paths after slicing.
+Open `outputs/full-catalogue/job.3mf` as a project. Common plates keep model bounds inside the H2D shared reach (X=25..325, Y=0..320, Z<=320), add another 5 mm model inset and leave at least 10 mm between model bounds. The 306x306 mm 5x5 tile needs the wider left-nozzle area, so it gets its own `5x5 TILE - SINGLE NOZZLE ONLY - LEFT` plate and maps slot 1 to the left nozzle. Other plates use automatic `Auto For Match`. These are model bounds; check support, brim and tower paths after slicing.
 
 The project names the H2D 0.8 nozzle, 0.32 mm Balanced Strength process, Textured PEI plate and Bambu PETG Basic profile. Confirm those profiles and your loaded filament before slicing. The catalogue does not add PLA roof interfaces to tiles; the PETG/PLA roof-support job below remains a separate tile-only workflow.
 
-Both 3MFs are unsliced projects. Open each as a project, then slice and inspect every plate you plan to print.
+The 3MF is an unsliced project. Open it as a project, then slice and inspect every plate you plan to print.
 
 ## Vertical tile brackets
 

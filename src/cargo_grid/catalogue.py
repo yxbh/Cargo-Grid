@@ -1,7 +1,6 @@
 """Finite functional catalogue bounded by the user's usable print envelope."""
 
 import json
-from copy import deepcopy
 from dataclasses import asdict
 from hashlib import sha256
 from math import floor
@@ -31,7 +30,6 @@ BRACKET_DISPLAY_NAMES = {
     (1, 1, 2): "Shallow tall tile bracket — floor 1x1, wall 1x2",
     (2, 1, 2): "Shallow wide tile bracket — floor 2x1, wall 2x2",
 }
-H2D_BAMBU_PROJECT_PLATE_LIMIT = 36
 
 
 def tile_sizes(build: BuildVolume, interface: Interface = Interface()) -> list[tuple[int, int]]:
@@ -431,76 +429,3 @@ def h2d_dual_safe_catalogue_job(
     )
     job.part_gap = 10
     return job
-
-
-def h2d_dual_safe_catalogue_projects(
-    *,
-    hole_diameter: float | None = DEFAULT_HOLE_DIAMETER_MM,
-    hole_scope: Literal["interior", "full"] = "full",
-) -> tuple[Job, ...]:
-    source = h2d_dual_safe_catalogue_job(
-        hole_diameter=hole_diameter,
-        hole_scope=hole_scope,
-    )
-    plate_count = max(placement.plate for placement in source.print_placements) + 1
-    ranges = [
-        (start, min(start + H2D_BAMBU_PROJECT_PLATE_LIMIT, plate_count))
-        for start in range(0, plate_count, H2D_BAMBU_PROJECT_PLATE_LIMIT)
-    ]
-    if len(ranges) != 2:
-        raise ValueError(f"H2D catalogue expected two Bambu projects, got {len(ranges)}")
-    projects = []
-    retained_ids = []
-    for project_number, (start, end) in enumerate(ranges, start=1):
-        members = [
-            (design, placement)
-            for design, placement in zip(source.designs, source.print_placements)
-            if start <= placement.plate < end
-        ]
-        policy = deepcopy(source.placement_policy)
-        policy["catalogue_set"] = {
-            "project_number": project_number,
-            "project_count": len(ranges),
-            "global_visible_plate_range": [start + 1, end],
-            "project_visible_plate_range": [1, end - start],
-        }
-        exception = policy.get("exception")
-        if exception is not None:
-            global_exception = exception["plate"]
-            if start < global_exception <= end:
-                exception["global_visible_plate"] = global_exception
-                exception["project_visible_plate"] = global_exception - start
-                exception["plate"] = global_exception - start
-            else:
-                policy.pop("exception")
-        project = Job(
-            [design for design, _ in members],
-            source.build,
-            source.kind,
-            print_placements=[
-                PrintPlacement(
-                    placement.plate - start,
-                    placement.x,
-                    placement.y,
-                    placement.rotation,
-                )
-                for _, placement in members
-            ],
-            plate_names={
-                plate - start: name
-                for plate, name in source.plate_names.items()
-                if start <= plate < end
-            },
-            plate_settings={
-                plate - start: settings
-                for plate, settings in source.plate_settings.items()
-                if start <= plate < end
-            },
-            placement_policy=policy,
-        )
-        project.part_gap = source.part_gap
-        projects.append(project)
-        retained_ids.extend(id(design) for design in project.designs)
-    if retained_ids != [id(design) for design in source.designs]:
-        raise ValueError("H2D project split omitted, duplicated or reordered designs")
-    return tuple(projects)
