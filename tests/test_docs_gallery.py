@@ -316,9 +316,20 @@ def test_incremental_corner_half_composition_updates_only_24_assets(
     gallery.compose_corner_halves(work, provenance)
     assert calls == [provenance["generator_commit"]]
     updated = json.loads(path.read_text())
-    assert [row for row in updated["items"] if row["key"] not in keys] == [
-        row for row in baseline["items"] if row["key"] not in keys
-    ]
+    updated_retained = [row for row in updated["items"] if row["key"] not in keys]
+    baseline_retained = [row for row in baseline["items"] if row["key"] not in keys]
+    expected_descriptions = {
+        item.key: gallery.item_description(item) for item in gallery.inventory()
+    }
+    for row in baseline_retained:
+        if row["family"] == "corner-out":
+            row["description"] = expected_descriptions[row["key"]]
+    assert updated_retained == baseline_retained
+    assert all(
+        row["description"] == expected_descriptions[row["key"]]
+        for row in updated["items"]
+        if row["family"] == "corner-out"
+    )
     assert updated["overview_images"] == baseline["overview_images"]
     assert all((tmp_path / "docs" / name).read_bytes() == data for name, data in retained.items())
     report = json.loads((work / "render-report.json").read_text())

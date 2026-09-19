@@ -950,6 +950,10 @@ def compose_corner_halves(work: Path, provenance: dict) -> None:
     expected = {item.key for item in inventory()} - keys
     if len(retained) != len(expected) or {entry["key"] for entry in retained} != expected:
         raise ValueError("Retained thumbnails do not match the non-half-corner inventory")
+    descriptions = {item.key: item_description(item) for item in inventory()}
+    for entry in retained:
+        if entry["family"] == "corner-out":
+            entry["description"] = descriptions[entry["key"]]
     if len(manifest["overview_images"]) != len(IMAGE_NAMES) or {
         entry["file"] for entry in manifest["overview_images"]
     } != {f"images/{name}" for name in IMAGE_NAMES}:
