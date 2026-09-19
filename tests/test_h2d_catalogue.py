@@ -7,10 +7,20 @@ import pytest
 
 from cargo_grid.catalogue import h2d_dual_safe_catalogue_job
 from cargo_grid.cli import main
+from cargo_grid.jobs import Design
 
 
-def test_h2d_dual_safe_plan_keeps_full_family_inventory_and_hardware_zones():
+def test_h2d_dual_safe_plan_keeps_full_family_inventory_and_hardware_zones(monkeypatch):
+    original_size = Design.bambu_size
+    measured = Counter()
+
+    def counted_size(design):
+        measured[id(design)] += 1
+        return original_size.fget(design)
+
+    monkeypatch.setattr(Design, "bambu_size", property(counted_size))
     job = h2d_dual_safe_catalogue_job(hole_diameter=10, hole_scope="full")
+    assert measured == Counter(id(design) for design in job.designs)
     families = Counter(design.parameters.get("family", "tile") for design in job.designs)
     assert families == {
         "tile": 25,

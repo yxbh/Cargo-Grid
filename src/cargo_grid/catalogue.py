@@ -137,10 +137,32 @@ def catalogue_job(
     hole_scope: Literal["interior", "full"] = "full",
     orient_for_bambu: bool = False,
 ) -> Job:
+    job, _ = _catalogue_job_with_sizes(
+        build,
+        interface=interface,
+        hole_diameter=hole_diameter,
+        hole_scope=hole_scope,
+        orient_for_bambu=orient_for_bambu,
+    )
+    return job
+
+
+def _catalogue_job_with_sizes(
+    build: BuildVolume,
+    *,
+    interface: Interface,
+    hole_diameter: float | None,
+    hole_scope: Literal["interior", "full"],
+    orient_for_bambu: bool,
+) -> tuple[Job, dict[int, tuple[float, float, float]]]:
     designs = [
         tile_design(Tile(x, y, interface, hole_diameter, hole_scope=hole_scope))
         for x, y in tile_sizes(build, interface)
     ]
+    # Retained designs keep these identities alive until this request finishes packing.
+    sizes = {
+        id(design): design.bambu_size if orient_for_bambu else design.size for design in designs
+    }
     omitted = []
     for spec in accessory_variants(build, interface):
         design = accessory_design(spec)
@@ -156,12 +178,13 @@ def catalogue_job(
             )
         else:
             designs.append(design)
+            sizes[id(design)] = size
     for design in designs:
-        if build.placement(design.bambu_size if orient_for_bambu else design.size) is None:
+        if build.placement(sizes[id(design)]) is None:
             raise ValueError(f"unexpected actual-bounds fit failure: {design.name}")
     if not designs:
         raise ValueError("no supported designs fit the configured build envelope")
-    return Job(designs, build, "catalogue", omitted=omitted)
+    return Job(designs, build, "catalogue", omitted=omitted), sizes
 
 
 def h2d_dual_safe_catalogue_job(
@@ -171,7 +194,7 @@ def h2d_dual_safe_catalogue_job(
 ) -> Job:
     interface = Interface()
     physical_build = BuildVolume(350, 320, 325)
-    source = catalogue_job(
+    source, sizes = _catalogue_job_with_sizes(
         physical_build,
         interface=interface,
         hole_diameter=hole_diameter,
@@ -225,7 +248,7 @@ def h2d_dual_safe_catalogue_job(
             and (ramp_join is None or design.parameters.get("ramp_join", "female") == ramp_join)
         ]
         packed = pack_sizes(
-            [design.bambu_size for design in members],
+            [sizes[id(design)] for design in members],
             common_build,
             gap=10,
             pack=True,
@@ -251,7 +274,7 @@ def h2d_dual_safe_catalogue_job(
     ):
         raise ValueError("H2D dual-safe family grouping is incomplete or duplicated")
     exception_placement = pack_sizes(
-        [exception.bambu_size],
+        [sizes[id(exception)]],
         BuildVolume(325, 320, 320, margin=5),
         gap=10,
         pack=True,
