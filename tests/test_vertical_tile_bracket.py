@@ -299,7 +299,7 @@ def test_separate_tile_insertion_bearing_and_solid_backing(nx, ny, holes):
 
 def test_bracket_variants_and_scaled_interface_policy():
     variants = accessory_variants(BuildVolume(350, 320, 325))
-    assert len(variants) == 61
+    assert len(variants) == 161
     assert {
         (a.nx, a.ny, a.panel_height_cells or a.ny)
         for a in variants

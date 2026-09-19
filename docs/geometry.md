@@ -28,6 +28,12 @@ The full 10 mm round-hole pattern is the default. `full` scope uses half-unit gr
 
 Neither enabling holes nor producing one valid solid establishes strength or bridge quality. Check the intended hole centres, retained webs and actual slicer paths for the chosen configuration.
 
+### Perimeter edge projections and completed holes
+
+`edge-x`, `edge-y`, `corner-in` and `corner-out` keep their established mating datums while their non-mating body can project 10, 20 or 30 mm outward. The plain 10 mm form remains the API and CLI default. Original-style perimeter bodies keep their coupled R3 comfort treatment; the shared tile-edge joint profiles are applied separately and remain unchanged.
+
+Optional edge-hole completion uses the same full-pattern placement test as a matching tile, then cuts a fixed 10 mm cylinder only from the accessory material at accepted boundary sites. A tile edge supplies one half of the opening and the accessory supplies the other; at an ordinary tile corner, adjacent perimeter material supplies the remaining quarter sections. It does not add an exterior row of holes, fill an existing opening or scale the diameter with unit size. If a custom interface rejects every matching boundary site, the request is rejected rather than changing the hole or drilling through a protected region.
+
 ## Non-printing roof modifiers
 
 Roof support is off by default and only works with original-style tile `part` and `layout` jobs. It targets the downward-facing ceilings over retained west and south female pockets. Male edges aren't targeted, and a tile with no eligible female roof is rejected.

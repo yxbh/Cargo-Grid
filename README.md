@@ -52,7 +52,7 @@ uv run cargo-grid layout --build-width-mm 150 --build-depth-mm 150 --build-heigh
 
 ## Browse and generate accessories
 
-At the standard 60/13 settings, the documented 350x320x325 mm build envelope fits 61 accessories: female and male ramps, attachment plates, five vertical tile brackets, eight normal stops, two angled stops, edge/corner pieces and separate support rails/connectors. A different unit size or build envelope can change what fits.
+At the standard 60/13 settings, the documented 350x320x325 mm build envelope fits 161 accessories: ramps, attachment plates, five vertical tile brackets, eight normal stops, two angled stops, edge/corner pieces and separate support rails/connectors. The perimeter inventory includes 10, 20 and 30 mm outward projections, both plain and with matching boundary-hole completion. A different unit size or build envelope can change what fits.
 
 ![Three plates, five tile brackets, eight normal stops and two angled stops that use the X attachment interface.](docs/images/x-attachments.png)
 
@@ -63,6 +63,14 @@ Generate one accessory with `part`:
 ```sh
 uv run cargo-grid part --family plate --width-cells 1 --depth-cells 1 --build-width-mm 150 --build-depth-mm 150 --build-height-mm 80 --output outputs/x-plate
 ```
+
+For a wider finishing strip, select its total outward projection. `--complete-edge-holes` continues only the tile's accepted full-pattern boundary sites through the strip, producing complete nominal 10 mm holes after assembly:
+
+```sh
+uv run cargo-grid part --family edge-y --length-cells 2 --edge-outward-mm 30 --complete-edge-holes --build-width-mm 150 --build-depth-mm 150 --build-height-mm 50 --output outputs/wide-edge
+```
+
+The same two options apply to `edge-x`, `corner-in` and `corner-out`. Plain 10 mm parts remain the default. Hole completion has its own fixed 10 mm diameter and does not reuse the tile-only `--holes` or `--hole-diameter-mm` options.
 
 For Bambu output, attachment plates are flipped X=180 degrees so the broad plate body starts on the bed and the X plugs grow upward. STEP, STL and core 3MF keep the source orientation.
 
@@ -76,7 +84,7 @@ The manifest lists anything omitted because it did not fit.
 
 ## Make the full H2D catalogue
 
-This standard-only command creates the documented H2D project: 25 tile sizes with the full 10 mm hole pattern and all 61 accessories. It packs actual part bounds onto named, family-grouped plates; the manifest records the plate count. It requires 60 mm units, 13 mm thickness and zero fit offset.
+This standard-only command creates the documented H2D project: 25 tile sizes with the full 10 mm hole pattern and all 161 accessories on 65 named, family-grouped plates. It requires 60 mm units, 13 mm thickness and zero fit offset.
 
 ```sh
 uv run cargo-grid catalogue --h2d-dual-safe --build-width-mm 350 --build-depth-mm 320 --build-height-mm 325 --bambu --material "Bambu PETG Basic @BBL H2D 0.8 nozzle" PETG "#637b70" --nozzle-diameter-mm 0.8 --layer-height-mm 0.32 --no-stl --output outputs/full-catalogue
@@ -199,6 +207,8 @@ Common options:
 - `--width-cells`, `--depth-cells`: one tile or two-axis accessory;
 - `--panel-height-cells`: bracket wall rows, separate from floor depth;
 - `--length-cells`: edge strips and support rails;
+- `--edge-outward-mm`: 10, 20 or 30 mm horizontal projection for edge/corner parts;
+- `--complete-edge-holes`: continue accepted tile-boundary sites through an edge/corner as nominal 10 mm holes;
 - `--copy-count`: repeated copies of one design;
 - `--layout-width-mm`, `--layout-depth-mm`: finished rectangular layout;
 - `--packing-gap-mm`: catalogue separation.

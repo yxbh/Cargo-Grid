@@ -7,7 +7,7 @@ from math import floor
 from pathlib import Path
 
 from cargo_grid._version import __version__
-from cargo_grid.accessories import FAMILIES, Accessory
+from cargo_grid.accessories import EDGE_FAMILIES, EDGE_OUTWARD_OPTIONS_MM, FAMILIES, Accessory
 from cargo_grid.catalogue import accessory_design, catalogue_job, h2d_dual_safe_catalogue_job
 from cargo_grid.export import BambuSettings, Material, export_job
 from cargo_grid.jobs import Job, layout_job, tile_design
@@ -539,6 +539,19 @@ def parser() -> argparse.ArgumentParser:
                 help="lock-45 or vertical-stop Z height above its attachment shoulder, in mm; defaults: 50 or 60 respectively",
             )
             p.add_argument(
+                "--edge-outward-mm",
+                type=float,
+                choices=EDGE_OUTWARD_OPTIONS_MM,
+                metavar="MM",
+                help="edge/corner horizontal outward projection: 10 (default), 20 or 30 mm",
+            )
+            p.add_argument(
+                "--complete-edge-holes",
+                action="store_true",
+                default=None,
+                help="continue accepted full-pattern tile boundary sites through an edge/corner as nominal 10 mm round holes",
+            )
+            p.add_argument(
                 "--copy-count",
                 type=int,
                 default=1,
@@ -654,6 +667,18 @@ def main(argv: list[str] | None = None) -> int:
                 {"vertical-tile-bracket"},
                 None,
             )
+            edge_outward = _part_option(
+                args,
+                "edge_outward_mm",
+                set(EDGE_FAMILIES),
+                10.0,
+            )
+            complete_edge_holes = _part_option(
+                args,
+                "complete_edge_holes",
+                set(EDGE_FAMILIES),
+                False,
+            )
             ramp_join = _part_option(args, "ramp_join", {"ramp"}, "female")
             if args.family == "tile":
                 design = tile_design(
@@ -670,6 +695,8 @@ def main(argv: list[str] | None = None) -> int:
                         interface,
                         panel_height_cells=panel_height,
                         ramp_join=ramp_join,
+                        edge_outward=edge_outward,
+                        complete_edge_holes=complete_edge_holes,
                     )
                 )
             design.quantity = args.copy_count

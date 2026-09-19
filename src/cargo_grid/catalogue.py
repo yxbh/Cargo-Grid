@@ -7,12 +7,15 @@ from math import floor
 from typing import Literal
 
 from cargo_grid.accessories import (
+    EDGE_OUTWARD_OPTIONS_MM,
     VERTICAL_BRACKET_CONFIGS,
     VERTICAL_STOP_CELLS,
     VERTICAL_STOP_HEIGHTS_MM,
     Accessory,
+    accessory_datums,
     bambu_print_rotation,
     bambu_print_rotation_y,
+    edge_hole_completion_supported,
     make_accessory,
     required_bambu_object_settings,
 )
@@ -50,13 +53,47 @@ def tile_sizes(build: BuildVolume, interface: Interface = Interface()) -> list[t
 def accessory_variants(build: BuildVolume, interface: Interface = Interface()) -> list[Accessory]:
     nmax = max(1, floor(max(build.usable[:2]) / interface.pitch))
     result = []
+    edge_options = tuple(
+        (outward, complete) for outward in EDGE_OUTWARD_OPTIONS_MM for complete in (False, True)
+    )
     for n in range(1, nmax + 1):
         result.extend(
-            Accessory(family, nx=n, interface=interface)
-            for family in ("edge-x", "edge-y", "support")
+            Accessory(
+                family,
+                nx=n,
+                interface=interface,
+                edge_outward=outward,
+                complete_edge_holes=complete,
+            )
+            for family in ("edge-x", "edge-y")
+            for outward, complete in edge_options
+            if not complete
+            or edge_hole_completion_supported(
+                family,
+                n,
+                interface=interface,
+            )
         )
-    result.extend(Accessory("corner-in", variant=v, interface=interface) for v in range(1, 5))
-    result.extend(Accessory("corner-out", variant=v, interface=interface) for v in range(1, 7))
+        result.append(Accessory("support", nx=n, interface=interface))
+    result.extend(
+        Accessory(
+            family,
+            variant=variant,
+            interface=interface,
+            edge_outward=outward,
+            complete_edge_holes=complete,
+        )
+        for family, variants in (("corner-in", range(1, 5)), ("corner-out", range(1, 7)))
+        for variant in variants
+        for outward in EDGE_OUTWARD_OPTIONS_MM
+        for complete in (False, True)
+        if not complete
+        or edge_hole_completion_supported(
+            family,
+            variant=variant,
+            interface=interface,
+        )
+    )
     result.extend(Accessory("support-end", variant=v, interface=interface) for v in range(1, 5))
     result.extend(
         Accessory("support-bit", length=length, interface=interface) for length in (20, 30, 40, 50)
@@ -99,6 +136,10 @@ def accessory_design(spec: Accessory) -> Design:
         del parameters["ramp_join"]
     if parameters["panel_height_cells"] is None:
         del parameters["panel_height_cells"]
+    if parameters["edge_outward"] == 10.0:
+        del parameters["edge_outward"]
+    if not parameters["complete_edge_holes"]:
+        del parameters["complete_edge_holes"]
     token = sha256(json.dumps(parameters, sort_keys=True).encode()).hexdigest()[:10]
     dimensions = (
         f"{spec.nx}x{spec.ny}_h{spec.height:g}"
@@ -107,12 +148,19 @@ def accessory_design(spec: Accessory) -> Design:
         if spec.family == "vertical-tile-bracket" and spec.panel_height_cells is not None
         else f"{spec.nx}x{spec.ny}"
     )
+    edge_suffix = (f"_out{spec.edge_outward:g}mm" if spec.edge_outward != 10 else "") + (
+        "_complete-holes" if spec.complete_edge_holes else ""
+    )
     join_suffix = "_male" if spec.family == "ramp" and spec.ramp_join == "male" else ""
-    name = f"{spec.family}_{dimensions}{join_suffix}_v{spec.variant}_{spec.interface.joint_style}_{token}"
+    name = (
+        f"{spec.family}_{dimensions}{join_suffix}_v{spec.variant}{edge_suffix}_"
+        f"{spec.interface.joint_style}_{token}"
+    )
     shape = make_accessory(spec)
     shape.label = name
     rotation = bambu_print_rotation(spec)
     rotation_y = bambu_print_rotation_y(spec)
+    datums = accessory_datums(spec)
     return Design(
         name,
         shape,
@@ -126,6 +174,15 @@ def accessory_design(spec: Accessory) -> Design:
         recommended_print_rotation_y=rotation_y,
         apply_orientation_to_bambu=rotation is not None or rotation_y is not None,
         bambu_object_settings=dict(required_bambu_object_settings(parameters)),
+        holes=[
+            {
+                "x": x,
+                "y": y,
+                "accepted": True,
+                "reason": "matching accepted full-pattern tile boundary site",
+            }
+            for x, y in datums.get("edge_hole_centers", [])
+        ],
     )
 
 
@@ -211,20 +268,78 @@ def h2d_dual_safe_catalogue_job(
         and design.parameters["ny"] == 5
     )
     common_designs = [design for design in source.designs if design is not exception]
-    groups = (
-        ("Tiles", {"tile"}, None),
-        ("Female ramps", {"ramp"}, "female"),
-        ("Male ramps", {"ramp"}, "male"),
-        ("Normal stops", {"vertical-stop"}, None),
+
+    def family_members(families: set[str], ramp_join: str | None = None) -> list[Design]:
+        return [
+            design
+            for design in common_designs
+            if design.parameters.get("family", "tile") in families
+            and (ramp_join is None or design.parameters.get("ramp_join", "female") == ramp_join)
+        ]
+
+    def perimeter_traits(design: Design) -> tuple[float, bool, str, str]:
+        parameters = design.parameters
+        family = parameters["family"]
+        outward = parameters.get("edge_outward", 10.0)
+        complete = parameters.get("complete_edge_holes", False)
+        spec = Accessory(
+            family,
+            nx=parameters["nx"],
+            variant=parameters["variant"],
+            edge_outward=outward,
+            complete_edge_holes=complete,
+        )
+        sexes = sorted(join["sex"] for join in accessory_datums(spec)["joins"])
+        kind = "edges" if family in {"edge-x", "edge-y"} else "corners"
+        if kind == "edges":
+            if len(set(sexes)) != 1:
+                raise ValueError(f"straight edge has mixed connector sexes: {design.name}")
+            connector = sexes[0]
+        elif len(sexes) == 1:
+            connector = sexes[0]
+        elif sexes[0] == sexes[1]:
+            connector = f"all-{sexes[0]}"
+        else:
+            connector = "male-female"
+        return outward, complete, connector, kind
+
+    groups = [
+        ("Tiles", family_members({"tile"})),
+        ("Female ramps", family_members({"ramp"}, "female")),
+        ("Male ramps", family_members({"ramp"}, "male")),
+        ("Normal stops", family_members({"vertical-stop"})),
         (
             "Tile brackets - deep and shallow",
-            {"vertical-tile-bracket"},
-            None,
+            family_members({"vertical-tile-bracket"}),
         ),
-        ("Angled stops", {"lock-45"}, None),
-        ("Attachment plates", {"plate"}, None),
-        ("Edges and corners", {"edge-x", "edge-y", "corner-in", "corner-out"}, None),
-        ("Rails and connectors", {"support", "support-bit", "support-end"}, None),
+        ("Angled stops", family_members({"lock-45"})),
+        ("Attachment plates", family_members({"plate"})),
+    ]
+    perimeter_designs = family_members({"edge-x", "edge-y", "corner-in", "corner-out"})
+    for outward in EDGE_OUTWARD_OPTIONS_MM:
+        for complete in (False, True):
+            mode = "complete holes" if complete else "plain"
+            for connector in ("female", "male"):
+                traits = (outward, complete, connector, "edges")
+                members = [
+                    design for design in perimeter_designs if perimeter_traits(design) == traits
+                ]
+                if not members:
+                    raise ValueError(f"H2D edge group unexpectedly empty: {traits}")
+                groups.append((f"{outward:g}mm {connector} edges - {mode}", members))
+            for connector in ("female", "male", "all-female", "male-female", "all-male"):
+                traits = (outward, complete, connector, "corners")
+                members = [
+                    design for design in perimeter_designs if perimeter_traits(design) == traits
+                ]
+                if not members:
+                    raise ValueError(f"H2D corner group unexpectedly empty: {traits}")
+                groups.append((f"{outward:g}mm {connector} corners - {mode}", members))
+    groups.append(
+        (
+            "Rails and connectors",
+            family_members({"support", "support-bit", "support-end"}),
+        )
     )
     common_build = BuildVolume(
         350,
@@ -240,13 +355,7 @@ def h2d_dual_safe_catalogue_job(
     placements = []
     plate_names = {}
     plate_offset = 0
-    for title, families, ramp_join in groups:
-        members = [
-            design
-            for design in common_designs
-            if design.parameters.get("family", "tile") in families
-            and (ramp_join is None or design.parameters.get("ramp_join", "female") == ramp_join)
-        ]
+    for title, members in groups:
         packed = pack_sizes(
             [sizes[id(design)] for design in members],
             common_build,
@@ -309,6 +418,7 @@ def h2d_dual_safe_catalogue_job(
             "common_model_inset_mm": 5,
             "minimum_model_gap_mm": 10,
             "grouped_by_family": True,
+            "perimeter_grouping": "outward width, boundary-hole mode and actual connector sexes",
             "exception": {
                 "design": exception.name,
                 "plate": plate_offset + 1,
@@ -318,6 +428,4 @@ def h2d_dual_safe_catalogue_job(
         },
     )
     job.part_gap = 10
-    if plate_offset + 1 > 36:
-        raise ValueError("H2D dual-safe grouped catalogue exceeds the 36-plate limit")
     return job

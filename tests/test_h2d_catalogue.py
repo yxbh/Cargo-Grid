@@ -5,6 +5,7 @@ from math import hypot
 
 import pytest
 
+from cargo_grid.accessories import Accessory, accessory_datums
 from cargo_grid.catalogue import h2d_dual_safe_catalogue_job
 from cargo_grid.cli import main
 from cargo_grid.jobs import Design
@@ -24,11 +25,11 @@ def test_h2d_dual_safe_plan_keeps_full_family_inventory_and_hardware_zones(monke
     families = Counter(design.parameters.get("family", "tile") for design in job.designs)
     assert families == {
         "tile": 25,
-        "edge-x": 5,
-        "edge-y": 5,
+        "edge-x": 30,
+        "edge-y": 30,
         "support": 5,
-        "corner-in": 4,
-        "corner-out": 6,
+        "corner-in": 24,
+        "corner-out": 36,
         "support-end": 4,
         "support-bit": 4,
         "vertical-tile-bracket": 5,
@@ -37,10 +38,10 @@ def test_h2d_dual_safe_plan_keeps_full_family_inventory_and_hardware_zones(monke
         "lock-45": 2,
         "plate": 3,
     }
-    assert len(job.designs) == len(job.print_placements) == 86
+    assert len(job.designs) == len(job.print_placements) == 186
     plate_count = max(placement.plate for placement in job.print_placements) + 1
     assert set(job.plate_names) == set(range(plate_count))
-    assert plate_count == 25
+    assert plate_count == 65
     assert job.part_gap == 10
     assert job.omitted == []
     assert job.placement_policy["common_reach_mm"] == {
@@ -68,14 +69,44 @@ def test_h2d_dual_safe_plan_keeps_full_family_inventory_and_hardware_zones(monke
     by_plate = {}
     ramp_joins = set()
     ramp_plates = {}
+    perimeter_plates = {}
     for design, placement in zip(job.designs, job.print_placements):
-        if design.parameters.get("family") == "ramp":
+        family = design.parameters.get("family", "tile")
+        if family == "ramp":
             join = design.parameters.get("ramp_join", "female")
             assert job.plate_names[placement.plate] == f"{join.title()} ramps"
             ramp_joins.add((design.parameters["nx"], join))
             ramp_plates.setdefault(placement.plate, []).append(
                 (design.parameters["nx"], join, design.quantity)
             )
+        elif family in {"edge-x", "edge-y", "corner-in", "corner-out"}:
+            outward = design.parameters.get("edge_outward", 10.0)
+            complete = design.parameters.get("complete_edge_holes", False)
+            spec = Accessory(
+                family,
+                nx=design.parameters["nx"],
+                variant=design.parameters["variant"],
+                edge_outward=outward,
+                complete_edge_holes=complete,
+            )
+            sexes = sorted(join["sex"] for join in accessory_datums(spec)["joins"])
+            if family in {"edge-x", "edge-y"}:
+                assert len(set(sexes)) == 1
+                connector = sexes[0]
+                kind = "edges"
+            else:
+                connector = (
+                    sexes[0]
+                    if len(sexes) == 1
+                    else f"all-{sexes[0]}"
+                    if sexes[0] == sexes[1]
+                    else "male-female"
+                )
+                kind = "corners"
+            mode = "complete holes" if complete else "plain"
+            expected_name = f"{outward:g}mm {connector} {kind} - {mode}"
+            assert job.plate_names[placement.plate] == expected_name
+            perimeter_plates.setdefault(placement.plate, []).append(design.name)
         elif placement.plate != exception_plate:
             assert job.plate_names[placement.plate] not in {"Female ramps", "Male ramps"}
         width, depth, height = design.bambu_size
@@ -95,19 +126,40 @@ def test_h2d_dual_safe_plan_keeps_full_family_inventory_and_hardware_zones(monke
         12: [(width, "female", 1) for width in range(1, 6)],
         13: [(width, "male", 1) for width in range(1, 6)],
     }
-    assert [job.plate_names[index] for index in range(14, 25)] == [
+    fixed_names = [
         "Normal stops 1",
         "Normal stops 2",
         "Tile brackets - deep and shallow 1",
         "Tile brackets - deep and shallow 2",
         "Angled stops",
         "Attachment plates",
-        "Edges and corners 1",
-        "Edges and corners 2",
+    ]
+    perimeter_names = [
+        f"{outward:g}mm {connector} {kind} - {mode}"
+        for outward in (10, 20, 30)
+        for mode in ("plain", "complete holes")
+        for kind, connectors in (
+            ("edges", ("female", "male")),
+            (
+                "corners",
+                ("female", "male", "all-female", "male-female", "all-male"),
+            ),
+        )
+        for connector in connectors
+    ]
+    assert [job.plate_names[index] for index in range(14, 64)] == [
+        *fixed_names,
+        *perimeter_names,
         "Rails and connectors 1",
         "Rails and connectors 2",
-        "5x5 TILE - SINGLE NOZZLE ONLY - LEFT",
     ]
+    assert [job.plate_names[index] for index in sorted(perimeter_plates)] == perimeter_names
+    assert len(perimeter_plates) == 42
+    assert all(
+        len(names) == (5 if " edges " in job.plate_names[plate] else 2)
+        for plate, names in perimeter_plates.items()
+    )
+    assert job.plate_names[64] == "5x5 TILE - SINGLE NOZZLE ONLY - LEFT"
     assert len(by_plate[exception_plate]) == 1
     for rectangles in by_plate.values():
         for index, first in enumerate(rectangles):
