@@ -1,14 +1,20 @@
 """H2D-specific placement policy; generated projects remain unsliced and unverified physically."""
 
+import json
 from collections import Counter
 from math import hypot
 
 import pytest
+from build123d import Box
 
+import cargo_grid.catalogue as catalogue
+import cargo_grid.cli as cli
 from cargo_grid.accessories import Accessory, accessory_datums
 from cargo_grid.catalogue import h2d_dual_safe_catalogue_job
 from cargo_grid.cli import main
-from cargo_grid.jobs import Design
+from cargo_grid.jobs import Design, Job
+from cargo_grid.packing import PrintPlacement
+from cargo_grid.parameters import BuildVolume
 
 
 def test_h2d_dual_safe_plan_keeps_full_family_inventory_and_hardware_zones(monkeypatch):
@@ -186,6 +192,47 @@ def test_h2d_dual_safe_plan_keeps_full_family_inventory_and_hardware_zones(monke
         if design.parameters.get("family") == "ramp"
         and design.parameters.get("ramp_join") == "male"
     )
+    monkeypatch.setattr(
+        catalogue,
+        "h2d_dual_safe_catalogue_job",
+        lambda **kwargs: job,
+    )
+    projects = catalogue.h2d_dual_safe_catalogue_projects(
+        hole_diameter=10,
+        hole_scope="full",
+    )
+    assert [len(project.plate_names) for project in projects] == [36, 29]
+    assert [
+        project.placement_policy["catalogue_set"]["global_visible_plate_range"]
+        for project in projects
+    ] == [[1, 36], [37, 65]]
+    assert [
+        project.placement_policy["catalogue_set"]["project_visible_plate_range"]
+        for project in projects
+    ] == [[1, 36], [1, 29]]
+    assert [
+        project.plate_names[index]
+        for project in projects
+        for index in range(len(project.plate_names))
+    ] == [job.plate_names[index] for index in range(65)]
+    assert [id(design) for project in projects for design in project.designs] == [
+        id(design) for design in job.designs
+    ]
+    assert projects[0].plate_settings == {}
+    assert projects[1].plate_settings == {
+        28: {
+            "filament_map_mode": "Manual",
+            "filament_maps": "1",
+            "filament_volume_maps": "0",
+        }
+    }
+    assert "exception" not in projects[0].placement_policy
+    assert projects[1].placement_policy["exception"]["global_visible_plate"] == 65
+    assert projects[1].placement_policy["exception"]["project_visible_plate"] == 29
+    assert projects[1].placement_policy["exception"]["plate"] == 29
+    assert all(
+        max(placement.plate for placement in project.print_placements) < 36 for project in projects
+    )
 
 
 @pytest.mark.parametrize(
@@ -229,3 +276,115 @@ def test_h2d_dual_safe_cli_rejects_incomplete_hardware_requests(extra, message, 
     assert error.value.code == 2
     assert message in capsys.readouterr().err
     assert not (tmp_path / "catalogue").exists()
+
+
+def test_h2d_dual_safe_cli_exports_two_standalone_projects(
+    tmp_path,
+    monkeypatch,
+    capsys,
+):
+    build = BuildVolume(350, 320, 325)
+    first = Job(
+        [Design("first", Box(1, 1, 1), {})],
+        build,
+        "catalogue",
+        print_placements=[PrintPlacement(35, 5, 5, 0)],
+        plate_names={index: f"Global plate {index + 1}" for index in range(36)},
+        placement_policy={
+            "catalogue_set": {
+                "project_number": 1,
+                "project_count": 2,
+                "global_visible_plate_range": [1, 36],
+                "project_visible_plate_range": [1, 36],
+            }
+        },
+    )
+    second = Job(
+        [Design("second", Box(1, 1, 1), {})],
+        build,
+        "catalogue",
+        print_placements=[PrintPlacement(28, 5, 5, 0)],
+        plate_names={index: f"Global plate {index + 37}" for index in range(29)},
+        placement_policy={
+            "catalogue_set": {
+                "project_number": 2,
+                "project_count": 2,
+                "global_visible_plate_range": [37, 65],
+                "project_visible_plate_range": [1, 29],
+            }
+        },
+    )
+    monkeypatch.setattr(
+        cli,
+        "h2d_dual_safe_catalogue_projects",
+        lambda **kwargs: (first, second),
+    )
+    calls = []
+
+    def fake_export(job, output, *, stl, bambu, stack=None):
+        calls.append((job, output, stl, bambu, stack))
+        output.mkdir(parents=True)
+        (output / "job.3mf").write_bytes(b"project")
+        manifest = output / "manifest.json"
+        manifest.write_text("{}\n")
+        return manifest
+
+    monkeypatch.setattr(cli, "export_job", fake_export)
+    output = tmp_path / "full-catalogue"
+    command = [
+        "catalogue",
+        "--h2d-dual-safe",
+        "--build-width-mm",
+        "350",
+        "--build-depth-mm",
+        "320",
+        "--build-height-mm",
+        "325",
+        "--bambu",
+        "--material",
+        "Bambu PETG Basic @BBL H2D 0.8 nozzle",
+        "PETG",
+        "#637b70",
+        "--nozzle-diameter-mm",
+        "0.8",
+        "--layer-height-mm",
+        "0.32",
+        "--no-stl",
+        "--output",
+        str(output),
+    ]
+    assert main(command) == 0
+    index = json.loads((output / "manifest.json").read_text())
+    assert index["kind"] == "catalogue-set"
+    assert index["design_count"] == 2
+    assert index["plate_count"] == 65
+    assert index["projects"] == [
+        {
+            "project_number": 1,
+            "visible_plate_range": [1, 36],
+            "plate_count": 36,
+            "design_count": 1,
+            "directory": "plates-01-to-36",
+            "manifest": "plates-01-to-36/manifest.json",
+            "bambu_project": "plates-01-to-36/job.3mf",
+        },
+        {
+            "project_number": 2,
+            "visible_plate_range": [37, 65],
+            "plate_count": 29,
+            "design_count": 1,
+            "directory": "plates-37-to-65",
+            "manifest": "plates-37-to-65/manifest.json",
+            "bambu_project": "plates-37-to-65/job.3mf",
+        },
+    ]
+    assert [call[1].name for call in calls] == ["plates-01-to-36", "plates-37-to-65"]
+    assert all(not call[2] and call[3] is not None and call[4] is None for call in calls)
+    assert capsys.readouterr().out.strip() == str(output / "manifest.json")
+    before = (output / "manifest.json").read_bytes()
+    with pytest.raises(SystemExit) as error:
+        main(command)
+    assert error.value.code == 2
+    assert len(calls) == 2
+    assert (output / "manifest.json").read_bytes() == before
+    assert "output directory is not empty" in capsys.readouterr().err

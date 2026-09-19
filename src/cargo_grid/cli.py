@@ -8,8 +8,13 @@ from pathlib import Path
 
 from cargo_grid._version import __version__
 from cargo_grid.accessories import EDGE_FAMILIES, EDGE_OUTWARD_OPTIONS_MM, FAMILIES, Accessory
-from cargo_grid.catalogue import accessory_design, catalogue_job, h2d_dual_safe_catalogue_job
-from cargo_grid.export import BambuSettings, Material, export_job
+from cargo_grid.catalogue import (
+    H2D_BAMBU_PROJECT_PLATE_LIMIT,
+    accessory_design,
+    catalogue_job,
+    h2d_dual_safe_catalogue_projects,
+)
+from cargo_grid.export import MANIFEST_SCHEMA_VERSION, BambuSettings, Material, export_job
 from cargo_grid.jobs import Job, layout_job, tile_design
 from cargo_grid.layout import exact_layout
 from cargo_grid.parameters import (
@@ -617,6 +622,70 @@ def _resolved_hole_diameter(args) -> float | None:
     return requested_diameter if requested_diameter is not None else DEFAULT_HOLE_DIAMETER_MM
 
 
+def _export_h2d_catalogue_projects(
+    projects: tuple[Job, ...],
+    output: Path,
+    *,
+    stl: bool,
+    bambu: BambuSettings,
+) -> Path:
+    if output.exists() and (not output.is_dir() or any(output.iterdir())):
+        raise ValueError(f"output directory is not empty: {output}; choose a new job directory")
+    if len(projects) != 2:
+        raise ValueError(f"H2D catalogue expected two Bambu projects, got {len(projects)}")
+    expected_start = 1
+    for project in projects:
+        catalogue_set = project.placement_policy["catalogue_set"]
+        start, end = catalogue_set["global_visible_plate_range"]
+        local_plate_count = max(placement.plate for placement in project.print_placements) + 1
+        if (
+            start != expected_start
+            or end - start + 1 != local_plate_count
+            or local_plate_count > H2D_BAMBU_PROJECT_PLATE_LIMIT
+            or set(project.plate_names) != set(range(local_plate_count))
+        ):
+            raise ValueError("H2D catalogue project plate ranges are incomplete or noncontiguous")
+        expected_start = end + 1
+    output.mkdir(parents=True, exist_ok=True)
+    records = []
+    for project in projects:
+        catalogue_set = project.placement_policy["catalogue_set"]
+        start, end = catalogue_set["global_visible_plate_range"]
+        directory = output / f"plates-{start:02d}-to-{end:02d}"
+        manifest = export_job(project, directory, stl=stl, bambu=bambu)
+        records.append(
+            {
+                "project_number": catalogue_set["project_number"],
+                "visible_plate_range": [start, end],
+                "plate_count": end - start + 1,
+                "design_count": len(project.designs),
+                "directory": directory.name,
+                "manifest": f"{directory.name}/{manifest.name}",
+                "bambu_project": f"{directory.name}/job.3mf",
+            }
+        )
+    plate_count = sum(record["plate_count"] for record in records)
+    design_count = sum(record["design_count"] for record in records)
+    index = {
+        "schema_version": MANIFEST_SCHEMA_VERSION,
+        "generator": {"name": "cargo-grid", "version": __version__},
+        "kind": "catalogue-set",
+        "units": "millimeter",
+        "design_count": design_count,
+        "plate_count": plate_count,
+        "projects": records,
+        "placement_policy": {
+            "name": "H2D dual-nozzle safe",
+            "project_split": "Bambu projects are capped at 36 plates",
+            "global_visible_plate_range": [1, plate_count],
+        },
+        "physical_fit_verified": False,
+    }
+    path = output / "manifest.json"
+    path.write_text(json.dumps(index, indent=2) + "\n")
+    return path
+
+
 def main(argv: list[str] | None = None) -> int:
     p = parser()
     args = p.parse_args(argv)
@@ -640,6 +709,7 @@ def main(argv: list[str] | None = None) -> int:
         roof_support = _roof_support(args)
         bambu = _bambu_settings(args, roof_support)
         stack = _stack_settings(args, bambu, build, interface)
+        catalogue_projects = None
         if args.command == "part":
             count("copy count", args.copy_count)
             cells = _part_dimensions(args)
@@ -739,7 +809,7 @@ def main(argv: list[str] | None = None) -> int:
                 requested_gap = getattr(args, "packing_gap_mm", None)
                 if requested_gap not in (None, 10):
                     raise ValueError("--h2d-dual-safe uses a fixed --packing-gap-mm 10")
-                job = h2d_dual_safe_catalogue_job(
+                catalogue_projects = h2d_dual_safe_catalogue_projects(
                     hole_diameter=hole_diameter,
                     hole_scope=args.hole_scope,
                 )
@@ -751,11 +821,37 @@ def main(argv: list[str] | None = None) -> int:
                     hole_scope=args.hole_scope,
                     orient_for_bambu=bool(bambu),
                 )
-        if not job.print_placements:
-            job.part_gap = getattr(args, "packing_gap_mm", 2)
-        manifest = export_job(job, args.output, stl=not args.no_stl, bambu=bambu, stack=stack)
+        if catalogue_projects is not None:
+            manifest = _export_h2d_catalogue_projects(
+                catalogue_projects,
+                args.output,
+                stl=not args.no_stl,
+                bambu=bambu,
+            )
+            designs = [
+                design
+                for catalogue_project in catalogue_projects
+                for design in catalogue_project.designs
+            ]
+            omitted = [
+                item
+                for catalogue_project in catalogue_projects
+                for item in catalogue_project.omitted
+            ]
+        else:
+            if not job.print_placements:
+                job.part_gap = getattr(args, "packing_gap_mm", 2)
+            manifest = export_job(
+                job,
+                args.output,
+                stl=not args.no_stl,
+                bambu=bambu,
+                stack=stack,
+            )
+            designs = job.designs
+            omitted = job.omitted
         print(manifest)
-        rejected = sum(not h["accepted"] for d in job.designs for h in d.holes)
+        rejected = sum(not h["accepted"] for d in designs for h in d.holes)
         if rejected:
             print(
                 f"WARNING: {rejected} round-hole placements rejected by keep-outs; see manifest.",
@@ -765,16 +861,16 @@ def main(argv: list[str] | None = None) -> int:
             design.parameters.get("hole_diameter") is not None
             and design.holes
             and not any(hole["accepted"] for hole in design.holes)
-            for design in job.designs
+            for design in designs
         ):
             print(
                 "WARNING: no requested round holes fit at least one tile; "
                 "use a smaller --hole-diameter-mm or --no-holes.",
                 file=sys.stderr,
             )
-        if job.omitted:
+        if omitted:
             print(
-                f"WARNING: {len(job.omitted)} oversized accessories omitted; see manifest.",
+                f"WARNING: {len(omitted)} oversized accessories omitted; see manifest.",
                 file=sys.stderr,
             )
         geometry_warning = interface.compatibility()["geometry_warning"]
