@@ -19,7 +19,7 @@ def test_complete_ordered_tile_family():
 
 def test_accessory_families_finite_and_complete():
     variants = accessory_variants(BuildVolume(246, 246, 120))
-    assert len(variants) == 56
+    assert len(variants) == 60
     assert {(v.nx, v.ramp_join) for v in variants if v.family == "ramp"} == {
         (width, join) for width in range(1, 5) for join in ("female", "male")
     }
@@ -36,6 +36,8 @@ def test_accessory_families_finite_and_complete():
         "vertical-stop",
         "lock-45",
         "plate",
+        "rod",
+        "rod-brace",
     }
 
 

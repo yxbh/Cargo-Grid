@@ -36,11 +36,13 @@ def test_h2d_dual_safe_plan_keeps_full_family_inventory_and_hardware_zones(monke
         "vertical-stop": 8,
         "lock-45": 2,
         "plate": 3,
+        "rod": 2,
+        "rod-brace": 2,
     }
-    assert len(job.designs) == len(job.print_placements) == 86
+    assert len(job.designs) == len(job.print_placements) == 90
     plate_count = max(placement.plate for placement in job.print_placements) + 1
     assert set(job.plate_names) == set(range(plate_count))
-    assert plate_count == 25
+    assert plate_count == 26
     assert job.part_gap == 10
     assert job.omitted == []
     assert job.placement_policy["common_reach_mm"] == {
@@ -95,7 +97,7 @@ def test_h2d_dual_safe_plan_keeps_full_family_inventory_and_hardware_zones(monke
         12: [(width, "female", 1) for width in range(1, 6)],
         13: [(width, "male", 1) for width in range(1, 6)],
     }
-    assert [job.plate_names[index] for index in range(14, 25)] == [
+    assert [job.plate_names[index] for index in range(14, 26)] == [
         "Normal stops 1",
         "Normal stops 2",
         "Tile brackets - deep and shallow 1",
@@ -106,6 +108,7 @@ def test_h2d_dual_safe_plan_keeps_full_family_inventory_and_hardware_zones(monke
         "Edges and corners 2",
         "Rails and connectors 1",
         "Rails and connectors 2",
+        "Rods and upper braces",
         "5x5 TILE - SINGLE NOZZLE ONLY - LEFT",
     ]
     assert len(by_plate[exception_plate]) == 1
