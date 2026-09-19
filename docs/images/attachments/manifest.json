@@ -50,10 +50,28 @@
       "file": "images/ramps.png",
       "dimensions": [
         1800,
-        900
+        1600
       ],
-      "bytes": 88020,
-      "sha256": "e6c290772357ec290571b35c01fbd4052efbba02c8f86c9e38826bdce68dd98f"
+      "bytes": 172363,
+      "sha256": "4ca1160892f0ead39be68b6718ca9727f8868de590f51f9a3b427b9ea84558cd",
+      "provenance": {
+        "generator_commit": "ea1a8a3938c1e8861eeae4f4f78b48b5b62db42e",
+        "generator_tree": "1a60ceabbbf5f8bacf80387fc5d81aec4fa4b061",
+        "workbench_commit": "ff5b2181afec7f80571fbb95f57dc244418be2d2",
+        "recipe_sha256": "fafcf236d56075c6170eb5aaa2d7a70680efe2aefefe1cc0f11bbf281a6cdea6"
+      },
+      "items": [
+        "ramp-1",
+        "ramp-2",
+        "ramp-3",
+        "ramp-4",
+        "ramp-5",
+        "ramp-male-1",
+        "ramp-male-2",
+        "ramp-male-3",
+        "ramp-male-4",
+        "ramp-male-5"
+      ]
     },
     {
       "file": "images/interface-sizes.png",
@@ -87,21 +105,27 @@
       },
       "size_mm": [
         60.0000002,
-        50.00000010042143,
-        13.000000200000002
+        50.00000010042155,
+        13.0000002
       ],
       "file": "images/attachments/ramp-1.png",
-      "alt": "ramp, 1 cell width / 50 mm run, original joints: isometric STEP-derived render",
-      "description": "A floor-to-mat transition with a 50 mm run. Its width and original female pocket follow unit size; its rise follows tile thickness. Bambu projects enable Auto support for the pocket roofs.",
+      "alt": "female ramp, 1 cell width / 50 mm run, original joints: isometric STEP-derived render",
+      "description": "A 50 mm slope with original female tile-edge pockets. Receives a north male tile edge and extends in positive Y. Bambu projects enable Auto support for the pocket roofs; remove it before assembly.",
       "dimensions": [
         480,
         300
       ],
-      "pixels_per_mm": 1.7067537378104283,
-      "bytes": 6067,
-      "sha256": "f63aca7f5c86ef0a253aa052babac430afb1749f2ff71b71400dfa8269ef4c96",
-      "source_render_sha256": "0668fc230e3fcf29e24a9f06a3679367adeb0b3dee1c649cca3925ea7e67c81e",
-      "source_step_sha256": "30d2716c3174a7f8d3655c4382b5a0ae0c3f732c236d2073452b616356602cfe"
+      "pixels_per_mm": 1.6779882258710401,
+      "bytes": 5854,
+      "sha256": "b8a14e479b8f0937b9c5b0c2dc03e36bfbf0956057c9d1cb937d2082f123d2d9",
+      "source_render_sha256": "9fdfe6be8fa8089c9cef3f1c9460ead1a00880e09f6e4c4b3d233fab1f6f4034",
+      "source_step_sha256": "c45d1b6cbcad7e693b31194877163ee718cab0abce9d3ddbb8a3dd71b87f7259",
+      "provenance": {
+        "generator_commit": "ea1a8a3938c1e8861eeae4f4f78b48b5b62db42e",
+        "generator_tree": "1a60ceabbbf5f8bacf80387fc5d81aec4fa4b061",
+        "workbench_commit": "ff5b2181afec7f80571fbb95f57dc244418be2d2",
+        "recipe_sha256": "fafcf236d56075c6170eb5aaa2d7a70680efe2aefefe1cc0f11bbf281a6cdea6"
+      }
     },
     {
       "key": "ramp-2",
@@ -124,21 +148,27 @@
       },
       "size_mm": [
         120.00000019999999,
-        50.00000010042143,
-        13.000000200000002
+        50.00000010042155,
+        13.0000002
       ],
       "file": "images/attachments/ramp-2.png",
-      "alt": "ramp, 2 cell width / 50 mm run, original joints: isometric STEP-derived render",
-      "description": "A floor-to-mat transition with a 50 mm run. Its width and original female pocket follow unit size; its rise follows tile thickness. Bambu projects enable Auto support for the pocket roofs.",
+      "alt": "female ramp, 2 cell width / 50 mm run, original joints: isometric STEP-derived render",
+      "description": "A 50 mm slope with original female tile-edge pockets. Receives a north male tile edge and extends in positive Y. Bambu projects enable Auto support for the pocket roofs; remove it before assembly.",
       "dimensions": [
         480,
         300
       ],
-      "pixels_per_mm": 1.7067537378104283,
-      "bytes": 8493,
-      "sha256": "18688889df6e71840d6ac0a60b3e35f36b7f3cb02f1c4109f0bf7aa2042c14d2",
-      "source_render_sha256": "6f97cf1a9ac56c0bf67201673fd24822391ab5c0cffff94ae61d022430856661",
-      "source_step_sha256": "bf361c12ef2785e1735ea08d31407027600c7d34e37e356d9c71b5d11c6a1bd4"
+      "pixels_per_mm": 1.6779882258710401,
+      "bytes": 8572,
+      "sha256": "7a7b01889d1c6c8791fce5c472e5478cbb1dd94ff13dea7a29926acf6a6659ec",
+      "source_render_sha256": "3eb941ed1438eb636260ee079102865501308be951b378a8ff946a3f2718f6a3",
+      "source_step_sha256": "bf2cb68f94cea6ceaf80617ab8deb6843bfef7eb4d1068a1e8aaa0cc143b999b",
+      "provenance": {
+        "generator_commit": "ea1a8a3938c1e8861eeae4f4f78b48b5b62db42e",
+        "generator_tree": "1a60ceabbbf5f8bacf80387fc5d81aec4fa4b061",
+        "workbench_commit": "ff5b2181afec7f80571fbb95f57dc244418be2d2",
+        "recipe_sha256": "fafcf236d56075c6170eb5aaa2d7a70680efe2aefefe1cc0f11bbf281a6cdea6"
+      }
     },
     {
       "key": "ramp-3",
@@ -161,21 +191,27 @@
       },
       "size_mm": [
         180.0000002,
-        50.00000010042143,
-        13.000000200000002
+        50.00000010042155,
+        13.0000002
       ],
       "file": "images/attachments/ramp-3.png",
-      "alt": "ramp, 3 cell width / 50 mm run, original joints: isometric STEP-derived render",
-      "description": "A floor-to-mat transition with a 50 mm run. Its width and original female pocket follow unit size; its rise follows tile thickness. Bambu projects enable Auto support for the pocket roofs.",
+      "alt": "female ramp, 3 cell width / 50 mm run, original joints: isometric STEP-derived render",
+      "description": "A 50 mm slope with original female tile-edge pockets. Receives a north male tile edge and extends in positive Y. Bambu projects enable Auto support for the pocket roofs; remove it before assembly.",
       "dimensions": [
         480,
         300
       ],
-      "pixels_per_mm": 1.7067537378104283,
-      "bytes": 10719,
-      "sha256": "6e22f5128a147ec6dc88ae6edd4f7cee6307dc718bc0ce7c45c7fada9e898385",
-      "source_render_sha256": "05eb575adb21ac45f50484716615b3dabcdb6c72a5ffd138c4d4820425e78484",
-      "source_step_sha256": "999e62e7e7c62e0b575d151372e7423bad5f48cbc0dca5138dba76c1246ae80a"
+      "pixels_per_mm": 1.6779882258710401,
+      "bytes": 10891,
+      "sha256": "c5b67e066fdac230f3174cd8fb0db7a466a95a9f8a27d77193058ef177f77f18",
+      "source_render_sha256": "ccd2cc984d0e32299635af923c782ec8d0b269521e2461519ca7696a646b1be8",
+      "source_step_sha256": "baed294e85c26e21f87c37eb15dbb6f0bdc2bce3f39b36541ae963d9e21afe40",
+      "provenance": {
+        "generator_commit": "ea1a8a3938c1e8861eeae4f4f78b48b5b62db42e",
+        "generator_tree": "1a60ceabbbf5f8bacf80387fc5d81aec4fa4b061",
+        "workbench_commit": "ff5b2181afec7f80571fbb95f57dc244418be2d2",
+        "recipe_sha256": "fafcf236d56075c6170eb5aaa2d7a70680efe2aefefe1cc0f11bbf281a6cdea6"
+      }
     },
     {
       "key": "ramp-4",
@@ -198,21 +234,27 @@
       },
       "size_mm": [
         240.0000002,
-        50.00000010042143,
-        13.000000200000002
+        50.00000010042155,
+        13.0000002
       ],
       "file": "images/attachments/ramp-4.png",
-      "alt": "ramp, 4 cell width / 50 mm run, original joints: isometric STEP-derived render",
-      "description": "A floor-to-mat transition with a 50 mm run. Its width and original female pocket follow unit size; its rise follows tile thickness. Bambu projects enable Auto support for the pocket roofs.",
+      "alt": "female ramp, 4 cell width / 50 mm run, original joints: isometric STEP-derived render",
+      "description": "A 50 mm slope with original female tile-edge pockets. Receives a north male tile edge and extends in positive Y. Bambu projects enable Auto support for the pocket roofs; remove it before assembly.",
       "dimensions": [
         480,
         300
       ],
-      "pixels_per_mm": 1.7067537378104283,
-      "bytes": 13588,
-      "sha256": "39a162b66050baf421af6cd493e8a39193558484a4d4c8ade608c167a3753413",
-      "source_render_sha256": "3a01a86544abf34486e83ce285f64ab7840679a23e25a6b131ffc9d981b50a90",
-      "source_step_sha256": "a070493d418c46c700a8d932e88e79735bc0f5465ac416e843bd615fed5f043c"
+      "pixels_per_mm": 1.6779882258710401,
+      "bytes": 13760,
+      "sha256": "f141ef7acf0ff5b640526f02226793240b55e01c670c147b855f50b63a209e3d",
+      "source_render_sha256": "939b76330ba9b946d9d6ca9d3aec28da3829c6c2c3097858912d37938229cc51",
+      "source_step_sha256": "58230ae601d02b6b84d5cabd1bbfcfbfb2a93ad6ae7791454f537b785cfad609",
+      "provenance": {
+        "generator_commit": "ea1a8a3938c1e8861eeae4f4f78b48b5b62db42e",
+        "generator_tree": "1a60ceabbbf5f8bacf80387fc5d81aec4fa4b061",
+        "workbench_commit": "ff5b2181afec7f80571fbb95f57dc244418be2d2",
+        "recipe_sha256": "fafcf236d56075c6170eb5aaa2d7a70680efe2aefefe1cc0f11bbf281a6cdea6"
+      }
     },
     {
       "key": "ramp-5",
@@ -235,21 +277,247 @@
       },
       "size_mm": [
         300.00000020000004,
-        50.00000010042143,
-        13.000000200000002
+        50.00000010042155,
+        13.0000002
       ],
       "file": "images/attachments/ramp-5.png",
-      "alt": "ramp, 5 cell width / 50 mm run, original joints: isometric STEP-derived render",
-      "description": "A floor-to-mat transition with a 50 mm run. Its width and original female pocket follow unit size; its rise follows tile thickness. Bambu projects enable Auto support for the pocket roofs.",
+      "alt": "female ramp, 5 cell width / 50 mm run, original joints: isometric STEP-derived render",
+      "description": "A 50 mm slope with original female tile-edge pockets. Receives a north male tile edge and extends in positive Y. Bambu projects enable Auto support for the pocket roofs; remove it before assembly.",
       "dimensions": [
         480,
         300
       ],
-      "pixels_per_mm": 1.7067537378104283,
-      "bytes": 17039,
-      "sha256": "63f1d16c17bfbaa75fbd370d6c8e072acbef9df20efba0bd920a49f3d500fc68",
-      "source_render_sha256": "161bf4063c6857b5100f0db5fdf3d9b65bbc5e0ad0d41124aa2a24cef202c987",
-      "source_step_sha256": "a34760bb12fe8940d5a3cb367c581512b44f33229cffa1cbfd6cdef2a1d1b6d5"
+      "pixels_per_mm": 1.6779882258710401,
+      "bytes": 17265,
+      "sha256": "6f6ceb88e527b0a5873cd40dddf5752231a09418cb69cb11a3fe602b13a8eb6f",
+      "source_render_sha256": "e2cea4c9bea92a320814b349a424f68ab9f67aa6b57d67b82d427fc12e52998c",
+      "source_step_sha256": "2c0fbf3dc88ec3049ee59b93f2672ed13b8b1feb20d962733af3639fa88aabb8",
+      "provenance": {
+        "generator_commit": "ea1a8a3938c1e8861eeae4f4f78b48b5b62db42e",
+        "generator_tree": "1a60ceabbbf5f8bacf80387fc5d81aec4fa4b061",
+        "workbench_commit": "ff5b2181afec7f80571fbb95f57dc244418be2d2",
+        "recipe_sha256": "fafcf236d56075c6170eb5aaa2d7a70680efe2aefefe1cc0f11bbf281a6cdea6"
+      }
+    },
+    {
+      "key": "ramp-male-1",
+      "family": "ramp",
+      "public_name": "ramp_1_male_original",
+      "parameters": {
+        "family": "ramp",
+        "nx": 1,
+        "ny": 1,
+        "variant": 1,
+        "length": 60,
+        "height": 50,
+        "interface": {
+          "pitch": 60.0,
+          "height": 13.0,
+          "fit_offset": 0.0,
+          "joint_style": "original"
+        },
+        "panel_height_cells": null,
+        "ramp_join": "male"
+      },
+      "size_mm": [
+        60.0000002,
+        56.00000000042155,
+        13.0000002
+      ],
+      "file": "images/attachments/ramp-male-1.png",
+      "alt": "male ramp, 1 cell width / 50 mm run, original joints: isometric STEP-derived render",
+      "description": "A 50 mm slope with original male tile-edge tabs, not X plugs. Tabs add 6 mm beyond the slope at standard unit size. Place against a female south or west tile edge. Bambu projects leave object support off.",
+      "dimensions": [
+        480,
+        300
+      ],
+      "pixels_per_mm": 1.6779882258710401,
+      "bytes": 6349,
+      "sha256": "f12750ad442948f6e5b79ddeab38b4b8b854643249649156f62fe0cb8b7b60af",
+      "source_render_sha256": "c4ed1e0b42fdb3db2a10d45603caa8abbbc8f0eac0c7b8be39641506aad357f7",
+      "source_step_sha256": "92487bc6f80f9c8fa13b39ddb6f0fa15b8e7736851e94639d4a1c70e07c31493",
+      "provenance": {
+        "generator_commit": "ea1a8a3938c1e8861eeae4f4f78b48b5b62db42e",
+        "generator_tree": "1a60ceabbbf5f8bacf80387fc5d81aec4fa4b061",
+        "workbench_commit": "ff5b2181afec7f80571fbb95f57dc244418be2d2",
+        "recipe_sha256": "fafcf236d56075c6170eb5aaa2d7a70680efe2aefefe1cc0f11bbf281a6cdea6"
+      }
+    },
+    {
+      "key": "ramp-male-2",
+      "family": "ramp",
+      "public_name": "ramp_2_male_original",
+      "parameters": {
+        "family": "ramp",
+        "nx": 2,
+        "ny": 1,
+        "variant": 1,
+        "length": 60,
+        "height": 50,
+        "interface": {
+          "pitch": 60.0,
+          "height": 13.0,
+          "fit_offset": 0.0,
+          "joint_style": "original"
+        },
+        "panel_height_cells": null,
+        "ramp_join": "male"
+      },
+      "size_mm": [
+        120.00000019999999,
+        56.00000000042155,
+        13.0000002
+      ],
+      "file": "images/attachments/ramp-male-2.png",
+      "alt": "male ramp, 2 cell width / 50 mm run, original joints: isometric STEP-derived render",
+      "description": "A 50 mm slope with original male tile-edge tabs, not X plugs. Tabs add 6 mm beyond the slope at standard unit size. Place against a female south or west tile edge. Bambu projects leave object support off.",
+      "dimensions": [
+        480,
+        300
+      ],
+      "pixels_per_mm": 1.6779882258710401,
+      "bytes": 9102,
+      "sha256": "79da3de881ebb8f162aa33025062220696bdcfb9fbadda2b14f2cf9b8fa9dc51",
+      "source_render_sha256": "4538c271b013af90ff9eb9667026d75340a64aff7e88056d8e56c5dc40f399a4",
+      "source_step_sha256": "1d1bd7834d4c4e32d6850a2ad216c96d36b1b36813f8ce70eb1580323101a9f5",
+      "provenance": {
+        "generator_commit": "ea1a8a3938c1e8861eeae4f4f78b48b5b62db42e",
+        "generator_tree": "1a60ceabbbf5f8bacf80387fc5d81aec4fa4b061",
+        "workbench_commit": "ff5b2181afec7f80571fbb95f57dc244418be2d2",
+        "recipe_sha256": "fafcf236d56075c6170eb5aaa2d7a70680efe2aefefe1cc0f11bbf281a6cdea6"
+      }
+    },
+    {
+      "key": "ramp-male-3",
+      "family": "ramp",
+      "public_name": "ramp_3_male_original",
+      "parameters": {
+        "family": "ramp",
+        "nx": 3,
+        "ny": 1,
+        "variant": 1,
+        "length": 60,
+        "height": 50,
+        "interface": {
+          "pitch": 60.0,
+          "height": 13.0,
+          "fit_offset": 0.0,
+          "joint_style": "original"
+        },
+        "panel_height_cells": null,
+        "ramp_join": "male"
+      },
+      "size_mm": [
+        180.0000002,
+        56.00000000042155,
+        13.0000002
+      ],
+      "file": "images/attachments/ramp-male-3.png",
+      "alt": "male ramp, 3 cell width / 50 mm run, original joints: isometric STEP-derived render",
+      "description": "A 50 mm slope with original male tile-edge tabs, not X plugs. Tabs add 6 mm beyond the slope at standard unit size. Place against a female south or west tile edge. Bambu projects leave object support off.",
+      "dimensions": [
+        480,
+        300
+      ],
+      "pixels_per_mm": 1.6779882258710401,
+      "bytes": 11816,
+      "sha256": "2038a408007d48bfb4c10e4ee88a72438a8f1d42277a7db6ba46c9759148acdd",
+      "source_render_sha256": "83f3383320d0d7d916b91e5dbae7d61e06002d295e9f7bb51b7a47397da07b23",
+      "source_step_sha256": "d9429e9ac5da2ecac365a4fc35a37ab4aea708c535b2e1be3a3d00dd724a0503",
+      "provenance": {
+        "generator_commit": "ea1a8a3938c1e8861eeae4f4f78b48b5b62db42e",
+        "generator_tree": "1a60ceabbbf5f8bacf80387fc5d81aec4fa4b061",
+        "workbench_commit": "ff5b2181afec7f80571fbb95f57dc244418be2d2",
+        "recipe_sha256": "fafcf236d56075c6170eb5aaa2d7a70680efe2aefefe1cc0f11bbf281a6cdea6"
+      }
+    },
+    {
+      "key": "ramp-male-4",
+      "family": "ramp",
+      "public_name": "ramp_4_male_original",
+      "parameters": {
+        "family": "ramp",
+        "nx": 4,
+        "ny": 1,
+        "variant": 1,
+        "length": 60,
+        "height": 50,
+        "interface": {
+          "pitch": 60.0,
+          "height": 13.0,
+          "fit_offset": 0.0,
+          "joint_style": "original"
+        },
+        "panel_height_cells": null,
+        "ramp_join": "male"
+      },
+      "size_mm": [
+        240.0000002,
+        56.00000000042155,
+        13.0000002
+      ],
+      "file": "images/attachments/ramp-male-4.png",
+      "alt": "male ramp, 4 cell width / 50 mm run, original joints: isometric STEP-derived render",
+      "description": "A 50 mm slope with original male tile-edge tabs, not X plugs. Tabs add 6 mm beyond the slope at standard unit size. Place against a female south or west tile edge. Bambu projects leave object support off.",
+      "dimensions": [
+        480,
+        300
+      ],
+      "pixels_per_mm": 1.6779882258710401,
+      "bytes": 14783,
+      "sha256": "560c86aedff790e7f38918b6c03c36deae5839f2ba7188d305bdf306ffbc7b70",
+      "source_render_sha256": "991631052b8eab60d76ad333b596384c981a28ded2bd26b6891f17c1c57ffd37",
+      "source_step_sha256": "36341bc81d8cc7d174581c1a021930658bbeebefdc396a2d0835966554ec2c62",
+      "provenance": {
+        "generator_commit": "ea1a8a3938c1e8861eeae4f4f78b48b5b62db42e",
+        "generator_tree": "1a60ceabbbf5f8bacf80387fc5d81aec4fa4b061",
+        "workbench_commit": "ff5b2181afec7f80571fbb95f57dc244418be2d2",
+        "recipe_sha256": "fafcf236d56075c6170eb5aaa2d7a70680efe2aefefe1cc0f11bbf281a6cdea6"
+      }
+    },
+    {
+      "key": "ramp-male-5",
+      "family": "ramp",
+      "public_name": "ramp_5_male_original",
+      "parameters": {
+        "family": "ramp",
+        "nx": 5,
+        "ny": 1,
+        "variant": 1,
+        "length": 60,
+        "height": 50,
+        "interface": {
+          "pitch": 60.0,
+          "height": 13.0,
+          "fit_offset": 0.0,
+          "joint_style": "original"
+        },
+        "panel_height_cells": null,
+        "ramp_join": "male"
+      },
+      "size_mm": [
+        300.00000020000004,
+        56.00000000042155,
+        13.0000002
+      ],
+      "file": "images/attachments/ramp-male-5.png",
+      "alt": "male ramp, 5 cell width / 50 mm run, original joints: isometric STEP-derived render",
+      "description": "A 50 mm slope with original male tile-edge tabs, not X plugs. Tabs add 6 mm beyond the slope at standard unit size. Place against a female south or west tile edge. Bambu projects leave object support off.",
+      "dimensions": [
+        480,
+        300
+      ],
+      "pixels_per_mm": 1.6779882258710401,
+      "bytes": 18198,
+      "sha256": "a289670b406fd516c91d18292c3761a3b5d4b5060778239e50b10f93ab43dfd1",
+      "source_render_sha256": "31f054a849c1722d9a0b2e3655c44d98a610e2da1c091f44ca0c2143e5e69d72",
+      "source_step_sha256": "e53e2726ba29434385d1a3c1f5db2145184f2331a62638b88a283b146beb5d0d",
+      "provenance": {
+        "generator_commit": "ea1a8a3938c1e8861eeae4f4f78b48b5b62db42e",
+        "generator_tree": "1a60ceabbbf5f8bacf80387fc5d81aec4fa4b061",
+        "workbench_commit": "ff5b2181afec7f80571fbb95f57dc244418be2d2",
+        "recipe_sha256": "fafcf236d56075c6170eb5aaa2d7a70680efe2aefefe1cc0f11bbf281a6cdea6"
+      }
     },
     {
       "key": "plate-1x1",
@@ -2138,5 +2406,6 @@
       "source_render_sha256": "0c98f3ebe0cf259883111e1a270a47fd76953b0120c12f91c970697764b874d6",
       "source_step_sha256": "699d766094e354d4655cb4318f5fb84f0fc66c3c03e5899d30f74c221b42b109"
     }
-  ]
+  ],
+  "provenance_scope": "Top-level revisions describe retained baseline images; per-image provenance overrides them for regenerated assets. This is not a full-gallery rerender."
 }
