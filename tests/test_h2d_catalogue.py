@@ -30,7 +30,7 @@ def test_h2d_dual_safe_plan_keeps_full_family_inventory_and_hardware_zones():
     assert len(job.designs) == len(job.print_placements) == 86
     plate_count = max(placement.plate for placement in job.print_placements) + 1
     assert set(job.plate_names) == set(range(plate_count))
-    assert plate_count <= 36
+    assert plate_count == 25
     assert job.part_gap == 10
     assert job.omitted == []
     assert job.placement_policy["common_reach_mm"] == {
@@ -57,12 +57,17 @@ def test_h2d_dual_safe_plan_keeps_full_family_inventory_and_hardware_zones():
     assert exception.parameters["hole_scope"] == "full"
     by_plate = {}
     ramp_joins = set()
+    ramp_plates = {}
     for design, placement in zip(job.designs, job.print_placements):
         if design.parameters.get("family") == "ramp":
-            assert job.plate_names[placement.plate].startswith("Ramps")
-            ramp_joins.add((design.parameters["nx"], design.parameters.get("ramp_join", "female")))
+            join = design.parameters.get("ramp_join", "female")
+            assert job.plate_names[placement.plate] == f"{join.title()} ramps"
+            ramp_joins.add((design.parameters["nx"], join))
+            ramp_plates.setdefault(placement.plate, []).append(
+                (design.parameters["nx"], join, design.quantity)
+            )
         elif placement.plate != exception_plate:
-            assert not job.plate_names[placement.plate].startswith("Ramps")
+            assert job.plate_names[placement.plate] not in {"Female ramps", "Male ramps"}
         width, depth, height = design.bambu_size
         if placement.rotation == 90:
             width, depth = depth, width
@@ -76,6 +81,23 @@ def test_h2d_dual_safe_plan_keeps_full_family_inventory_and_hardware_zones():
             assert bounds[2] >= 5 - 1e-6 and bounds[3] <= 315 + 1e-6
             assert bounds[4] <= 320 + 1e-6
     assert ramp_joins == {(width, join) for width in range(1, 6) for join in ("female", "male")}
+    assert ramp_plates == {
+        12: [(width, "female", 1) for width in range(1, 6)],
+        13: [(width, "male", 1) for width in range(1, 6)],
+    }
+    assert [job.plate_names[index] for index in range(14, 25)] == [
+        "Normal stops 1",
+        "Normal stops 2",
+        "Tile brackets - deep and shallow 1",
+        "Tile brackets - deep and shallow 2",
+        "Angled stops",
+        "Attachment plates",
+        "Edges and corners 1",
+        "Edges and corners 2",
+        "Rails and connectors 1",
+        "Rails and connectors 2",
+        "5x5 TILE - SINGLE NOZZLE ONLY - LEFT",
+    ]
     assert len(by_plate[exception_plate]) == 1
     for rectangles in by_plate.values():
         for index, first in enumerate(rectangles):

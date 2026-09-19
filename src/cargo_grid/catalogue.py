@@ -189,17 +189,19 @@ def h2d_dual_safe_catalogue_job(
     )
     common_designs = [design for design in source.designs if design is not exception]
     groups = (
-        ("Tiles", {"tile"}),
-        ("Ramps", {"ramp"}),
-        ("Normal stops", {"vertical-stop"}),
+        ("Tiles", {"tile"}, None),
+        ("Female ramps", {"ramp"}, "female"),
+        ("Male ramps", {"ramp"}, "male"),
+        ("Normal stops", {"vertical-stop"}, None),
         (
             "Tile brackets - deep and shallow",
             {"vertical-tile-bracket"},
+            None,
         ),
-        ("Angled stops", {"lock-45"}),
-        ("Attachment plates", {"plate"}),
-        ("Edges and corners", {"edge-x", "edge-y", "corner-in", "corner-out"}),
-        ("Rails and connectors", {"support", "support-bit", "support-end"}),
+        ("Angled stops", {"lock-45"}, None),
+        ("Attachment plates", {"plate"}, None),
+        ("Edges and corners", {"edge-x", "edge-y", "corner-in", "corner-out"}, None),
+        ("Rails and connectors", {"support", "support-bit", "support-end"}, None),
     )
     common_build = BuildVolume(
         350,
@@ -215,11 +217,12 @@ def h2d_dual_safe_catalogue_job(
     placements = []
     plate_names = {}
     plate_offset = 0
-    for title, families in groups:
+    for title, families, ramp_join in groups:
         members = [
             design
             for design in common_designs
             if design.parameters.get("family", "tile") in families
+            and (ramp_join is None or design.parameters.get("ramp_join", "female") == ramp_join)
         ]
         packed = pack_sizes(
             [design.bambu_size for design in members],
