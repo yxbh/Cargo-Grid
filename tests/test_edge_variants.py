@@ -3,7 +3,7 @@ from dataclasses import replace
 from math import cos, pi, sin
 
 import pytest
-from build123d import Vector
+from build123d import Location, Vector
 
 from cargo_grid import BuildVolume, Interface, Tile, make_tile
 from cargo_grid.accessories import Accessory, accessory_datums, make_accessory
@@ -15,6 +15,47 @@ from cargo_grid.meshes import checked_mesh
 
 def _assembly_contains(shapes, point):
     return any(shape.is_inside(point) for shape in shapes)
+
+
+def _matching_tiles(spec):
+    pitch = spec.interface.pitch
+    placements = {}
+    for join in accessory_datums(spec)["joins"]:
+        x, y, _ = join["position"]
+        if join["angle"] == 0:
+            origin = (x - pitch / 2, y - pitch if join["sex"] == "female" else y, 0)
+        elif join["angle"] == -90:
+            origin = (x - pitch if join["sex"] == "female" else x, y - pitch / 2, 0)
+        else:
+            raise AssertionError(f"unsupported perimeter join angle: {join['angle']}")
+        placements[origin] = make_tile(Tile(interface=spec.interface)).moved(Location(origin))
+    return tuple(placements.values())
+
+
+def _assert_completed_circle(shapes, center, height):
+    for z in (1, height / 2, height - 1):
+        for index in range(64):
+            angle = 2 * pi * index / 64
+            inside = Vector(
+                center[0] + 4.99 * cos(angle),
+                center[1] + 4.99 * sin(angle),
+                z,
+            )
+            assert not _assembly_contains(shapes, inside)
+        assert (
+            sum(
+                _assembly_contains(
+                    shapes,
+                    Vector(
+                        center[0] + 5.01 * cos(2 * pi * index / 64),
+                        center[1] + 5.01 * sin(2 * pi * index / 64),
+                        z,
+                    ),
+                )
+                for index in range(64)
+            )
+            >= 62
+        )
 
 
 @pytest.mark.parametrize("family", ["edge-x", "edge-y"])
@@ -73,6 +114,29 @@ def test_wider_corner_variants_remain_single_valid_solids(style, outward, comple
         assert all(join["position"][0] in (0, 30, 60) for join in accessory_datums(spec)["joins"])
 
 
+@pytest.mark.parametrize(
+    "family,variants",
+    [
+        ("edge-x", range(1, 2)),
+        ("edge-y", range(1, 2)),
+        ("corner-in", range(1, 5)),
+        ("corner-out", range(1, 7)),
+    ],
+)
+@pytest.mark.parametrize("outward", [10, 20, 30])
+def test_every_perimeter_join_completes_assembled_ten_mm_holes(family, variants, outward):
+    for variant in variants:
+        spec = Accessory(
+            family,
+            variant=variant,
+            edge_outward=outward,
+            complete_edge_holes=True,
+        )
+        shapes = (make_accessory(spec), *_matching_tiles(spec))
+        for join in accessory_datums(spec)["joins"]:
+            _assert_completed_circle(shapes, join["position"], spec.interface.height)
+
+
 @pytest.mark.parametrize("outward", [10, 20, 30])
 @pytest.mark.parametrize("variant,center", [(3, (60, 60)), (6, (0, 0))])
 def test_completed_one_piece_outer_corner_makes_full_ten_mm_hole(outward, variant, center):
@@ -86,29 +150,7 @@ def test_completed_one_piece_outer_corner_makes_full_ten_mm_hole(outward, varian
         )
     )
     shapes = (tile, corner)
-    for z in (1, 6.5, 12):
-        for index in range(64):
-            angle = 2 * pi * index / 64
-            inside = Vector(
-                center[0] + 4.99 * cos(angle),
-                center[1] + 4.99 * sin(angle),
-                z,
-            )
-            assert not _assembly_contains(shapes, inside)
-        assert (
-            sum(
-                _assembly_contains(
-                    shapes,
-                    Vector(
-                        center[0] + 5.01 * cos(2 * pi * index / 64),
-                        center[1] + 5.01 * sin(2 * pi * index / 64),
-                        z,
-                    ),
-                )
-                for index in range(64)
-            )
-            >= 62
-        )
+    _assert_completed_circle(shapes, center, 13)
 
 
 def test_completed_miter_terminations_cut_the_tile_corner_site():
