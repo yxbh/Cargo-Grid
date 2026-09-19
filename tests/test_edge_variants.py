@@ -1,5 +1,6 @@
 import json
 from dataclasses import replace
+from functools import lru_cache
 from math import cos, pi, sin, sqrt
 
 import pytest
@@ -15,8 +16,24 @@ from cargo_grid.meshes import checked_mesh
 from cargo_grid.tiles import hole_placements
 
 
-def _assembly_contains(shapes, point):
-    return any(shape.is_inside(point) for shape in shapes)
+@lru_cache(maxsize=None)
+def _accessory_shape(spec):
+    return make_accessory(spec)
+
+
+@lru_cache(maxsize=None)
+def _tile_shape(tile):
+    return make_tile(tile)
+
+
+def _assembly_contains(shapes_and_bounds, point):
+    return any(
+        bounds.min.X <= point.X <= bounds.max.X
+        and bounds.min.Y <= point.Y <= bounds.max.Y
+        and bounds.min.Z <= point.Z <= bounds.max.Z
+        and shape.is_inside(point)
+        for shape, bounds in shapes_and_bounds
+    )
 
 
 def _solid_intersection_volume(first, second):
@@ -35,13 +52,13 @@ def _matching_tiles(spec):
             origin = (x - pitch if join["sex"] == "female" else x, y - pitch / 2, 0)
         else:
             raise AssertionError(f"unsupported perimeter join angle: {join['angle']}")
-        placements[origin] = make_tile(Tile(interface=spec.interface)).moved(Location(origin))
+        placements[origin] = _tile_shape(Tile(interface=spec.interface)).moved(Location(origin))
     return tuple(placements.values())
 
 
 def _three_by_three_perimeter(outward, complete):
     def part(family, *, variant=1):
-        return make_accessory(
+        return _accessory_shape(
             Accessory(
                 family,
                 variant=variant,
@@ -51,7 +68,7 @@ def _three_by_three_perimeter(outward, complete):
         )
 
     return {
-        "tile": make_tile(Tile(3, 3)),
+        "tile": _tile_shape(Tile(3, 3)),
         "v6": part("corner-out", variant=6),
         "south": part("edge-x").moved(Location((60, 0, 0))),
         "v5": part("corner-out", variant=5).moved(Location((120, 0, 0))),
@@ -67,7 +84,7 @@ def _three_by_three_perimeter(outward, complete):
 
 def _corner_half_pairs(outward, complete, interface=Interface()):
     def part(variant):
-        return make_accessory(
+        return _accessory_shape(
             Accessory(
                 "corner-out",
                 variant=variant,
@@ -85,6 +102,7 @@ def _corner_half_pairs(outward, complete, interface=Interface()):
 
 
 def _assert_completed_circle(shapes, center, height, minimum_ring_samples=62):
+    shapes_and_bounds = tuple((shape, shape.bounding_box()) for shape in shapes)
     for z in (1, height / 2, height - 1):
         for index in range(64):
             angle = 2 * pi * index / 64
@@ -93,11 +111,11 @@ def _assert_completed_circle(shapes, center, height, minimum_ring_samples=62):
                 center[1] + 4.99 * sin(angle),
                 z,
             )
-            assert not _assembly_contains(shapes, inside)
+            assert not _assembly_contains(shapes_and_bounds, inside)
         assert (
             sum(
                 _assembly_contains(
-                    shapes,
+                    shapes_and_bounds,
                     Vector(
                         center[0] + 5.01 * cos(2 * pi * index / 64),
                         center[1] + 5.01 * sin(2 * pi * index / 64),
@@ -120,7 +138,7 @@ def test_straight_edge_projection_and_hole_mode(family, outward, complete):
         edge_outward=outward,
         complete_edge_holes=complete,
     )
-    part = make_accessory(spec)
+    part = _accessory_shape(spec)
     expected_depth = outward + (spec.interface.male_join_depth if family == "edge-x" else 0)
     assert tuple(part.bounding_box().size) == pytest.approx((120, expected_depth, 13))
     datums = accessory_datums(spec)
@@ -160,7 +178,7 @@ def test_wider_corner_variants_remain_single_valid_solids(style, outward, comple
         ),
     ]
     for spec in specs:
-        part = make_accessory(spec)
+        part = _accessory_shape(spec)
         assert part.is_valid and len(part.solids()) == 1
         assert part.volume > 0
         assert all(join["position"][0] in (0, 30, 60) for join in accessory_datums(spec)["joins"])
@@ -184,7 +202,7 @@ def test_every_perimeter_join_completes_assembled_ten_mm_holes(family, variants,
             edge_outward=outward,
             complete_edge_holes=True,
         )
-        shapes = (make_accessory(spec), *_matching_tiles(spec))
+        shapes = (_accessory_shape(spec), *_matching_tiles(spec))
         for join in accessory_datums(spec)["joins"]:
             _assert_completed_circle(shapes, join["position"], spec.interface.height)
 
@@ -192,8 +210,8 @@ def test_every_perimeter_join_completes_assembled_ten_mm_holes(family, variants,
 @pytest.mark.parametrize("outward", [10, 20, 30])
 @pytest.mark.parametrize("variant,center", [(3, (60, 60)), (6, (0, 0))])
 def test_completed_one_piece_outer_corner_makes_full_ten_mm_hole(outward, variant, center):
-    tile = make_tile(Tile())
-    corner = make_accessory(
+    tile = _tile_shape(Tile())
+    corner = _accessory_shape(
         Accessory(
             "corner-out",
             variant=variant,
@@ -210,7 +228,7 @@ def test_completed_miter_terminations_cut_the_tile_corner_site():
         spec = Accessory("corner-out", variant=variant, complete_edge_holes=True)
         centers = accessory_datums(spec)["edge_hole_centers"]
         assert len(centers) == 3
-        part = make_accessory(spec)
+        part = _accessory_shape(spec)
         for x, y in centers:
             for z in (1, 6.5, 12):
                 assert not part.is_inside(Vector(x, y, z))
@@ -354,7 +372,7 @@ def test_outer_corner_halves_keep_rounds_step_and_mesh(
     complete,
     tmp_path,
 ):
-    part = make_accessory(
+    part = _accessory_shape(
         Accessory(
             "corner-out",
             variant=variant,
@@ -401,7 +419,7 @@ def test_custom_unit_completion_uses_only_tile_accepted_boundary_sites():
         complete_edge_holes=True,
     )
     assert accessory_datums(spec)["edge_hole_centers"] == [(0, 0), (41, 0), (82, 0)]
-    part = make_accessory(spec)
+    part = _accessory_shape(spec)
     for x in (0, 41, 82):
         assert not part.is_inside(Vector(x, 4, 6.5))
     for x in (20.5, 61.5):
@@ -515,7 +533,7 @@ def test_completed_wide_edge_keeps_hole_diameter_physical(unit, thickness):
         edge_outward=30,
         complete_edge_holes=True,
     )
-    part = make_accessory(spec)
+    part = _accessory_shape(spec)
     center = unit
     for z in (1, thickness / 2, thickness - 1):
         assert not part.is_inside(Vector(center, 4.99, z))
