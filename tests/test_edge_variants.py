@@ -1,9 +1,10 @@
 import json
 from dataclasses import replace
-from math import cos, pi, sin
+from math import cos, pi, sin, sqrt
 
 import pytest
-from build123d import Location, Vector
+from build123d import Axis, GeomType, Location, Vector
+from OCP.BRepAdaptor import BRepAdaptor_Surface
 
 from cargo_grid import BuildVolume, Interface, Tile, make_tile
 from cargo_grid.accessories import Accessory, accessory_datums, make_accessory
@@ -11,10 +12,16 @@ from cargo_grid.catalogue import accessory_design, accessory_variants
 from cargo_grid.cli import main
 from cargo_grid.export import _checked_step_roundtrip
 from cargo_grid.meshes import checked_mesh
+from cargo_grid.tiles import hole_placements
 
 
 def _assembly_contains(shapes, point):
     return any(shape.is_inside(point) for shape in shapes)
+
+
+def _solid_intersection_volume(first, second):
+    intersection = first.intersect(second)
+    return sum(solid.volume for solid in intersection.solids()) if intersection else 0
 
 
 def _matching_tiles(spec):
@@ -32,7 +39,52 @@ def _matching_tiles(spec):
     return tuple(placements.values())
 
 
-def _assert_completed_circle(shapes, center, height):
+def _three_by_three_perimeter(outward, complete):
+    def part(family, *, variant=1):
+        return make_accessory(
+            Accessory(
+                family,
+                variant=variant,
+                edge_outward=outward,
+                complete_edge_holes=complete,
+            )
+        )
+
+    return {
+        "tile": make_tile(Tile(3, 3)),
+        "v6": part("corner-out", variant=6),
+        "south": part("edge-x").moved(Location((60, 0, 0))),
+        "v5": part("corner-out", variant=5).moved(Location((120, 0, 0))),
+        "v4": part("corner-out", variant=4).moved(Location((180, 0, 0))),
+        "east": part("edge-y").rotate(Axis.Z, -90).moved(Location((180, 120, 0))),
+        "v3": part("corner-out", variant=3).moved(Location((120, 120, 0))),
+        "north": part("edge-y").moved(Location((60, 180, 0))),
+        "v2": part("corner-out", variant=2).moved(Location((0, 180, 0))),
+        "v1": part("corner-out", variant=1).moved(Location((0, 120, 0))),
+        "west": part("edge-x").rotate(Axis.Z, -90).moved(Location((0, 120, 0))),
+    }
+
+
+def _corner_half_pairs(outward, complete, interface=Interface()):
+    def part(variant):
+        return make_accessory(
+            Accessory(
+                "corner-out",
+                variant=variant,
+                interface=interface,
+                edge_outward=outward,
+                complete_edge_holes=complete,
+            )
+        )
+
+    pitch = interface.pitch
+    return (
+        (part(1), part(2).moved(Location((0, pitch, 0)))),
+        (part(5), part(4).moved(Location((pitch, 0, 0)))),
+    )
+
+
+def _assert_completed_circle(shapes, center, height, minimum_ring_samples=62):
     for z in (1, height / 2, height - 1):
         for index in range(64):
             angle = 2 * pi * index / 64
@@ -54,7 +106,7 @@ def _assert_completed_circle(shapes, center, height):
                 )
                 for index in range(64)
             )
-            >= 62
+            >= minimum_ring_samples
         )
 
 
@@ -162,6 +214,181 @@ def test_completed_miter_terminations_cut_the_tile_corner_site():
         for x, y in centers:
             for z in (1, 6.5, 12):
                 assert not part.is_inside(Vector(x, y, z))
+
+
+@pytest.mark.parametrize("outward", [10, 20, 30])
+@pytest.mark.parametrize("complete", [False, True])
+def test_outer_corner_half_pairs_close_without_overlap(outward, complete):
+    pitch = 60
+    diagonal = outward / sqrt(2)
+    pairs = _corner_half_pairs(outward, complete)
+    for (first, second), seam_point, expected_min, expected_max in zip(
+        pairs,
+        (
+            lambda fraction: Vector(
+                -diagonal * fraction,
+                pitch + diagonal * fraction,
+                6.5,
+            ),
+            lambda fraction: Vector(
+                pitch + diagonal * fraction,
+                -diagonal * fraction,
+                6.5,
+            ),
+        ),
+        (
+            (-outward, 0, 0),
+            (0, -outward, 0),
+        ),
+        (
+            (pitch, pitch + outward, 13),
+            (pitch + outward, pitch, 13),
+        ),
+    ):
+        assert first.distance_to(second) < 1e-6
+        assert _solid_intersection_volume(first, second) < 1e-7
+        fractions = (
+            tuple(sorted({6 / outward, (outward - 4) / outward})) if complete else (0.1, 0.5, 0.9)
+        )
+        for fraction in fractions:
+            point = seam_point(fraction)
+            assert first.distance_to(point) < 1e-6
+            assert second.distance_to(point) < 1e-6
+        actual_min = tuple(
+            min(getattr(shape.bounding_box().min, axis) for shape in (first, second))
+            for axis in "XYZ"
+        )
+        actual_max = tuple(
+            max(getattr(shape.bounding_box().max, axis) for shape in (first, second))
+            for axis in "XYZ"
+        )
+        assert actual_min == pytest.approx(expected_min, abs=1e-5)
+        assert actual_max == pytest.approx(expected_max, abs=1e-5)
+
+
+def test_outer_corner_halves_and_whole_corners_close_a_real_perimeter():
+    outward = 30
+    assembly = _three_by_three_perimeter(outward, True)
+    neighbors = [
+        ("v6", "south"),
+        ("south", "v5"),
+        ("v5", "v4"),
+        ("v4", "east"),
+        ("east", "v3"),
+        ("v3", "north"),
+        ("north", "v2"),
+        ("v2", "v1"),
+        ("v1", "west"),
+        ("west", "v6"),
+    ]
+    for first, second in neighbors:
+        assert assembly[first].distance_to(assembly[second]) < 1e-6
+        assert _solid_intersection_volume(assembly[first], assembly[second]) < 1e-7
+
+    pitch = 60
+    corner_specs = {
+        "v1": (1, (0, 2 * pitch)),
+        "v2": (2, (0, 3 * pitch)),
+        "v3": (3, (2 * pitch, 2 * pitch)),
+        "v4": (4, (3 * pitch, 0)),
+        "v5": (5, (2 * pitch, 0)),
+        "v6": (6, (0, 0)),
+    }
+    for name, (variant, (offset_x, offset_y)) in corner_specs.items():
+        for join in accessory_datums(
+            Accessory(
+                "corner-out",
+                variant=variant,
+                edge_outward=outward,
+                complete_edge_holes=True,
+            )
+        )["joins"]:
+            x = join["position"][0] + offset_x
+            y = join["position"][1] + offset_y
+            tile_sex = "female" if x == 0 or y == 0 else "male"
+            assert x in (0, 180) or y in (0, 180)
+            assert join["sex"] != tile_sex
+            assert assembly[name].distance_to(assembly["tile"]) < 1e-6
+
+    shapes = tuple(assembly.values())
+    boundary_holes = [
+        (hole.x, hole.y)
+        for hole in hole_placements(Tile(3, 3))
+        if hole.accepted and (hole.x in (0, 180) or hole.y in (0, 180))
+    ]
+    assert len(boundary_holes) == 24
+    representative_holes = {
+        (0, 0),
+        (180, 180),
+        (0, 180),
+        (180, 0),
+        (30, 0),
+        (0, 30),
+        (60, 0),
+        (180, 60),
+    }
+    assert representative_holes < set(boundary_holes)
+    for center in representative_holes:
+        _assert_completed_circle(
+            shapes,
+            center,
+            13,
+            minimum_ring_samples=59 if center in {(60, 0), (180, 60)} else 62,
+        )
+
+
+@pytest.mark.parametrize(
+    "variant,outward,complete",
+    [
+        (1, 10, False),
+        (2, 10, True),
+        (4, 20, False),
+        (5, 20, True),
+        (2, 30, False),
+        (4, 30, True),
+    ],
+)
+def test_outer_corner_halves_keep_rounds_step_and_mesh(
+    variant,
+    outward,
+    complete,
+    tmp_path,
+):
+    part = make_accessory(
+        Accessory(
+            "corner-out",
+            variant=variant,
+            edge_outward=outward,
+            complete_edge_holes=complete,
+        )
+    )
+    assert part.is_valid and len(part.solids()) == 1 and part.volume > 0
+    assert min(face.area for face in part.faces()) > 0.3
+    assert min(edge.length for edge in part.edges()) > 0.3
+    assert any(
+        face.geom_type == GeomType.CYLINDER
+        and BRepAdaptor_Surface(face.wrapped).Cylinder().Radius() == pytest.approx(3, abs=1e-7)
+        for face in part.faces()
+    )
+    restored, _, _, _, _ = _checked_step_roundtrip(
+        part,
+        tmp_path / f"corner-out-v{variant}-out{outward}-holes{complete}.step",
+    )
+    assert restored.is_valid and len(restored.solids()) == 1
+    assert tuple(restored.bounding_box().size) == pytest.approx(
+        tuple(part.bounding_box().size),
+        abs=1e-5,
+    )
+    _, _, report = checked_mesh(part)
+    assert report["closed_oriented_manifold"]
+
+
+def test_outer_corner_half_pair_scales_unit_and_thickness_independently():
+    interface = Interface(45, 8)
+    for first, second in _corner_half_pairs(20, False, interface):
+        assert first.distance_to(second) < 1e-6
+        assert _solid_intersection_volume(first, second) < 1e-7
+        assert max(first.bounding_box().size.Z, second.bounding_box().size.Z) == pytest.approx(8)
 
 
 def test_custom_unit_completion_uses_only_tile_accepted_boundary_sites():

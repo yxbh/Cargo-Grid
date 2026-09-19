@@ -71,7 +71,6 @@ BRACKET_ENVELOPE_MARGIN_MM = 0.1
 STOP_WALL_MM = 6.0
 EDGE_TOP_RADIUS_MM = 2.0
 EDGE_BODY_RADIUS_MM = 3.0
-EDGE_MITER_RETANGENT_MM = 4.82962
 EDGE_OUTWARD_OPTIONS_MM = (10.0, 20.0, 30.0)
 EDGE_FAMILIES = ("edge-x", "edge-y", "corner-in", "corner-out")
 SUPPORT_TOP_RADIUS_MM = 1.0
@@ -1195,6 +1194,42 @@ def _round_free_top(part: Part, spec: Accessory) -> Part:
     return part.fillet(SUPPORT_TOP_RADIUS_MM if support else EDGE_TOP_RADIUS_MM, edges)
 
 
+def _rounded_original_corner_out_half_body(spec: Accessory, half_face: Face) -> Part:
+    p = spec.interface.pitch
+    partner_variant, partner_offset = {
+        1: (2, (0, p, 0)),
+        2: (1, (0, -p, 0)),
+        4: (5, (-p, 0, 0)),
+        5: (4, (p, 0, 0)),
+    }[spec.variant]
+    partner_face, _ = _edge_plan(
+        Accessory(
+            "corner-out",
+            variant=partner_variant,
+            interface=spec.interface,
+            edge_outward=spec.edge_outward,
+            complete_edge_holes=spec.complete_edge_holes,
+        )
+    )
+    partner_face = partner_face.moved(Location(partner_offset))
+    pair_faces = half_face.fuse(partner_face).faces()
+    if len(pair_faces) != 1:
+        raise ValueError("corner-out: half-pair plan did not form one face")
+    pair_body = prism(Face(pair_faces[0].wrapped), spec.interface.height)
+    operation = BRepFilletAPI_MakeFillet(pair_body.wrapped)
+    for edge in pair_body.edges():
+        operation.Add(EDGE_BODY_RADIUS_MM, edge.wrapped)
+    operation.Build()
+    if not operation.IsDone():
+        raise ValueError("corner-out: coupled half-pair R3 body fillet failed")
+    rounded_pair = Part(Solid(operation.Shape()).wrapped)
+    trim = prism(half_face, spec.interface.height + 2).moved(Location((0, 0, -1)))
+    body = Part(rounded_pair.intersect(trim).solids()).clean()
+    if not body.is_valid or len(body.solids()) != 1 or body.volume <= 0:
+        raise ValueError("corner-out: half-pair split produced invalid body")
+    return body
+
+
 def _support_plan(spec: Accessory) -> tuple[float, list[dict]]:
     if spec.family == "support-end":
         male = spec.variant in (3, 4)
@@ -1459,16 +1494,7 @@ def make_accessory(spec: Accessory) -> Part:
     elif spec.family.startswith("support"):
         part = _support(spec)
     else:
-        face, joins = _edge_plan(
-            spec,
-            free_miter_extension=(
-                EDGE_MITER_RETANGENT_MM
-                if spec.interface.joint_style == "original"
-                and spec.family == "corner-out"
-                and spec.variant in (1, 2, 4, 5)
-                else 0
-            ),
-        )
+        face, joins = _edge_plan(spec)
         if spec.interface.joint_style == "full-height":
             males, females = [], []
             for join in joins:
@@ -1488,18 +1514,18 @@ def make_accessory(spec: Accessory) -> Part:
                 interface_blend_radius=spec.interface.tile_join_blend_radius,
             )
         else:
-            body = prism(face, spec.interface.height)
-            operation = BRepFilletAPI_MakeFillet(body.wrapped)
-            for edge in body.edges():
-                operation.Add(EDGE_BODY_RADIUS_MM, edge.wrapped)
-            operation.Build()
-            if not operation.IsDone():
-                raise ValueError(f"{spec.family}: coupled R3 body fillet failed")
-            part = _apply_joins(
-                Part(Solid(operation.Shape()).wrapped),
-                joins,
-                interface=spec.interface,
-            )
+            if spec.family == "corner-out" and spec.variant in (1, 2, 4, 5):
+                body = _rounded_original_corner_out_half_body(spec, face)
+            else:
+                body = prism(face, spec.interface.height)
+                operation = BRepFilletAPI_MakeFillet(body.wrapped)
+                for edge in body.edges():
+                    operation.Add(EDGE_BODY_RADIUS_MM, edge.wrapped)
+                operation.Build()
+                if not operation.IsDone():
+                    raise ValueError(f"{spec.family}: coupled R3 body fillet failed")
+                body = Part(Solid(operation.Shape()).wrapped)
+            part = _apply_joins(body, joins, interface=spec.interface)
         if spec.interface.joint_style == "full-height":
             part = part.fillet(1, horizontal_edges(part, 0))
         part = _cut_completed_edge_holes(part, spec)

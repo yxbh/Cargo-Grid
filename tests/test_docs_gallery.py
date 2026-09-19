@@ -169,6 +169,23 @@ def test_gallery_parameters_preserve_default_identity(gallery):
     )
 
 
+def test_corner_out_descriptions_explain_whole_parts_and_half_pairs(gallery):
+    items = {
+        item.spec.variant: item
+        for item in gallery.inventory()
+        if item.spec.family == "corner-out"
+        and item.spec.edge_outward == 10
+        and not item.spec.complete_edge_holes
+    }
+    assert "west half" in gallery.item_description(items[1])
+    assert "Use it with v2" in gallery.item_description(items[1])
+    assert "north half" in gallery.item_description(items[2])
+    assert "whole northeast L" in gallery.item_description(items[3])
+    assert "east half" in gallery.item_description(items[4])
+    assert "south half" in gallery.item_description(items[5])
+    assert "whole southwest L" in gallery.item_description(items[6])
+
+
 def test_incremental_perimeter_composition_retains_unrelated_assets(gallery, tmp_path, monkeypatch):
     import copy
     import shutil
@@ -233,6 +250,82 @@ def test_incremental_perimeter_composition_retains_unrelated_assets(gallery, tmp
     report = json.loads((work / "render-report.json").read_text())
     assert len(report["updated_keys"]) == 120
     assert "not a full-gallery rerender" in (tmp_path / "docs/attachments.md").read_text()
+
+
+def test_incremental_corner_half_composition_updates_only_24_assets(
+    gallery,
+    tmp_path,
+    monkeypatch,
+):
+    import copy
+    import shutil
+
+    shutil.copytree(ROOT / "docs/images", tmp_path / "docs/images")
+    path = tmp_path / "docs/images/attachments/manifest.json"
+    baseline = json.loads(path.read_text())
+    keys = {
+        item.key
+        for item in gallery.inventory()
+        if item.spec.family == "corner-out" and item.spec.variant in (1, 2, 4, 5)
+    }
+    assert len(keys) == 24
+    retained = {
+        entry["file"]: (tmp_path / "docs" / entry["file"]).read_bytes()
+        for entry in [*baseline["items"], *baseline["overview_images"]]
+        if entry.get("key") not in keys
+    }
+    provenance = {
+        "generator_commit": "1" * 40,
+        "generator_tree": "2" * 40,
+        "workbench_commit": "3" * 40,
+        "recipe_sha256": "4" * 64,
+    }
+    calls = []
+    monkeypatch.setattr(gallery, "ROOT", tmp_path)
+    monkeypatch.setattr(gallery, "verify_geometry_source", lambda revision: calls.append(revision))
+    monkeypatch.setattr(gallery, "verify_assets", lambda: {})
+
+    def thumbnails(
+        work,
+        supplied,
+        *,
+        keys: set[str],
+        scale_overrides: dict[str, float],
+        write_manifest: bool,
+    ):
+        assert supplied == provenance and len(keys) == 24 and not write_manifest
+        assert scale_overrides == {
+            "corner-out": next(
+                entry["pixels_per_mm"]
+                for entry in baseline["items"]
+                if entry["family"] == "corner-out"
+            )
+        }
+        rows = []
+        for item in gallery.inventory():
+            if item.key not in keys:
+                continue
+            entry = copy.deepcopy(next(row for row in baseline["items"] if row["key"] == item.key))
+            entry["provenance"] = provenance
+            rows.append(entry)
+        return rows
+
+    monkeypatch.setattr(gallery, "thumbnail_entries", thumbnails)
+    work = tmp_path / "outputs/corner-half-update"
+    work.mkdir(parents=True)
+    gallery.compose_corner_halves(work, provenance)
+    assert calls == [provenance["generator_commit"]]
+    updated = json.loads(path.read_text())
+    assert [row for row in updated["items"] if row["key"] not in keys] == [
+        row for row in baseline["items"] if row["key"] not in keys
+    ]
+    assert updated["overview_images"] == baseline["overview_images"]
+    assert all((tmp_path / "docs" / name).read_bytes() == data for name, data in retained.items())
+    report = json.loads((work / "render-report.json").read_text())
+    assert len(report["updated_keys"]) == 24
+    text = (tmp_path / "docs/attachments.md").read_text()
+    assert "diagonal faces simply butt together" in text
+    assert "not a full-gallery rerender" in text
 
 
 def test_incremental_ramp_composition_retains_unrelated_assets_and_provenance(
@@ -311,7 +404,10 @@ def test_incremental_ramp_composition_retains_unrelated_assets_and_provenance(
     assert "not a full-gallery rerender" in (tmp_path / "docs/attachments.md").read_text()
 
 
-@pytest.mark.parametrize("composer", ["compose_perimeters", "compose_ramps"])
+@pytest.mark.parametrize(
+    "composer",
+    ["compose_perimeters", "compose_ramps", "compose_corner_halves"],
+)
 def test_incremental_composition_rejects_changed_retained_picture(
     gallery, tmp_path, monkeypatch, composer
 ):

@@ -88,7 +88,7 @@ FAMILIES = {
     ),
     "corner-out": (
         "Outer corners",
-        "An R3 outer-edge finishing piece in one of six supported arrangements, sized to match the selected edge projection and boundary-hole mode.",
+        "R3 outer-edge corner parts sized to match the selected edge projection and boundary-hole mode.",
     ),
     "support": (
         "Support rails",
@@ -171,6 +171,15 @@ def item_description(item: Item) -> str:
         if item.spec.ramp_join == "male":
             return "A 50 mm slope with original male tile-edge tabs, not X plugs. Tabs add 6 mm beyond the slope at standard unit size. Place against a female south or west tile edge. Bambu projects leave object support off."
         return "A 50 mm slope with original female tile-edge pockets. Receives a north male tile edge and extends in positive Y. Bambu projects enable Auto support for the pocket roofs; remove it before assembly."
+    if item.spec.family == "corner-out":
+        return {
+            1: "The west half of the northwest mixed-sex corner, with one male tile-edge join. Use it with v2; their diagonal faces form a butt seam and do not clip together.",
+            2: "The north half of the northwest mixed-sex corner, with one female tile-edge join. Use it with v1; their diagonal faces form a butt seam and do not clip together.",
+            3: "The whole northeast L corner, with two female tile-edge joins.",
+            4: "The east half of the southeast mixed-sex corner, with one female tile-edge join. Use it with v5; their diagonal faces form a butt seam and do not clip together.",
+            5: "The south half of the southeast mixed-sex corner, with one male tile-edge join. Use it with v4; their diagonal faces form a butt seam and do not clip together.",
+            6: "The whole southwest L corner, with two male tile-edge joins.",
+        }[item.spec.variant]
     return FAMILIES[item.spec.family][1]
 
 
@@ -560,6 +569,8 @@ def thumbnail_entries(
     provenance: dict,
     *,
     families: set[str] | None = None,
+    keys: set[str] | None = None,
+    scale_overrides: dict[str, float] | None = None,
     write_manifest: bool = True,
 ) -> list[dict]:
     from PIL import Image
@@ -572,14 +583,23 @@ def thumbnail_entries(
         if families is not None and family not in families:
             continue
         items = [item for item in inventory() if item.spec.family == family]
+        if keys is not None:
+            items = [item for item in items if item.key in keys]
+        if not items:
+            continue
         facts = {
             item.key: json.loads((work / "facts" / f"{item.key}.json").read_text())
             for item in items
         }
         spans = [projected_spans(facts[item.key]["size_mm"]) for item in items]
-        scale = 0.88 * min(
-            THUMBNAIL_SIZE[0] / max(s[0] for s in spans),
-            THUMBNAIL_SIZE[1] / max(s[1] for s in spans),
+        scale = (
+            scale_overrides[family]
+            if scale_overrides and family in scale_overrides
+            else 0.88
+            * min(
+                THUMBNAIL_SIZE[0] / max(s[0] for s in spans),
+                THUMBNAIL_SIZE[1] / max(s[1] for s in spans),
+            )
         )
         for item in items:
             fact = facts[item.key]
@@ -815,6 +835,8 @@ def write_gallery(
         "",
         "Normal `vertical-stop` names give base X units, base Y units and the physical H60/H120 shoulder height. They are filled CAD wedges with no wall holes, panel connectors or ledges. The slicer still chooses perimeters and infill.",
         "",
+        "Outer-corner variants 1 and 2 are the two halves of the northwest mixed-sex corner; variant 3 is the whole northeast female/female L. Variants 4 and 5 are the two halves of the southeast mixed-sex corner; variant 6 is the whole southwest male/male L. Each half joins the tile itself, while the two diagonal faces simply butt together with no extra clip or connector.",
+        "",
         "Original edge/corner bodies and straight rail bodies use R3. Rail ends use smaller rounds where the shape or STEP export needs them. Plates and stops use R2. Ramps have R2 sides/noses and a broad R32 shelf blend, capped to retain 2 mm of flat shelf on thicker custom parts. Brackets use R3 at the thick front-to-slope transition, R2 on other thick edges and R1 around the thin bearing lip. Mating surfaces keep their own geometry.",
         "",
         "Before packing, Bambu projects put plates broad-face-down at X=180, original brackets on their diagonal rear face, shallow brackets side-down at Y=-90, normal stops on their broad rear face and angled stops back-down at X=-135. STEP, STL and core 3MF keep source orientation. Female ramps, normal stops and shallow brackets turn on Auto support for that object; male ramps leave it off. Remove support from mating areas before assembly. Physical fit and support removal still need checking on a print.",
@@ -850,6 +872,8 @@ def write_gallery(
         "For a ramp-only update, add `--update-ramps --geometry-revision <committed-generator-revision> --workbench-revision <recorded-workbench-revision>`. This renders all ten ramps and recomposes only the ramp overview. Other pictures and their original provenance stay unchanged; no earlier render cache is needed.",
         "",
         "For a perimeter-only update, use `--update-perimeters` with those two revision options. This rerenders the complete edge/corner families so each family keeps one physical image scale. Other pictures and their earlier provenance stay unchanged.",
+        "",
+        "For a repaired outer-corner-half update, use `--update-corner-halves` with those two revision options. This rerenders only variants 1, 2, 4 and 5 across their three outward widths and two hole modes, retaining the established outer-corner image scale and every unrelated image byte.",
         "",
         (
             f"The manifest's top-level provenance belongs to the retained baseline images. Regenerated assets carry their own provenance; this is not a full-gallery rerender. Updated scope: {incremental_scope}. "
@@ -898,6 +922,64 @@ def compose_perimeters(work: Path, provenance: dict) -> None:
     )
     path.write_text(json.dumps(manifest, indent=2) + "\n")
     scope = "edge-x, edge-y, corner-in and corner-out thumbnails"
+    write_gallery(manifest["items"], provenance, incremental_scope=scope)
+    report = {
+        **provenance,
+        "scope": scope,
+        "composition_recipe_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+        "updated_keys": [entry["key"] for entry in replacements],
+        "assets": verify_assets(),
+    }
+    (work / "render-report.json").write_text(json.dumps(report, indent=2) + "\n")
+    print(json.dumps(report["updated_keys"], indent=2))
+
+
+def compose_corner_halves(work: Path, provenance: dict) -> None:
+    """Replace only repaired corner-out half variants while retaining other image bytes."""
+    verify_geometry_source(provenance["generator_commit"])
+    keys = {
+        item.key
+        for item in inventory()
+        if item.spec.family == "corner-out" and item.spec.variant in (1, 2, 4, 5)
+    }
+    if len(keys) != 24:
+        raise ValueError("Expected 24 corner-out half thumbnails")
+    path = ROOT / "docs/images/attachments/manifest.json"
+    manifest = json.loads(path.read_text())
+    retained = [entry for entry in manifest["items"] if entry["key"] not in keys]
+    expected = {item.key for item in inventory()} - keys
+    if len(retained) != len(expected) or {entry["key"] for entry in retained} != expected:
+        raise ValueError("Retained thumbnails do not match the non-half-corner inventory")
+    if len(manifest["overview_images"]) != len(IMAGE_NAMES) or {
+        entry["file"] for entry in manifest["overview_images"]
+    } != {f"images/{name}" for name in IMAGE_NAMES}:
+        raise ValueError("Retained overviews do not match the documented image set")
+    for entry in [*retained, *manifest["overview_images"]]:
+        asset = ROOT / "docs" / entry["file"]
+        if hashlib.sha256(asset.read_bytes()).hexdigest() != entry["sha256"]:
+            raise ValueError(f"Retained image hash mismatch: {entry['file']}")
+    corner_scales = {
+        entry["pixels_per_mm"] for entry in manifest["items"] if entry["family"] == "corner-out"
+    }
+    if len(corner_scales) != 1:
+        raise ValueError("Existing corner-out thumbnails do not share one physical scale")
+    replacements = thumbnail_entries(
+        work,
+        provenance,
+        keys=keys,
+        scale_overrides={"corner-out": corner_scales.pop()},
+        write_manifest=False,
+    )
+    rows = [*retained, *replacements]
+    manifest["items"] = [
+        entry for family in FAMILIES for entry in rows if entry["family"] == family
+    ]
+    manifest["provenance_scope"] = (
+        "Top-level revisions describe retained baseline images; per-image provenance overrides "
+        "them for the 24 regenerated corner-out half assets. This is not a full-gallery rerender."
+    )
+    path.write_text(json.dumps(manifest, indent=2) + "\n")
+    scope = "corner-out variants 1, 2, 4 and 5 across all outward widths and hole modes"
     write_gallery(manifest["items"], provenance, incremental_scope=scope)
     report = {
         **provenance,
@@ -993,6 +1075,11 @@ def main() -> None:
         action="store_true",
         help="render and compose only the ten ramp thumbnails and ramp overview",
     )
+    parser.add_argument(
+        "--update-corner-halves",
+        action="store_true",
+        help="render and compose only repaired corner-out variants 1, 2, 4 and 5",
+    )
     parser.add_argument("--geometry-revision", default=GEOMETRY_REVISION)
     parser.add_argument("--workbench-revision", default=WORKBENCH_REVISION)
     parser.add_argument("--check", action="store_true")
@@ -1000,12 +1087,11 @@ def main() -> None:
     if args.check:
         print(json.dumps(verify_assets(), indent=2))
         return
-    if args.update_perimeters and args.update_ramps:
-        parser.error("--update-perimeters and --update-ramps are separate update modes")
-    if args.update_perimeters and args.only:
-        parser.error("--update-perimeters already selects the edge/corner families; omit --only")
-    if args.update_ramps and args.only:
-        parser.error("--update-ramps already selects the complete ramp family; omit --only")
+    update_modes = sum((args.update_perimeters, args.update_ramps, args.update_corner_halves))
+    if update_modes > 1:
+        parser.error("incremental gallery update modes are separate")
+    if update_modes and args.only:
+        parser.error("incremental gallery update modes select their own items; omit --only")
     if args.workbench is None:
         parser.error("--workbench is required for rendering")
     work = (ROOT / args.work_dir).resolve()
@@ -1027,6 +1113,12 @@ def main() -> None:
             if args.update_perimeters
             else {item.key for item in inventory() if item.spec.family == "ramp"}
             if args.update_ramps
+            else {
+                item.key
+                for item in inventory()
+                if item.spec.family == "corner-out" and item.spec.variant in (1, 2, 4, 5)
+            }
+            if args.update_corner_halves
             else set(args.only)
             if args.only
             else None
@@ -1043,6 +1135,8 @@ def main() -> None:
         compose_perimeters(work, provenance)
     elif args.update_ramps:
         compose_ramps(work, provenance)
+    elif args.update_corner_halves:
+        compose_corner_halves(work, provenance)
     elif not args.only:
         compose_all(work, provenance)
 
