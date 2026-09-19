@@ -34,7 +34,7 @@ jobs:
           uv run --no-sync ruff check .
           uv run --no-sync ruff format --check .
       - name: Portable geometry and export tests
-        run: uv run --no-sync pytest -q -n 2 --dist loadfile -m "not native and not reference"
+        run: uv run --no-sync pytest -q -n 2 --dist loadfile -m "not native and not reference" --durations=0 --durations-min=0
       - name: Build and inspect distributions
         run: |
           uv build

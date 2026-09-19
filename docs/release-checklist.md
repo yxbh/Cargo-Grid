@@ -34,6 +34,8 @@ CI runs for pull requests, pushes to `main` and manual dispatches. It does not r
 
 The Linux job installs the CAD runtime libraries, runs Ruff, runs the portable tests with two process workers, builds both distributions and installs the wheel into a clean environment. Its smoke commands generate a tile, bracket, normal stop and ramp, then check their manifest dimensions, orientations and support settings with named assertion messages.
 
+The portable test command includes pytest's built-in `--durations=0 --durations-min=0` report. It lists every test's setup, call and teardown durations, slowest first, without adding a timing plugin. Add the same flags to a local run when investigating slow tests. These are per-phase elapsed times: phases on parallel workers can overlap, so their sum is not the CI job's wall time.
+
 CI can't use private reference files, local slicer profiles or printers. Treat a CI failure as a source, package or test failure until the log shows otherwise.
 
 ## Optional local Bambu and reference checks
