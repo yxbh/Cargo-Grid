@@ -128,6 +128,8 @@ Bambu single-part and catalogue exports rotate attachment plates X=180 degrees b
 
 The H2D dual-safe catalogue is a standard 60/13 machine-specific plan, not a generic build rectangle. Common plates use X25..325, Y0..320 and Z<=320, add a 5 mm model inset and keep model bounds at least 10 mm apart. The 306x306 mm 5x5 tile gets its own left-nozzle-only plate because it doesn't fit the 300 mm common width. Slot 1 is mapped left there; common plates keep automatic Convenience Mode. Packing checks model bounds only, so inspect support, brim and tower paths after slicing.
 
+Catalogue fit checks measure each generated candidate in the requested source or Bambu pose once. The H2D planner reuses those precise sizes while grouping and packing the same unchanged designs. Sizes are tied to design identity, not names, and live only for that request; later calls measure again so changed shapes or poses cannot reuse stale bounds.
+
 ## Optional reference comparison
 
 Portable tests inspect generated solids, dimensions, layout placement, accepted hole locations, STEP reimports, mesh topology, accessory families, separator contacts and 3MF structure without a redistributed reference mesh.
