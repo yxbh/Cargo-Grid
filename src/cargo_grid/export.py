@@ -28,6 +28,7 @@ from cargo_grid.jobs import Job
 from cargo_grid.meshes import checked_mesh, write_stl
 from cargo_grid.packing import PrintPlacement, pack_sizes
 from cargo_grid.parameters import Interface, count, positive
+from cargo_grid.rods import ROD_FAMILIES, Rod, RodBrace, fit_evidence
 from cargo_grid.roof_support import RoofSupportSettings, roof_enforcers, validate_roof_job
 from cargo_grid.stacking import StackSettings, Volume, stack_volumes
 
@@ -856,6 +857,11 @@ def export_job(
                     }
                 )
             )
+        if design.parameters.get("family") in ROD_FAMILIES:
+            spec_type = Rod if design.parameters["family"] == "rod" else RodBrace
+            round_spec = spec_type(**{k: v for k, v in design.parameters.items() if k != "family"})
+            entries[-1]["mating_datums"] = accessory_datums(round_spec)
+            entries[-1]["fit_evidence"] = fit_evidence(round_spec)
         if (
             design.recommended_print_rotation_x is not None
             or design.recommended_print_rotation_y is not None
